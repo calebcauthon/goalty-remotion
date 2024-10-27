@@ -1,0 +1,37 @@
+.videos-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.video-form {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.video-input {
+  flex-grow: 1;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #444;
+  background-color: #333;
+  color: #fff;
+}
+
+.video-submit {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.video-submit:hover {
+  background-color: #45a049;
+}
+
+.message {
+  font-size: 18px;
+  margin-top: 20px;
+}
