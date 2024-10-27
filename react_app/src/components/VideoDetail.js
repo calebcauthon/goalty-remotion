@@ -83,13 +83,11 @@ function VideoDetail() {
     setParsedMetadata(updatedMetadata);
   }, []);
 
-  useHotkeys({
+  useHotkeys(
     hotkeyMode,
-    parsedMetadata,
-    currentFrame,
-    onMetadataUpdate: handleMetadataUpdate,
-    playerRef
-  });
+    { parsedMetadata, playerRef, onMetadataUpdate: handleMetadataUpdate },
+    currentFrame
+  );
 
   // Custom theme for JSONTree
   const theme = {

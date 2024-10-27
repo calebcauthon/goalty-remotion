@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
 
-export function useHotkeys({ hotkeyMode, parsedMetadata, currentFrame, onMetadataUpdate, playerRef }) {
+export function useHotkeys(hotkeyMode, { parsedMetadata, playerRef, onMetadataUpdate }, currentFrame) {
+
   const handleHotkey = useCallback((event) => {
     if (!hotkeyMode) return;
 
