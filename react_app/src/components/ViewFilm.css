@@ -74,3 +74,33 @@
   border: 1px solid #ccc;
   border-radius: 4px;
 }
+
+.tags-table-container {
+  margin-top: 2rem;
+}
+
+.tags-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.tags-table th,
+.tags-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border: 1px solid #ddd;
+}
+
+.tags-table th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+}
+
+.tags-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.tags-table tr:hover {
+  background-color: #f0f0f0;
+}

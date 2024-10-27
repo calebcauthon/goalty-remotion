@@ -97,28 +97,45 @@ function ViewFilm() {
           )}
         </div>
         <div className="video-table-container">
+          <h2>Videos</h2>
           <table className="video-table">
             <thead>
               <tr>
                 <th>Video Name</th>
-                <th>Tags</th>
+                <th>Number of Tags</th>
               </tr>
             </thead>
             <tbody>
               {videos.map((video) => (
                 <tr key={video.id}>
                   <td>{video.name}</td>
-                  <td>
-                    <div className="tag-container">
-                      {video.tags.map((tag, index) => (
-                        <span key={index} className="tag">
-                          {tag.name} @ {tag.frame}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
+                  <td>{video.tags.length}</td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="tags-table-container">
+          <h2>All Tags</h2>
+          <table className="tags-table">
+            <thead>
+              <tr>
+                <th>Video Name</th>
+                <th>Tag Name</th>
+                <th>Frame</th>
+              </tr>
+            </thead>
+            <tbody>
+              {videos.flatMap((video) =>
+                video.tags.map((tag, index) => (
+                  <tr key={`${video.id}-${index}`}>
+                    <td>{video.name}</td>
+                    <td>{tag.name}</td>
+                    <td>{tag.frame}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
