@@ -2,26 +2,51 @@ import { useCallback } from 'react';
 
 export function useHighlightAdder({ updateMetadata, playerRef, registerTemporaryHotkey, clearTemporaryHotkeys }, currentFrame) {
   return useCallback(() => {
-    updateMetadata(prevMetadata => {
-      const updatedMetadata = { ...prevMetadata };
-      if (!updatedMetadata.tags) {
-        updatedMetadata.tags = [];
+    const { speed, frames } = { speed: 250, frames: 3 };
+    playerRef.current?.pause();
+    const originalFrame = playerRef.current?.getCurrentFrame();
+    let intervalId;
+    let isRewinding = true;
+
+    const rewindThenForward = () => {
+      if (isRewinding) {
+        const currentPlayerFrame = playerRef.current?.getCurrentFrame();
+        playerRef.current?.seekTo(currentPlayerFrame - frames);
+      } else {
+        const currentPlayerFrame = playerRef.current?.getCurrentFrame();
+        playerRef.current?.seekTo(currentPlayerFrame + frames);
       }
-      updatedMetadata.tags.push({ name: 'highlight init', frame: currentFrame });
-      return updatedMetadata;
+    };
+
+    intervalId = setInterval(rewindThenForward, speed);
+
+    registerTemporaryHotkey('g', () => {
+      clearInterval(intervalId);
+      addTag('highlight start', playerRef.current?.getCurrentFrame());
+
+      playerRef.current?.seekTo(originalFrame);
+      isRewinding = false;
+      intervalId = setInterval(rewindThenForward, speed);
     });
 
-    playerRef.current?.pause();
+    registerTemporaryHotkey('h', () => {
+      clearInterval(intervalId);
+      addTag('highlight end', playerRef.current?.getCurrentFrame());
 
-    registerTemporaryHotkey('x', () => {
+      clearTemporaryHotkeys();
+      playerRef.current?.play();
+    });
+
+    function addTag(name, frame) {
       updateMetadata(prevMetadata => {
         const updatedMetadata = { ...prevMetadata };
-        updatedMetadata.tags.push({ name: 'highlight start', frame: currentFrame });
+        if (!updatedMetadata.tags) {
+          updatedMetadata.tags = [];
+        }
+        updatedMetadata.tags.push({ name, frame });
         return updatedMetadata;
       });
-      playerRef.current?.play();
-      clearTemporaryHotkeys();
-    });
+    }
 
   }, [updateMetadata, currentFrame, playerRef, registerTemporaryHotkey, clearTemporaryHotkeys]);
 }
