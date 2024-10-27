@@ -80,7 +80,7 @@ function VideoDetail() {
   const handleHotkey = useCallback((event) => {
     if (!hotkeyMode) return;
 
-    const frame = Math.round(playerRef.current?.getCurrentFrame() || 0);
+    const currentFrame = Math.round(playerRef.current?.getCurrentFrame() || 0);
     let updatedMetadata = { ...parsedMetadata };
 
     if (!updatedMetadata.tags) {
@@ -89,11 +89,17 @@ function VideoDetail() {
 
     switch (event.key) {
       case '1':
-        updatedMetadata.tags.push({ name: 'game_start', frame });
+        updatedMetadata.tags.push({ name: 'game_start', frame: currentFrame });
         break;
       case '9':
-        updatedMetadata.tags.push({ name: 'game_end', frame });
+        updatedMetadata.tags.push({ name: 'game_end', frame: currentFrame });
         break;
+      case 'ArrowLeft':
+        playerRef.current?.seekTo(Math.max(currentFrame - 5, 0));
+        return;
+      case 'ArrowRight':
+        playerRef.current?.seekTo(currentFrame + 5);
+        return;
       default:
         return;
     }
@@ -176,6 +182,8 @@ function VideoDetail() {
           <ul>
             <li>'1': Add game start tag</li>
             <li>'9': Add game end tag</li>
+            <li>'←': Move back 5 frames</li>
+            <li>'→': Move forward 5 frames</li>
           </ul>
         </div>
         <div className="metadata-container">
