@@ -1,9 +1,9 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import yt_dlp
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='react_app/build')
 CORS(app)
 
 DOWNLOAD_DIRECTORY = 'downloads'
@@ -34,6 +34,15 @@ def download_video():
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Serve React App
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    if path != "" and os.path.exists(app.static_folder + '/' + path):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
