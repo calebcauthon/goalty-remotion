@@ -9,6 +9,7 @@ function Layout({ children }) {
         <ul>
           <li><Link to="/">Home</Link></li>
           <li><Link to="/videos">Videos</Link></li>
+          <li><Link to="/studio">Studio</Link></li>
         </ul>
       </nav>
       <main className="content">

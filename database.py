@@ -10,9 +10,11 @@ def get_db_connection():
     return conn
 
 def init_db():
+
     conn = get_db_connection()
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS videos (
+    try:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS videos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             size INTEGER NOT NULL,
@@ -20,25 +22,39 @@ def init_db():
             metadata TEXT
         )
     ''')
-    conn.commit()
-    conn.close()
+
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS films (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                created_date TEXT NOT NULL,
+                data TEXT
+            )
+        ''')
+        conn.commit()
+    finally:
+        conn.close()
 
 def add_video(title, size, filepath, metadata=None):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO videos (title, size, filepath, metadata)
-        VALUES (?, ?, ?, ?)
-    ''', (title, size, filepath, json.dumps(metadata) if metadata else None))
-    conn.commit()
-    video_id = cursor.lastrowid
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+                INSERT INTO videos (title, size, filepath, metadata)
+            VALUES (?, ?, ?, ?)
+        ''', (title, size, filepath, json.dumps(metadata) if metadata else None))
+        conn.commit()
+        video_id = cursor.lastrowid
+    finally:
+        conn.close()
     return video_id
 
 def get_video(video_id):
     conn = get_db_connection()
-    video = conn.execute('SELECT * FROM videos WHERE id = ?', (video_id,)).fetchone()
-    conn.close()
+    try:
+        video = conn.execute('SELECT * FROM videos WHERE id = ?', (video_id,)).fetchone()
+    finally:
+        conn.close()
     if video:
         video = dict(video)
         video['metadata'] = json.loads(video['metadata']) if video['metadata'] else None
@@ -46,28 +62,45 @@ def get_video(video_id):
 
 def get_tables():
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = [row[0] for row in cursor.fetchall()]
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = [row[0] for row in cursor.fetchall()]
+    finally:
+        conn.close()
     return tables
 
 def get_table_data(table_name):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(f"SELECT * FROM {table_name}")
-    columns = [description[0] for description in cursor.description]
-    data = cursor.fetchall()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT * FROM {table_name}")
+        columns = [description[0] for description in cursor.description]
+        data = cursor.fetchall()
+    finally:
+        conn.close()
     return data, columns
 
-def execute_query(query):
+def commit_query(query, params=()):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(query)
-    columns = [description[0] for description in cursor.description]
-    data = cursor.fetchall()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        conn.commit()
+        last_id = cursor.lastrowid
+    finally:
+        conn.close()
+    return last_id
+
+def execute_query(query, params=()):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        columns = [description[0] for description in cursor.description]
+        data = cursor.fetchall()
+    finally:
+        conn.close()
     return data, columns
 
 def update_video_metadata(video_id, metadata):

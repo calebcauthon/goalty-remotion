@@ -4,7 +4,8 @@ import yt_dlp
 import os
 import argparse
 import json
-from database import add_video, get_video, get_tables, get_table_data, execute_query, update_video_metadata
+from database import add_video, get_video, get_tables, get_table_data, execute_query, update_video_metadata, commit_query
+from datetime import datetime
 
 app = Flask(__name__, static_folder='react_app/build', template_folder='templates')
 CORS(app)
@@ -70,7 +71,6 @@ def get_videos():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 # Add a new route to get video information
 @app.route('/api/videos/<int:video_id>', methods=['GET'])
 def get_video_info(video_id):
@@ -131,6 +131,51 @@ def save_video_metadata(video_id):
         return jsonify({'message': 'Metadata saved successfully'}), 200
     except json.JSONDecodeError:
         return jsonify({'error': 'Invalid JSON in metadata'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/films', methods=['GET'])
+def get_films():
+    try:
+        data, columns = execute_query('''
+            SELECT * FROM films 
+            ORDER BY created_date DESC
+        ''')
+        films = [dict(zip(columns, row)) for row in data]
+        return jsonify(films), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/films', methods=['POST'])
+def create_film():
+    try:
+        name = request.json.get('name', 'Untitled Film')
+        created_date = datetime.now().isoformat()
+        
+        query = '''
+            INSERT INTO films (name, created_date, data) 
+            VALUES (?, ?, ?)
+        '''
+        film_id = commit_query(query, (name, created_date, '{}'))
+        
+        return jsonify({
+            'id': film_id,
+            'name': name,
+            'created_date': created_date,
+            'data': {}
+        }), 201
+    except Exception as e:
+        print(e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/films/<int:film_id>', methods=['GET'])
+def get_film(film_id):
+    try:
+        data, columns = execute_query('SELECT * FROM films WHERE id = ?', (film_id,))
+        if not data:
+            return jsonify({'error': 'Film not found'}), 404
+        film = dict(zip(columns, data[0]))
+        return jsonify(film), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
