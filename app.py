@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, render_template
+from flask import Flask, request, jsonify, send_from_directory, render_template, send_file
 from flask_cors import CORS
 import yt_dlp
 import os
@@ -107,6 +107,11 @@ def serve(path):
         return send_from_directory(app.static_folder, path)
     else:
         return send_from_directory(app.static_folder, 'index.html')
+
+# Add a new route to serve video files
+@app.route('/downloads/<path:filename>')
+def serve_video(filename):
+    return send_from_directory(DOWNLOAD_DIRECTORY, filename)
 
 if __name__ == '__main__':
     # Set up argument parser
