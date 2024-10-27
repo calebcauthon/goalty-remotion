@@ -6,6 +6,7 @@ import { Player } from '@remotion/player';
 import VideoPlayer from './VideoPlayer';
 import { JSONTree } from 'react-json-tree';
 import './VideoDetail.css';
+import { useHotkeys } from './Hotkeys';
 
 function VideoDetail() {
   const { id } = useParams();
@@ -77,36 +78,27 @@ function VideoDetail() {
     setHotkeyMode(!hotkeyMode);
   };
 
+  const handleMetadataUpdate = useCallback((updatedMetadata) => {
+    setMetadata(JSON.stringify(updatedMetadata, null, 2));
+    setParsedMetadata(updatedMetadata);
+  }, []);
+
+  useHotkeys(hotkeyMode, parsedMetadata, currentFrame, handleMetadataUpdate);
+
   const handleHotkey = useCallback((event) => {
     if (!hotkeyMode) return;
 
-    const currentFrame = Math.round(playerRef.current?.getCurrentFrame() || 0);
-    let updatedMetadata = { ...parsedMetadata };
-
-    if (!updatedMetadata.tags) {
-      updatedMetadata.tags = [];
-    }
-
     switch (event.key) {
-      case '1':
-        updatedMetadata.tags.push({ name: 'game_start', frame: currentFrame });
-        break;
-      case '9':
-        updatedMetadata.tags.push({ name: 'game_end', frame: currentFrame });
-        break;
       case 'ArrowLeft':
         playerRef.current?.seekTo(Math.max(currentFrame - 5, 0));
-        return;
+        break;
       case 'ArrowRight':
         playerRef.current?.seekTo(currentFrame + 5);
-        return;
+        break;
       default:
         return;
     }
-
-    setMetadata(JSON.stringify(updatedMetadata, null, 2));
-    setParsedMetadata(updatedMetadata);
-  }, [hotkeyMode, parsedMetadata]);
+  }, [hotkeyMode, currentFrame]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleHotkey);
