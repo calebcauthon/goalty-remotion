@@ -1,5 +1,5 @@
 .videos-container {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 20px;
 }
@@ -13,9 +13,6 @@
   flex-grow: 1;
   padding: 10px;
   font-size: 16px;
-  border: 1px solid #444;
-  background-color: #333;
-  color: #fff;
 }
 
 .video-submit {
@@ -27,11 +24,34 @@
   cursor: pointer;
 }
 
-.video-submit:hover {
-  background-color: #45a049;
+.message {
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
 }
 
-.message {
-  font-size: 18px;
-  margin-top: 20px;
+.video-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.video-table th,
+.video-table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.video-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.video-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.video-table tr:hover {
+  background-color: #f5f5f5;
 }
