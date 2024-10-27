@@ -1,7 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from './Layout';
+import { Player } from '@remotion/player';
+import { AbsoluteFill, Video, Sequence } from 'remotion';
 import './ViewFilm.css';
+
+// Updated VideoPlayer component using Remotion Video
+const VideoPlayer = ({ selectedVideos, videos }) => {
+  return (
+    <AbsoluteFill>
+      {Array.from(selectedVideos).map((videoId, index) => {
+        const video = videos.find(v => v.id === videoId);
+        if (!video) return null;
+        
+        // Calculate grid position
+        const columns = Math.min(selectedVideos.size, 2); // Max 2 videos per row
+        const width = 100 / columns;
+        const row = Math.floor(index / columns);
+        const col = index % columns;
+        
+        return (
+          <Sequence key={videoId} from={0}>
+            <div
+              style={{
+                position: 'absolute',
+                left: `${col * width}%`,
+                top: `${row * 50}%`,
+                width: `${width}%`,
+                height: '50%',
+                padding: '10px'
+              }}
+            >
+              <p className="video-name">{video.name}</p>
+              <Video
+                src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
+                style={{
+                  width: '100%',
+                  height: '90%'
+                }}
+              />
+            </div>
+          </Sequence>
+        );
+      })}
+    </AbsoluteFill>
+  );
+};
 
 function ViewFilm() {
   const [film, setFilm] = useState(null);
@@ -117,6 +161,41 @@ function ViewFilm() {
           )}
         </div>
         
+        <div className="video-player">
+          {selectedVideos.size > 0 ? (
+            <Player
+              component={VideoPlayer}
+              inputProps={{
+                selectedVideos,
+                videos
+              }}
+              durationInFrames={30 * 60} // 30 fps * 60 seconds
+              compositionWidth={1280}
+              compositionHeight={720}
+              fps={30}
+              controls
+              loop
+              style={{
+                width: '100%',
+                aspectRatio: '16/9'
+              }}
+            />
+          ) : (
+            <div style={{
+              width: '100%',
+              height: 360,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#f0f0f0',
+              border: '1px solid #ccc',
+              borderRadius: '4px'
+            }}>
+              Please select a video
+            </div>
+          )}
+        </div>
+
         <div className="video-table-container">
           <h2>Videos</h2>
           <table className="video-table">

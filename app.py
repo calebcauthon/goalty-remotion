@@ -77,7 +77,7 @@ def get_videos():
 def get_videos_with_tags():
     try:
         query = """
-        SELECT v.id, v.title as name, v.metadata
+        SELECT v.id, v.title as name, v.metadata, v.filepath
         FROM videos v
         """
         data, columns = execute_query(query)
