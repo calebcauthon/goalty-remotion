@@ -13,6 +13,10 @@ export const hotkeyDescriptions = {
 
 export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
   playerTools.registerHotkey = (...args) => { return registerHotkey(...args) };
+  playerTools.unregisterHotkey = (...args) => { return unregisterHotkey(...args) };
+  playerTools.registerTemporaryHotkey = (...args) => { return registerTemporaryHotkey(...args) };
+  playerTools.clearTemporaryHotkeys = (...args) => { return clearTemporaryHotkeys(...args) };
+  playerTools.clearUnregisteredHotkeys = (...args) => { return clearUnregisteredHotkeys(...args) };
 
   const addTag = useTagAdder(playerTools, currentFrame);
   const { seekBackward, seekForward } = useVideoSeeker(playerTools, currentFrame);
@@ -26,7 +30,12 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
     'h': addHighlight,
   });
 
+  const [unregisteredHotkeys, setUnregisteredHotkeys] = useState({});
+  const [temporaryHotkeys, setTemporaryHotkeys] = useState({});
+
   const hotkeyMapRef = useRef(hotkeyMap);
+  const unregisteredHotkeysRef = useRef(unregisteredHotkeys);
+  const temporaryHotkeysRef = useRef(temporaryHotkeys);
 
   const registerHotkey = useCallback((key, action) => {
     setHotkeyMap(prevMap => {
@@ -37,10 +46,57 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
       hotkeyMapRef.current = newMap;
       return newMap;
     });
+    
+    // Remove from unregistered hotkeys if it was there
+    setUnregisteredHotkeys(prevUnregistered => {
+      const { [key]: _, ...newUnregistered } = prevUnregistered;
+      unregisteredHotkeysRef.current = newUnregistered;
+      return newUnregistered;
+    });
+  }, []);
+
+  const unregisterHotkey = useCallback((key) => {
+    setUnregisteredHotkeys(prevUnregistered => {
+      const newUnregistered = {
+        ...prevUnregistered,
+        [key]: true
+      };
+      unregisteredHotkeysRef.current = newUnregistered;
+      return newUnregistered;
+    });
+  }, []);
+
+  const registerTemporaryHotkey = useCallback((key, action) => {
+    setTemporaryHotkeys(prevTemp => {
+      const newTemp = {
+        ...prevTemp,
+        [key]: action
+      };
+      temporaryHotkeysRef.current = newTemp;
+      return newTemp;
+    });
+  }, []);
+
+  const clearTemporaryHotkeys = useCallback(() => {
+    setTemporaryHotkeys({});
+    temporaryHotkeysRef.current = {};
+  }, []);
+
+  const clearUnregisteredHotkeys = useCallback(() => {
+    setUnregisteredHotkeys({});
+    unregisteredHotkeysRef.current = {};
   }, []);
 
   const handleHotkey = useCallback((event) => {
     if (!hotkeyMode) return;
+    if (unregisteredHotkeysRef.current[event.key]) return;
+    
+    const temporaryAction = temporaryHotkeysRef.current[event.key];
+    if (temporaryAction) {
+      temporaryAction();
+      return;
+    }
+    
     const action = hotkeyMapRef.current[event.key];
     if (action) {
       action();
@@ -54,5 +110,12 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
     };
   }, [handleHotkey]);
 
-  return { registerHotkey, hotkeyDescriptions };
+  return { 
+    registerHotkey, 
+    unregisterHotkey, 
+    registerTemporaryHotkey, 
+    clearTemporaryHotkeys, 
+    clearUnregisteredHotkeys,
+    hotkeyDescriptions 
+  };
 }

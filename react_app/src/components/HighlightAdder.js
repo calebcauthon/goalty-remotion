@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-export function useHighlightAdder({ parsedMetadata, onMetadataUpdate, playerRef, registerHotkey }, currentFrame) {
+export function useHighlightAdder({ parsedMetadata, onMetadataUpdate, playerRef, registerTemporaryHotkey, clearTemporaryHotkeys, unregisterHotkey }, currentFrame) {
   return useCallback(() => {
     const updatedMetadata = { ...parsedMetadata };
     if (!updatedMetadata.tags) {
@@ -9,10 +9,11 @@ export function useHighlightAdder({ parsedMetadata, onMetadataUpdate, playerRef,
     updatedMetadata.tags.push({ name: 'highlight init', frame: currentFrame });
     playerRef.current?.pause();
 
-    registerHotkey('x', () => {
+    registerTemporaryHotkey('x', () => {
       updatedMetadata.tags.push({ name: 'highlight start', frame: currentFrame });
       onMetadataUpdate(updatedMetadata);
       playerRef.current?.play();
+      clearTemporaryHotkeys();
     });
     onMetadataUpdate(updatedMetadata);
 
