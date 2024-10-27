@@ -12,6 +12,7 @@ function VideoDetail() {
   const [loading, setLoading] = useState(true);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [metadata, setMetadata] = useState('');
+  const [saveButtonText, setSaveButtonText] = useState('Save Metadata');
   const playerRef = useRef(null);
 
   useEffect(() => {
@@ -39,12 +40,19 @@ function VideoDetail() {
   };
 
   const handleSaveMetadata = async () => {
+    setSaveButtonText('Saving...');
     try {
       await axios.post(`http://localhost:5000/api/videos/${id}/metadata`, { metadata });
-      alert('Metadata saved successfully');
+      setSaveButtonText('Saved ✅');
+      setTimeout(() => {
+        setSaveButtonText('Save Metadata');
+      }, 2000);
     } catch (error) {
       console.error('Error saving metadata:', error);
-      alert('Error saving metadata');
+      setSaveButtonText('Error Saving');
+      setTimeout(() => {
+        setSaveButtonText('Save Metadata');
+      }, 2000);
     }
   };
 
@@ -90,7 +98,7 @@ function VideoDetail() {
             rows={10}
             cols={50}
           />
-          <button onClick={handleSaveMetadata}>Save Metadata</button>
+          <button onClick={handleSaveMetadata}>{saveButtonText}</button>
         </div>
       </div>
     </Layout>
