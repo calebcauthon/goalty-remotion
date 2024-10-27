@@ -10,6 +10,7 @@ function VideoDetail() {
   const { id } = useParams();
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentFrame, setCurrentFrame] = useState(0);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -49,12 +50,15 @@ function VideoDetail() {
             compositionHeight={360}
             fps={30}
             controls
+            renderLoading={() => <div>Loading...</div>}
+            onFrame={(frame) => setCurrentFrame(frame)}
           />
         </div>
         <div className="video-info">
           <p><strong>ID:</strong> {video.id}</p>
           <p><strong>Size:</strong> {(video.size / 1024 / 1024).toFixed(2)} MB</p>
           <p><strong>Filepath:</strong> {video.filepath}</p>
+          <p><strong>Current Frame:</strong> {currentFrame}</p>
         </div>
       </div>
     </Layout>
