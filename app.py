@@ -71,7 +71,7 @@ def get_videos():
 
 
 # Add a new route to get video information
-@app.route('/api/video/<int:video_id>', methods=['GET'])
+@app.route('/api/videos/<int:video_id>', methods=['GET'])
 def get_video_info(video_id):
     video = get_video(video_id)
     if video:

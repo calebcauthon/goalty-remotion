@@ -1,0 +1,56 @@
+.video-detail-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.video-detail-container h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.video-info {
+  background-color: #f5f5f5;
+  border-radius: 5px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.video-info p {
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+.video-info strong {
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+/* Add styles for video player if you decide to add one */
+.video-player {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto 20px;
+}
+
+/* Add styles for buttons or additional functionality */
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.action-button {
+  padding: 10px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.action-button:hover {
+  background-color: #0056b3;
+}

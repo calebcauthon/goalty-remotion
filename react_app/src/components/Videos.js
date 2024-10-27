@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import axios from 'axios';
 import './Videos.css';
@@ -7,6 +8,7 @@ function Videos() {
   const [url, setUrl] = useState('');
   const [message, setMessage] = useState('');
   const [videos, setVideos] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchVideos();
@@ -33,6 +35,10 @@ function Videos() {
       setMessage('Error adding video. Please try again.');
       console.error('Error:', error);
     }
+  };
+
+  const handleVideoClick = (id) => {
+    navigate(`/videos/${id}`);
   };
 
   return (
@@ -63,7 +69,7 @@ function Videos() {
           </thead>
           <tbody>
             {videos.map((video) => (
-              <tr key={video.id}>
+              <tr key={video.id} onClick={() => handleVideoClick(video.id)} className="clickable-row">
                 <td>{video.id}</td>
                 <td>{video.title}</td>
                 <td>{(video.size / 1024 / 1024).toFixed(2)} MB</td>
