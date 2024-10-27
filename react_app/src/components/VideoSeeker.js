@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-export function useVideoSeeker(playerRef, currentFrame) {
+export function useVideoSeeker({ playerRef }, currentFrame) {
   const seekBackward = useCallback(() => {
     playerRef.current?.seekTo(Math.max(currentFrame - 5, 0));
   }, [currentFrame, playerRef]);

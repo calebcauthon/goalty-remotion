@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-export function useTagAdder(parsedMetadata, currentFrame, onMetadataUpdate) {
+export function useTagAdder({ parsedMetadata, onMetadataUpdate }, currentFrame) {
   return useCallback((tagName) => {
     const updatedMetadata = { ...parsedMetadata };
     if (!updatedMetadata.tags) {

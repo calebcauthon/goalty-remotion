@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useTagAdder } from './TagAdder';
 import { useVideoSeeker } from './VideoSeeker';
 
-export function useHotkeys(hotkeyMode, { parsedMetadata, playerRef, onMetadataUpdate }, currentFrame) {
-  const addTag = useTagAdder(parsedMetadata, currentFrame, onMetadataUpdate);
-  const { seekBackward, seekForward } = useVideoSeeker(playerRef, currentFrame);
+export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
+  const addTag = useTagAdder(playerTools, currentFrame);
+  const { seekBackward, seekForward } = useVideoSeeker(playerTools, currentFrame);
 
   const hotkeyMap = useMemo(() => ({
     '1': () => addTag('game_start'),
