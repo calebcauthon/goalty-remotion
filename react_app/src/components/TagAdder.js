@@ -1,12 +1,14 @@
 import { useCallback } from 'react';
 
-export function useTagAdder({ parsedMetadata, onMetadataUpdate }, currentFrame) {
+export function useTagAdder({ updateMetadata }, currentFrame) {
   return useCallback((tagName) => {
-    const updatedMetadata = { ...parsedMetadata };
-    if (!updatedMetadata.tags) {
-      updatedMetadata.tags = [];
-    }
-    updatedMetadata.tags.push({ name: tagName, frame: currentFrame });
-    onMetadataUpdate(updatedMetadata);
-  }, [parsedMetadata, currentFrame, onMetadataUpdate]);
+    updateMetadata(prevMetadata => {
+      const updatedMetadata = { ...prevMetadata };
+      if (!updatedMetadata.tags) {
+        updatedMetadata.tags = [];
+      }
+      updatedMetadata.tags.push({ name: tagName, frame: currentFrame });
+      return updatedMetadata;
+    });
+  }, [updateMetadata, currentFrame]);
 }

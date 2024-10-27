@@ -7,6 +7,7 @@ import VideoPlayer from './VideoPlayer';
 import { JSONTree } from 'react-json-tree';
 import './VideoDetail.css';
 import { useHotkeys, hotkeyDescriptions } from './Hotkeys';
+import { debounce } from 'lodash';
 
 function VideoDetail() {
   const { id } = useParams();
@@ -78,14 +79,20 @@ function VideoDetail() {
     setHotkeyMode(!hotkeyMode);
   };
 
-  const handleMetadataUpdate = useCallback((updatedMetadata) => {
-    setMetadata(JSON.stringify(updatedMetadata, null, 2));
-    setParsedMetadata(updatedMetadata);
-  }, []);
+  const updateMetadata = useCallback((updater) => {
+    setMetadata(prevMetadata => {
+      const newMetadata = updater(JSON.parse(prevMetadata));
+      setParsedMetadata(prevParsedMetadata => {
+        const newParsedMetadata = newMetadata;
+        return newParsedMetadata;
+      });
+      return JSON.stringify(newMetadata, null, 2);
+    });
+  }, [setMetadata, setParsedMetadata]);
 
   const { registerHotkey } = useHotkeys(
     hotkeyMode,
-    { parsedMetadata, playerRef, onMetadataUpdate: handleMetadataUpdate },
+    { updateMetadata, playerRef },
     currentFrame
   );
 
