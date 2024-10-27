@@ -70,5 +70,17 @@ def execute_query(query):
     conn.close()
     return data, columns
 
+def update_video_metadata(video_id, metadata):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "UPDATE videos SET metadata = ? WHERE id = ?",
+            (json.dumps(metadata), video_id)
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
 # Initialize the database when this module is imported
 init_db()

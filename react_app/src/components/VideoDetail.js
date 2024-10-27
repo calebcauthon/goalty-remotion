@@ -11,6 +11,7 @@ function VideoDetail() {
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentFrame, setCurrentFrame] = useState(0);
+  const [metadata, setMetadata] = useState('');
   const playerRef = useRef(null);
 
   useEffect(() => {
@@ -18,6 +19,7 @@ function VideoDetail() {
       try {
         const response = await axios.get(`http://localhost:5000/api/videos/${id}`);
         setVideo(response.data);
+        setMetadata(JSON.stringify(response.data.metadata, null, 2));
         setLoading(false);
       } catch (error) {
         console.error('Error fetching video details:', error);
@@ -31,6 +33,20 @@ function VideoDetail() {
   const handleFrameUpdate = useCallback((frame) => {
     setCurrentFrame(frame);
   }, []);
+
+  const handleMetadataChange = (e) => {
+    setMetadata(e.target.value);
+  };
+
+  const handleSaveMetadata = async () => {
+    try {
+      await axios.post(`http://localhost:5000/api/videos/${id}/metadata`, { metadata });
+      alert('Metadata saved successfully');
+    } catch (error) {
+      console.error('Error saving metadata:', error);
+      alert('Error saving metadata');
+    }
+  };
 
   if (loading) {
     return <Layout><div>Loading...</div></Layout>;
@@ -50,9 +66,9 @@ function VideoDetail() {
             component={VideoPlayer}
             inputProps={{
               src: `http://localhost:5000/downloads/${video.filepath.split('/').pop()}`,
-              onFrameUpdate: handleFrameUpdate // Pass the function to VideoPlayer
+              onFrameUpdate: handleFrameUpdate
             }}
-            durationInFrames={30 * 60} // Assuming 30 fps for 1 minute, adjust as needed
+            durationInFrames={30 * 60}
             compositionWidth={640}
             compositionHeight={360}
             fps={30}
@@ -65,6 +81,16 @@ function VideoDetail() {
           <p><strong>Size:</strong> {(video.size / 1024 / 1024).toFixed(2)} MB</p>
           <p><strong>Filepath:</strong> {video.filepath}</p>
           <p><strong>Current Frame:</strong> {currentFrame}</p>
+        </div>
+        <div className="metadata-container">
+          <h2>Metadata</h2>
+          <textarea
+            value={metadata}
+            onChange={handleMetadataChange}
+            rows={10}
+            cols={50}
+          />
+          <button onClick={handleSaveMetadata}>Save Metadata</button>
         </div>
       </div>
     </Layout>

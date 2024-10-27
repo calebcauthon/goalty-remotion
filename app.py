@@ -3,7 +3,8 @@ from flask_cors import CORS
 import yt_dlp
 import os
 import argparse
-from database import add_video, get_video, get_tables, get_table_data, execute_query
+import json
+from database import add_video, get_video, get_tables, get_table_data, execute_query, update_video_metadata
 
 app = Flask(__name__, static_folder='react_app/build', template_folder='templates')
 CORS(app)
@@ -112,6 +113,26 @@ def serve(path):
 @app.route('/downloads/<path:filename>')
 def serve_video(filename):
     return send_from_directory(DOWNLOAD_DIRECTORY, filename)
+
+# Add a new route to save video metadata
+@app.route('/api/videos/<int:video_id>/metadata', methods=['POST'])
+def save_video_metadata(video_id):
+    try:
+        metadata = request.json.get('metadata')
+        if not metadata:
+            return jsonify({'error': 'No metadata provided'}), 400
+
+        # Parse the metadata string into a Python dictionary
+        metadata_dict = json.loads(metadata)
+
+        # Update the video metadata in the database
+        update_video_metadata(video_id, metadata_dict)
+
+        return jsonify({'message': 'Metadata saved successfully'}), 200
+    except json.JSONDecodeError:
+        return jsonify({'error': 'Invalid JSON in metadata'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Set up argument parser

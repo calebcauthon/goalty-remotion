@@ -54,3 +54,24 @@
 .action-button:hover {
   background-color: #0056b3;
 }
+
+.metadata-container {
+  margin-top: 20px;
+}
+
+.metadata-container textarea {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.metadata-container button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.metadata-container button:hover {
+  background-color: #0056b3;
+}
