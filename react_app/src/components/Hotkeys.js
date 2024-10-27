@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 
-export function useHotkeys(hotkeyMode, parsedMetadata, currentFrame, onMetadataUpdate) {
+export function useHotkeys(hotkeyMode, parsedMetadata, currentFrame, onMetadataUpdate, playerRef) {
   const handleHotkey = useCallback((event) => {
     if (!hotkeyMode) return;
 
@@ -19,10 +19,16 @@ export function useHotkeys(hotkeyMode, parsedMetadata, currentFrame, onMetadataU
         updatedMetadata.tags.push({ name: 'game_end', frame: currentFrame });
         onMetadataUpdate(updatedMetadata);
         break;
+      case 'ArrowLeft':
+        playerRef.current?.seekTo(Math.max(currentFrame - 5, 0));
+        break;
+      case 'ArrowRight':
+        playerRef.current?.seekTo(currentFrame + 5);
+        break;
       default:
         return;
     }
-  }, [hotkeyMode, parsedMetadata, currentFrame, onMetadataUpdate]);
+  }, [hotkeyMode, parsedMetadata, currentFrame, onMetadataUpdate, playerRef]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleHotkey);

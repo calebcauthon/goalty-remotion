@@ -7,7 +7,6 @@ import VideoPlayer from './VideoPlayer';
 import { JSONTree } from 'react-json-tree';
 import './VideoDetail.css';
 import { useHotkeys } from './Hotkeys';
-import { useArrowKeys } from './ArrowKeyHandler';
 
 function VideoDetail() {
   const { id } = useParams();
@@ -84,8 +83,7 @@ function VideoDetail() {
     setParsedMetadata(updatedMetadata);
   }, []);
 
-  useHotkeys(hotkeyMode, parsedMetadata, currentFrame, handleMetadataUpdate);
-  useArrowKeys(hotkeyMode, currentFrame, playerRef);
+  useHotkeys(hotkeyMode, parsedMetadata, currentFrame, handleMetadataUpdate, playerRef);
 
   // Custom theme for JSONTree
   const theme = {
