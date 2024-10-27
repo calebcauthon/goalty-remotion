@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from './Layout';
 import axios from 'axios';
@@ -11,6 +11,7 @@ function VideoDetail() {
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentFrame, setCurrentFrame] = useState(0);
+  const playerRef = useRef(null);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -27,6 +28,10 @@ function VideoDetail() {
     fetchVideoDetails();
   }, [id]);
 
+  const handleFrameUpdate = useCallback((frame) => {
+    setCurrentFrame(frame);
+  }, []);
+
   if (loading) {
     return <Layout><div>Loading...</div></Layout>;
   }
@@ -41,9 +46,11 @@ function VideoDetail() {
         <h1>{video.title}</h1>
         <div className="video-player">
           <Player
+            ref={playerRef}
             component={VideoPlayer}
             inputProps={{
-              src: `http://localhost:5000/downloads/${video.filepath.split('/').pop()}`
+              src: `http://localhost:5000/downloads/${video.filepath.split('/').pop()}`,
+              onFrameUpdate: handleFrameUpdate // Pass the function to VideoPlayer
             }}
             durationInFrames={30 * 60} // Assuming 30 fps for 1 minute, adjust as needed
             compositionWidth={640}
@@ -51,7 +58,6 @@ function VideoDetail() {
             fps={30}
             controls
             renderLoading={() => <div>Loading...</div>}
-            onFrame={(frame) => setCurrentFrame(frame)}
           />
         </div>
         <div className="video-info">

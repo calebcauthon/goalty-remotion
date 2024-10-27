@@ -1,8 +1,14 @@
-import React from 'react';
-import {AbsoluteFill, Video, useCurrentFrame} from 'remotion';
+import React, { useEffect } from 'react';
+import { useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
+import { Video } from 'remotion';
 
-const VideoPlayer = ({src}) => {
+const VideoPlayer = ({ src, onFrameUpdate }) => {
   const frame = useCurrentFrame();
+
+  useEffect(() => {
+    onFrameUpdate(frame);
+  }, [frame, onFrameUpdate]);
 
   return (
     <AbsoluteFill>
@@ -21,6 +27,6 @@ const VideoPlayer = ({src}) => {
       </div>
     </AbsoluteFill>
   );
-};
+}
 
 export default VideoPlayer;
