@@ -7,6 +7,7 @@ import VideoPlayer from './VideoPlayer';
 import { JSONTree } from 'react-json-tree';
 import './VideoDetail.css';
 import { useHotkeys } from './Hotkeys';
+import { useArrowKeys } from './ArrowKeyHandler';
 
 function VideoDetail() {
   const { id } = useParams();
@@ -84,28 +85,7 @@ function VideoDetail() {
   }, []);
 
   useHotkeys(hotkeyMode, parsedMetadata, currentFrame, handleMetadataUpdate);
-
-  const handleHotkey = useCallback((event) => {
-    if (!hotkeyMode) return;
-
-    switch (event.key) {
-      case 'ArrowLeft':
-        playerRef.current?.seekTo(Math.max(currentFrame - 5, 0));
-        break;
-      case 'ArrowRight':
-        playerRef.current?.seekTo(currentFrame + 5);
-        break;
-      default:
-        return;
-    }
-  }, [hotkeyMode, currentFrame]);
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleHotkey);
-    return () => {
-      window.removeEventListener('keydown', handleHotkey);
-    };
-  }, [handleHotkey]);
+  useArrowKeys(hotkeyMode, currentFrame, playerRef);
 
   // Custom theme for JSONTree
   const theme = {
