@@ -1,7 +1,10 @@
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import logo from './logo.svg';
 import './App.css';
 
-function App() {
+// Home component (previously App content)
+function Home() {
   return (
     <div className="App">
       <header className="App-header">
@@ -19,6 +22,17 @@ function App() {
         </a>
       </header>
     </div>
+  );
+}
+
+// Main App component
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+      </Routes>
+    </Router>
   );
 }
 
