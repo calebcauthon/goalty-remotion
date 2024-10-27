@@ -17,6 +17,7 @@ function VideoDetail() {
   const playerRef = useRef(null);
   const [parsedMetadata, setParsedMetadata] = useState({});
   const [jsonError, setJsonError] = useState(null);
+  const [hotkeyMode, setHotkeyMode] = useState(false);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -71,6 +72,42 @@ function VideoDetail() {
       }, 2000);
     }
   };
+
+  const toggleHotkeyMode = () => {
+    setHotkeyMode(!hotkeyMode);
+  };
+
+  const handleHotkey = useCallback((event) => {
+    if (!hotkeyMode) return;
+
+    const frame = Math.round(playerRef.current?.getCurrentFrame() || 0);
+    let updatedMetadata = { ...parsedMetadata };
+
+    if (!updatedMetadata.tags) {
+      updatedMetadata.tags = [];
+    }
+
+    switch (event.key) {
+      case '1':
+        updatedMetadata.tags.push({ name: 'game_start', frame });
+        break;
+      case '9':
+        updatedMetadata.tags.push({ name: 'game_end', frame });
+        break;
+      default:
+        return;
+    }
+
+    setMetadata(JSON.stringify(updatedMetadata, null, 2));
+    setParsedMetadata(updatedMetadata);
+  }, [hotkeyMode, parsedMetadata]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleHotkey);
+    return () => {
+      window.removeEventListener('keydown', handleHotkey);
+    };
+  }, [handleHotkey]);
 
   // Custom theme for JSONTree
   const theme = {
@@ -127,6 +164,19 @@ function VideoDetail() {
           <p><strong>Size:</strong> {(video.size / 1024 / 1024).toFixed(2)} MB</p>
           <p><strong>Filepath:</strong> {video.filepath}</p>
           <p><strong>Current Frame:</strong> {currentFrame}</p>
+          <div className={`hotkey-indicator ${hotkeyMode ? 'active' : ''}`}>
+            Hotkey Mode: {hotkeyMode ? 'ON' : 'OFF'}
+          </div>
+          <button onClick={toggleHotkeyMode}>
+            {hotkeyMode ? 'Disable Hotkey Mode' : 'Enable Hotkey Mode'}
+          </button>
+        </div>
+        <div className="hotkey-instructions">
+          <h3>Hotkeys:</h3>
+          <ul>
+            <li>'1': Add game start tag</li>
+            <li>'9': Add game end tag</li>
+          </ul>
         </div>
         <div className="metadata-container">
           <h2>Metadata</h2>

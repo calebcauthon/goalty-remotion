@@ -84,3 +84,38 @@
   border-radius: 4px;
   font-size: 14px;
 }
+
+.hotkey-indicator {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.hotkey-indicator.active {
+  background-color: #ffa500;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.hotkey-instructions {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-radius: 5px;
+}
+
+.hotkey-instructions h3 {
+  margin-top: 0;
+}
+
+.hotkey-instructions ul {
+  padding-left: 20px;
+}
