@@ -1,3 +1,76 @@
 .view-film {
   padding: 20px;
 }
+
+.video-table-container {
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+.video-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.video-table th,
+.video-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.video-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.video-table tr:last-child td {
+  border-bottom: none;
+}
+
+.video-table tr:hover {
+  background-color: #f8f9fa;
+}
+
+.tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  background-color: #e9ecef;
+  color: #495057;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.film-title h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.edit-icon, .save-icon {
+  cursor: pointer;
+  font-size: 0.8em;
+  padding: 5px;
+}
+
+.edit-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.edit-title input {
+  font-size: 2em;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}

@@ -4,7 +4,8 @@ import yt_dlp
 import os
 import argparse
 import json
-from database import add_video, get_video, get_tables, get_table_data, execute_query, update_video_metadata, commit_query
+from database import add_video, get_video, get_tables, get_table_data, execute_query, update_video_metadata, commit_query, get_films, create_film, get_film_by_id
+import database
 from datetime import datetime
 
 app = Flask(__name__, static_folder='react_app/build', template_folder='templates')
@@ -67,6 +68,32 @@ def get_videos():
     try:
         data, columns = get_table_data('videos')
         videos = [dict(zip(columns, row)) for row in data]
+        return jsonify(videos), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Add this new route after the existing /api/videos route
+@app.route('/api/videos/with-tags', methods=['GET'])
+def get_videos_with_tags():
+    try:
+        query = """
+        SELECT v.id, v.title as name, v.metadata
+        FROM videos v
+        """
+        data, columns = execute_query(query)
+        videos = []
+        for row in data:
+            video_dict = dict(zip(columns, row))
+            # Extract tags from metadata if it exists
+            tags = []
+            if video_dict['metadata']:
+                try:
+                    metadata = json.loads(video_dict['metadata'])
+                    tags = metadata.get('tags', [])
+                except json.JSONDecodeError:
+                    tags = []
+            video_dict['tags'] = tags
+            videos.append(video_dict)
         return jsonify(videos), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -137,11 +164,7 @@ def save_video_metadata(video_id):
 @app.route('/api/films', methods=['GET'])
 def get_films():
     try:
-        data, columns = execute_query('''
-            SELECT * FROM films 
-            ORDER BY created_date DESC
-        ''')
-        films = [dict(zip(columns, row)) for row in data]
+        films = database.get_films()
         return jsonify(films), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -152,11 +175,7 @@ def create_film():
         name = request.json.get('name', 'Untitled Film')
         created_date = datetime.now().isoformat()
         
-        query = '''
-            INSERT INTO films (name, created_date, data) 
-            VALUES (?, ?, ?)
-        '''
-        film_id = commit_query(query, (name, created_date, '{}'))
+        film_id = database.create_film(name, created_date)
         
         return jsonify({
             'id': film_id,
@@ -171,11 +190,25 @@ def create_film():
 @app.route('/api/films/<int:film_id>', methods=['GET'])
 def get_film(film_id):
     try:
-        data, columns = execute_query('SELECT * FROM films WHERE id = ?', (film_id,))
-        if not data:
+        film = database.get_film_by_id(film_id)
+        if not film:
             return jsonify({'error': 'Film not found'}), 404
-        film = dict(zip(columns, data[0]))
         return jsonify(film), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/films/<int:film_id>/name', methods=['PUT'])
+def update_film_name(film_id):
+    try:
+        name = request.json.get('name')
+        if not name:
+            return jsonify({'error': 'Name is required'}), 400
+            
+        success = database.update_film_name(film_id, name)
+        if not success:
+            return jsonify({'error': 'Film not found'}), 404
+            
+        return jsonify({'message': 'Film name updated successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

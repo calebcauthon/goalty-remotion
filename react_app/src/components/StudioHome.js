@@ -13,7 +13,7 @@ function StudioHome() {
 
   const fetchFilms = async () => {
     try {
-      const response = await fetch('/api/films');
+      const response = await fetch('http://localhost:5000/api/films');
       const data = await response.json();
       setFilms(data);
     } catch (error) {

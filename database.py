@@ -117,3 +117,46 @@ def update_video_metadata(video_id, metadata):
 
 # Initialize the database when this module is imported
 init_db()
+
+# Add these new functions after your existing functions
+
+def get_films():
+    """Get all films ordered by created date descending"""
+    query = '''
+        SELECT * FROM films 
+        ORDER BY created_date DESC
+    '''
+    data, columns = execute_query(query)
+    return [dict(zip(columns, row)) for row in data]
+
+def create_film(name, created_date):
+    """Create a new film and return its ID"""
+    query = '''
+        INSERT INTO films (name, created_date, data) 
+        VALUES (?, ?, ?)
+    '''
+    return commit_query(query, (name, created_date, '{}'))
+
+def get_film_by_id(film_id):
+    """Get a single film by ID"""
+    query = 'SELECT * FROM films WHERE id = ?'
+    data, columns = execute_query(query, (film_id,))
+    if not data:
+        return None
+    return dict(zip(columns, data[0]))
+
+def update_film_name(film_id, name):
+    """Update a film's name and return True if successful"""
+    query = '''
+        UPDATE films 
+        SET name = ? 
+        WHERE id = ?
+    '''
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query, (name, film_id))
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
