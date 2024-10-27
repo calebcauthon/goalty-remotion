@@ -75,3 +75,12 @@
 .metadata-container button:hover {
   background-color: #0056b3;
 }
+
+.json-error {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  font-size: 14px;
+}

@@ -4,6 +4,7 @@ import Layout from './Layout';
 import axios from 'axios';
 import { Player } from '@remotion/player';
 import VideoPlayer from './VideoPlayer';
+import { JSONTree } from 'react-json-tree';
 import './VideoDetail.css';
 
 function VideoDetail() {
@@ -14,6 +15,8 @@ function VideoDetail() {
   const [metadata, setMetadata] = useState('');
   const [saveButtonText, setSaveButtonText] = useState('Save Metadata');
   const playerRef = useRef(null);
+  const [parsedMetadata, setParsedMetadata] = useState({});
+  const [jsonError, setJsonError] = useState(null);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -21,6 +24,7 @@ function VideoDetail() {
         const response = await axios.get(`http://localhost:5000/api/videos/${id}`);
         setVideo(response.data);
         setMetadata(JSON.stringify(response.data.metadata, null, 2));
+        setParsedMetadata(response.data.metadata);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching video details:', error);
@@ -37,9 +41,21 @@ function VideoDetail() {
 
   const handleMetadataChange = (e) => {
     setMetadata(e.target.value);
+    try {
+      setParsedMetadata(JSON.parse(e.target.value));
+      setJsonError(null);
+    } catch (error) {
+      console.error('Invalid JSON:', error);
+      setJsonError('Invalid JSON: ' + error.message);
+    }
   };
 
   const handleSaveMetadata = async () => {
+    if (jsonError) {
+      alert('Cannot save invalid JSON. Please fix the errors and try again.');
+      return;
+    }
+
     setSaveButtonText('Saving...');
     try {
       await axios.post(`http://localhost:5000/api/videos/${id}/metadata`, { metadata });
@@ -54,6 +70,28 @@ function VideoDetail() {
         setSaveButtonText('Save Metadata');
       }, 2000);
     }
+  };
+
+  // Custom theme for JSONTree
+  const theme = {
+    scheme: 'monokai',
+    author: 'wimer hazenberg (http://www.monokai.nl)',
+    base00: '#272822',
+    base01: '#383830',
+    base02: '#49483e',
+    base03: '#75715e',
+    base04: '#a59f85',
+    base05: '#f8f8f2',
+    base06: '#f5f4f1',
+    base07: '#f9f8f5',
+    base08: '#f92672',
+    base09: '#fd971f',
+    base0A: '#f4bf75',
+    base0B: '#a6e22e',
+    base0C: '#a1efe4',
+    base0D: '#66d9ef',
+    base0E: '#ae81ff',
+    base0F: '#cc6633'
   };
 
   if (loading) {
@@ -92,13 +130,22 @@ function VideoDetail() {
         </div>
         <div className="metadata-container">
           <h2>Metadata</h2>
+          {jsonError && <div className="json-error">{jsonError}</div>}
+          <div style={{ background: '#272822', padding: '10px', borderRadius: '5px' }}>
+            <JSONTree
+              data={parsedMetadata}
+              theme={theme}
+              invertTheme={false}
+              shouldExpandNode={() => true}
+            />
+          </div>
           <textarea
             value={metadata}
             onChange={handleMetadataChange}
             rows={10}
             cols={50}
           />
-          <button onClick={handleSaveMetadata}>{saveButtonText}</button>
+          <button onClick={handleSaveMetadata} disabled={!!jsonError}>{saveButtonText}</button>
         </div>
       </div>
     </Layout>
