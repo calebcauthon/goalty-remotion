@@ -6,7 +6,7 @@ import { Player } from '@remotion/player';
 import VideoPlayer from './VideoPlayer';
 import { JSONTree } from 'react-json-tree';
 import './VideoDetail.css';
-import { useHotkeys } from './Hotkeys';
+import { useHotkeys, hotkeyDescriptions } from './Hotkeys';
 
 function VideoDetail() {
   const { id } = useParams();
@@ -83,7 +83,7 @@ function VideoDetail() {
     setParsedMetadata(updatedMetadata);
   }, []);
 
-  useHotkeys(
+  const { registerHotkey } = useHotkeys(
     hotkeyMode,
     { parsedMetadata, playerRef, onMetadataUpdate: handleMetadataUpdate },
     currentFrame
@@ -154,10 +154,9 @@ function VideoDetail() {
         <div className="hotkey-instructions">
           <h3>Hotkeys:</h3>
           <ul>
-            <li>'1': Add game start tag</li>
-            <li>'9': Add game end tag</li>
-            <li>'←': Move back 5 frames</li>
-            <li>'→': Move forward 5 frames</li>
+            {Object.entries(hotkeyDescriptions).map(([key, description]) => (
+              <li key={key}>'{key}': {description}</li>
+            ))}
           </ul>
         </div>
         <div className="metadata-container">

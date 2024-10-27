@@ -3,6 +3,14 @@ import { useTagAdder } from './TagAdder';
 import { useVideoSeeker } from './VideoSeeker';
 import { useHighlightAdder } from './HighlightAdder';
 
+export const hotkeyDescriptions = {
+  '1': 'Add game start tag',
+  '9': 'Add game end tag',
+  'ArrowLeft': 'Move back 5 frames',
+  'ArrowRight': 'Move forward 5 frames',
+  'h': 'Add highlight tag and pause video',
+};
+
 export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
   const addTag = useTagAdder(playerTools, currentFrame);
   const { seekBackward, seekForward } = useVideoSeeker(playerTools, currentFrame);
@@ -35,5 +43,5 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
     };
   }, [handleHotkey]);
 
-  return { registerHotkey };
+  return { registerHotkey, hotkeyDescriptions };
 }
