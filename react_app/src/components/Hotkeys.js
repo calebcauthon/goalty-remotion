@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useTagAdder } from './TagAdder';
 import { useVideoSeeker } from './VideoSeeker';
 import { useHighlightAdder } from './HighlightAdder';
@@ -12,29 +12,40 @@ export const hotkeyDescriptions = {
 };
 
 export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
+  playerTools.registerHotkey = (...args) => { return registerHotkey(...args) };
+
   const addTag = useTagAdder(playerTools, currentFrame);
   const { seekBackward, seekForward } = useVideoSeeker(playerTools, currentFrame);
   const addHighlight = useHighlightAdder(playerTools, currentFrame);
 
-  const hotkeyMap = useMemo(() => ({
+  const [hotkeyMap, setHotkeyMap] = useState({
     '1': () => addTag('game_start'),
     '9': () => addTag('game_end'),
     'ArrowLeft': seekBackward,
     'ArrowRight': seekForward,
     'h': addHighlight,
-  }), [addTag, seekBackward, seekForward, addHighlight]);
+  });
+
+  const hotkeyMapRef = useRef(hotkeyMap);
 
   const registerHotkey = useCallback((key, action) => {
-    hotkeyMap[key] = action;
-  }, [hotkeyMap]);
+    setHotkeyMap(prevMap => {
+      const newMap = {
+        ...prevMap,
+        [key]: action
+      };
+      hotkeyMapRef.current = newMap;
+      return newMap;
+    });
+  }, []);
 
   const handleHotkey = useCallback((event) => {
     if (!hotkeyMode) return;
-    const action = hotkeyMap[event.key];
+    const action = hotkeyMapRef.current[event.key];
     if (action) {
       action();
     }
-  }, [hotkeyMode, hotkeyMap]);
+  }, [hotkeyMode]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleHotkey);
