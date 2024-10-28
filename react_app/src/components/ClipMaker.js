@@ -183,7 +183,9 @@ function ClipMaker() {
                   <tr>
                     <th>Tag Name</th>
                     <th>Frame Range</th>
+                    <th>Time Range</th>
                     <th>Frame</th>
+                    <th>Time</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -192,7 +194,12 @@ function ClipMaker() {
                     <tr key={index}>
                       <td>{tag.name}</td>
                       <td>{tag.startFrame}-{tag.endFrame}</td>
+                      <td>
+                        {tag.startFrame ? `${(tag.startFrame / 30).toFixed(2)}s` : ''}-
+                        {tag.endFrame ? `${(tag.endFrame / 30).toFixed(2)}s` : ''}
+                      </td>
                       <td>{tag.frame}</td>
+                      <td>{tag.frame ? `${(tag.frame / 30).toFixed(2)}s` : ''}</td>
                       <td>
                         <button 
                           className="delete-button"
