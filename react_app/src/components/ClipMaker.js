@@ -136,7 +136,6 @@ function ClipMaker() {
                     <th>Tag Name</th>
                     <th>Frame Range</th>
                     <th>Frame</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -145,11 +144,6 @@ function ClipMaker() {
                       <td>{tag.name}</td>
                       <td>{tag.startFrame}-{tag.endFrame}</td>
                       <td>{tag.frame}</td>
-                      <td>
-                        <button onClick={() => console.log('Create clip from tag:', tag)}>
-                          Create Clip
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
