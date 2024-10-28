@@ -5,6 +5,7 @@ import Videos from './components/Videos';
 import VideoDetail from './components/VideoDetail';
 import StudioHome from './components/StudioHome';
 import ViewFilm from './components/ViewFilm';
+import ClipMaker from './components/ClipMaker';
 import './App.css';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route path="/videos/:id" element={<VideoDetail />} />
         <Route path="/studio" element={<StudioHome />} />
         <Route path="/studio/films/:id" element={<ViewFilm />} />
+        <Route path="/clipmaker" element={<ClipMaker />} />
       </Routes>
     </Router>
   );
