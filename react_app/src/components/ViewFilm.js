@@ -7,39 +7,81 @@ import './ViewFilm.css';
 
 // Updated VideoPlayer component using Remotion Video
 const VideoPlayer = ({ selectedVideos, videos }) => {
+  const SEGMENT_DURATION = 150; // 5 seconds * 30fps = 150 frames
+  const videoArray = Array.from(selectedVideos);
+  
   return (
     <AbsoluteFill>
-      {Array.from(selectedVideos).map((videoId, index) => {
+      {/* First sequence: All videos together */}
+      <Sequence from={0} durationInFrames={SEGMENT_DURATION}>
+        <AbsoluteFill>
+          {videoArray.map((videoId, index) => {
+            const video = videos.find(v => v.id === videoId);
+            if (!video) return null;
+            
+            const columns = Math.min(selectedVideos.size, 2);
+            const width = 100 / columns;
+            const row = Math.floor(index / columns);
+            const col = index % columns;
+            
+            return (
+              <div
+                key={videoId}
+                style={{
+                  position: 'absolute',
+                  left: `${col * width}%`,
+                  top: `${row * 50}%`,
+                  width: `${width}%`,
+                  height: '50%',
+                  padding: '10px'
+                }}
+              >
+                <p className="video-name">{video.name}</p>
+                <Video
+                  src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
+                  style={{
+                    width: '100%',
+                    height: '90%'
+                  }}
+                />
+              </div>
+            );
+          })}
+        </AbsoluteFill>
+      </Sequence>
+
+      {/* Individual video sequences */}
+      {videoArray.map((videoId, index) => {
         const video = videos.find(v => v.id === videoId);
         if (!video) return null;
         
-        // Calculate grid position
-        const columns = Math.min(selectedVideos.size, 2); // Max 2 videos per row
-        const width = 100 / columns;
-        const row = Math.floor(index / columns);
-        const col = index % columns;
+        const startFrame = SEGMENT_DURATION + (index * SEGMENT_DURATION);
         
         return (
-          <Sequence key={videoId} from={0}>
-            <div
-              style={{
-                position: 'absolute',
-                left: `${col * width}%`,
-                top: `${row * 50}%`,
-                width: `${width}%`,
-                height: '50%',
-                padding: '10px'
-              }}
-            >
-              <p className="video-name">{video.name}</p>
-              <Video
-                src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
+          <Sequence
+            key={videoId}
+            from={startFrame}
+            durationInFrames={SEGMENT_DURATION}
+          >
+            <AbsoluteFill>
+              <div
                 style={{
+                  position: 'absolute',
                   width: '100%',
-                  height: '90%'
+                  height: '100%',
+                  padding: '10px'
                 }}
-              />
-            </div>
+              >
+                <p className="video-name">{video.name}</p>
+                <Video
+                  src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
+                  style={{
+                    width: '100%',
+                    height: '90%'
+                  }}
+                />
+              </div>
+            </AbsoluteFill>
           </Sequence>
         );
       })}
@@ -120,6 +162,13 @@ function ViewFilm() {
     });
   };
 
+  // Update the Player component's duration calculation
+  const calculateTotalDuration = () => {
+    const SEGMENT_DURATION = 150; // 5 seconds * 30fps
+    // Duration = first segment (all videos) + individual segments
+    return SEGMENT_DURATION * (selectedVideos.size + 1);
+  };
+
   if (!film) {
     return <Layout>Loading...</Layout>;
   }
@@ -169,7 +218,7 @@ function ViewFilm() {
                 selectedVideos,
                 videos
               }}
-              durationInFrames={30 * 60} // 30 fps * 60 seconds
+              durationInFrames={calculateTotalDuration()}
               compositionWidth={1280}
               compositionHeight={720}
               fps={30}
