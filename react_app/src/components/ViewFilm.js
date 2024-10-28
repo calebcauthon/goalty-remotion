@@ -7,8 +7,7 @@ import './ViewFilm.css';
 
 // Updated VideoPlayer component using Remotion Video
 const VideoPlayer = ({ selectedVideos, videos, selectedTags }) => {
-  const SEGMENT_DURATION = 150; // 5 seconds * 30fps = 150 frames
-  const videoArray = Array.from(selectedVideos);
+  const SEGMENT_DURATION = 150;
   const tagArray = Array.from(selectedTags);
   
   return (
@@ -37,9 +36,13 @@ const VideoPlayer = ({ selectedVideos, videos, selectedTags }) => {
                   padding: '10px'
                 }}
               >
-                <p className="video-name">{`${video.name} - ${tagInfo.tagName} (Frame: ${tagInfo.frame})`}</p>
+                <p className="video-name">
+                  {`${video.name} - ${tagInfo.tagName} (${tagInfo.startFrame}-${tagInfo.endFrame})`}
+                </p>
                 <Video
                   src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
+                  startFrom={parseInt(tagInfo.startFrame, 10)}
+                  endAt={parseInt(tagInfo.endFrame, 10)}
                   style={{
                     width: '100%',
                     height: '90%'
@@ -73,9 +76,13 @@ const VideoPlayer = ({ selectedVideos, videos, selectedTags }) => {
                   padding: '10px'
                 }}
               >
-                <p className="video-name">{`${video.name} - ${tagInfo.tagName} (Frame: ${tagInfo.frame})`}</p>
+                <p className="video-name">
+                  {`${video.name} - ${tagInfo.tagName} (${tagInfo.startFrame}-${tagInfo.endFrame})`}
+                </p>
                 <Video
                   src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
+                  startFrom={parseInt(tagInfo.startFrame, 10)}
+                  endAt={parseInt(tagInfo.endFrame, 10)}
                   style={{
                     width: '100%',
                     height: '90%'
@@ -115,7 +122,9 @@ function ViewFilm() {
             videoName: video.name,
             videoFilepath: video.filepath,
             tagName: tag.name,
-            frame: tag.frame
+            frame: tag.frame,
+            startFrame: tag.startFrame,
+            endFrame: tag.endFrame
           }))
         )
       );
@@ -176,19 +185,20 @@ function ViewFilm() {
     });
   };
 
-  const handleTagToggle = (videoId, tagName, frame, videoName, videoFilepath) => {
+  const handleTagToggle = (videoId, tagName, frame, videoName, videoFilepath, startFrame, endFrame) => {
     const tagInfo = {
       key: `${videoId}-${tagName}-${frame}`,
       videoId,
       videoName,
       videoFilepath,
       tagName,
-      frame
+      frame,
+      startFrame,
+      endFrame
     };
     
     setSelectedTags(prev => {
       const newSet = new Set(prev);
-      // Find if a tag with the same key exists
       const existingTag = Array.from(newSet).find(t => t.key === tagInfo.key);
       
       if (existingTag) {
@@ -320,7 +330,7 @@ function ViewFilm() {
                 <th>Show</th>
                 <th>Video Name</th>
                 <th>Tag Name</th>
-                <th>Frame</th>
+                <th>Frame Range</th>
               </tr>
             </thead>
             <tbody>
@@ -342,13 +352,15 @@ function ViewFilm() {
                               tag.name,
                               tag.frame,
                               video.name,
-                              video.filepath
+                              video.filepath,
+                              tag.startFrame,
+                              tag.endFrame
                             )}
                           />
                         </td>
                         <td>{video.name}</td>
                         <td>{tag.name}</td>
-                        <td>{tag.frame}</td>
+                        <td>{tag.startFrame}-{tag.endFrame}</td>
                       </tr>
                     );
                   })

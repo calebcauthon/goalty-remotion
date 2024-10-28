@@ -12,3 +12,4 @@ export function useTagAdder({ updateMetadata }, currentFrame) {
     });
   }, [updateMetadata, currentFrame]);
 }
+

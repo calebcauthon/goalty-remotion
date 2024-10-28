@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { useTagAdder } from './TagAdder';
-import { useVideoSeeker } from './VideoSeeker';
-import { useHighlightAdder } from './HighlightAdder';
+import { useCallback, useEffect, useState, useRef } from 'react';
+import { useTagAdder } from './hotkeys/TagAdder';
+import { useVideoSeeker } from './hotkeys/VideoSeeker';
+import { useHighlightAdder } from './hotkeys/HighlightAdder';
 
 export const hotkeyDescriptions = {
   '1': 'Add game start tag',

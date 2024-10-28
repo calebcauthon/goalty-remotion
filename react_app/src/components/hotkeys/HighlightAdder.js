@@ -50,3 +50,4 @@ export function useHighlightAdder({ updateMetadata, playerRef, registerTemporary
 
   }, [updateMetadata, currentFrame, playerRef, registerTemporaryHotkey, clearTemporaryHotkeys]);
 }
+
