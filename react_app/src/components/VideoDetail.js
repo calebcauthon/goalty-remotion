@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import Layout from './Layout';
 import axios from 'axios';
 import { Player } from '@remotion/player';
+import { getVideoMetadata } from '@remotion/media-utils';
 import VideoPlayer from './VideoPlayer';
 import { JSONTree } from 'react-json-tree';
 import './VideoDetail.css';
@@ -21,6 +22,8 @@ function VideoDetail() {
   const [jsonError, setJsonError] = useState(null);
   const [hotkeyMode, setHotkeyMode] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [durationInFrames, setDurationInFrames] = useState(30 * 60); // Default fallback
+  const [videoMetadata, setVideoMetadata] = useState(null);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -29,6 +32,18 @@ function VideoDetail() {
         setVideo(response.data);
         setMetadata(JSON.stringify(response.data.metadata, null, 2));
         setParsedMetadata(response.data.metadata);
+        
+        // Get video metadata using Remotion
+        const videoUrl = `http://localhost:5000/downloads/${response.data.filepath.split('/').pop()}`;
+        const metadata = await getVideoMetadata(videoUrl);
+        const assumedFps = 30;
+        metadata.fps = assumedFps;
+        setVideoMetadata(metadata);
+        
+        // Calculate duration in frames based on actual video duration and fps
+        const frames = Math.ceil(metadata.durationInSeconds * metadata.fps);
+        setDurationInFrames(frames);
+        
         setLoading(false);
       } catch (error) {
         console.error('Error fetching video details:', error);
@@ -138,6 +153,8 @@ function VideoDetail() {
     return <Layout><div>Video not found</div></Layout>;
   }
 
+  const desiredWidth = 800;
+
   return (
     <Layout>
       <div className="video-detail-container">
@@ -150,11 +167,11 @@ function VideoDetail() {
               src: `http://localhost:5000/downloads/${video.filepath.split('/').pop()}`,
               onFrameUpdate: handleFrameUpdate
             }}
-            durationInFrames={30 * 60}
-            compositionWidth={640}
-            compositionHeight={360}
+            durationInFrames={durationInFrames}
+            compositionWidth={desiredWidth}
+            compositionHeight={Math.round(desiredWidth * (videoMetadata?.height / videoMetadata?.width))}
             playbackRate={playbackRate}
-            fps={30}
+            fps={videoMetadata?.fps || 30}
             controls
             renderLoading={() => <div>Loading...</div>}
           />
@@ -163,6 +180,9 @@ function VideoDetail() {
           <p><strong>ID:</strong> {video.id}</p>
           <p><strong>Size:</strong> {(video.size / 1024 / 1024).toFixed(2)} MB</p>
           <p><strong>Filepath:</strong> {video.filepath}</p>
+          <p><strong>Duration:</strong> {videoMetadata?.durationInSeconds.toFixed(2)}s ({durationInFrames} frames)</p>
+          <p><strong>Resolution:</strong> {videoMetadata?.width}x{videoMetadata?.height}</p>
+          <p><strong>FPS:</strong> {videoMetadata?.fps}</p>
           <p><strong>Current Frame:</strong> {currentFrame}</p>
           <p><strong>Playback Speed:</strong> {playbackRate}x</p>
           <div className={`hotkey-indicator ${hotkeyMode ? 'active' : ''}`}>

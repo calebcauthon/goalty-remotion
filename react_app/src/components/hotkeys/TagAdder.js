@@ -1,13 +1,14 @@
 import { useCallback } from 'react';
 
-export function useTagAdder({ updateMetadata }, currentFrame) {
+export function useTagAdder({ updateMetadata, playerRef }, currentFrame) {
   return useCallback((tagName) => {
     updateMetadata(prevMetadata => {
       const updatedMetadata = { ...prevMetadata };
       if (!updatedMetadata.tags) {
         updatedMetadata.tags = [];
       }
-      updatedMetadata.tags.push({ name: tagName, frame: currentFrame });
+      const frameNumber = playerRef.current?.getCurrentFrame();
+      updatedMetadata.tags.push({ name: tagName, frame: frameNumber });
       return updatedMetadata;
     });
   }, [updateMetadata, currentFrame]);
