@@ -1,22 +1,26 @@
 import React, { useState } from 'react';
 
-function ScoringPossessionProcessor({ selectedVideo, onTagsApproved }) {
+function ScoringPossessionProcessor({ 
+  selectedVideo, 
+  onTagsApproved,
+  startTagName,
+  endTagName,
+  excludeTagName,
+  outputTagName,
+  buttonText
+}) {
   const [proposedTags, setProposedTags] = useState([]);
 
   const findValidSequences = (tags, startTagName, endTagName, excludeTagName, outputTagName) => {
-    // Sort tags by frame
     const sortedTags = [...tags].sort((a, b) => a.startFrame - b.startFrame);
     const sequences = [];
     
-    // Find all potential start tags
     sortedTags.forEach((startTag, startIndex) => {
       if (startTag.name === startTagName) {
-        // Look for the next end tag after this start tag
         for (let i = startIndex + 1; i < sortedTags.length; i++) {
           const currentTag = sortedTags[i];
           
           if (currentTag.name === endTagName) {
-            // Check if there's any exclude tag between start and end
             const hasExcludeTag = sortedTags
               .slice(startIndex + 1, i)
               .some(tag => tag.name === excludeTagName);
@@ -28,7 +32,7 @@ function ScoringPossessionProcessor({ selectedVideo, onTagsApproved }) {
                 endFrame: currentTag.frame
               });
             }
-            break; // Move to next start tag
+            break;
           }
         }
       }
@@ -42,10 +46,10 @@ function ScoringPossessionProcessor({ selectedVideo, onTagsApproved }) {
 
     const newTags = findValidSequences(
       selectedVideo.tags,
-      'home_possession',    // Start tag
-      'home_score',         // End tag
-      'home_turnover',      // Exclude tag
-      'scoring_possession'  // Output tag name
+      startTagName,
+      endTagName,
+      excludeTagName,
+      outputTagName
     );
 
     setProposedTags(newTags);
@@ -88,12 +92,12 @@ function ScoringPossessionProcessor({ selectedVideo, onTagsApproved }) {
         className="process-button"
         onClick={processClips}
       >
-        Process Scoring Possessions
+        {buttonText || `Process ${outputTagName}`}
       </button>
 
       {proposedTags.length > 0 && (
         <div className="proposed-tags-container">
-          <h2>Proposed Scoring Possession Tags</h2>
+          <h2>Proposed {outputTagName} Tags</h2>
           <textarea
             readOnly
             value={JSON.stringify(proposedTags, null, 2)}

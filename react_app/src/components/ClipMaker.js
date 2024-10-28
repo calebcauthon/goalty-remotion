@@ -108,6 +108,11 @@ function ClipMaker() {
                   const refreshedVideo = updatedVideos.find(v => v.id === selectedVideo.id);
                   setSelectedVideo(refreshedVideo);
                 }}
+                startTagName="home_possession"
+                endTagName="home_score"
+                excludeTagName="home_turnover"
+                outputTagName="scoring_possession"
+                buttonText="Process Scoring Possessions"
               />
               <table className="tags-table">
                 <thead>
