@@ -5,6 +5,7 @@ import './ClipMaker.css';
 function ClipMaker() {
   const [videos, setVideos] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [proposedTags, setProposedTags] = useState([]);
 
   useEffect(() => {
     fetchVideos();
@@ -23,6 +24,78 @@ function ClipMaker() {
   const handleVideoSelect = (videoId) => {
     const video = videos.find(v => v.id === videoId);
     setSelectedVideo(video);
+  };
+
+  const processClips = () => {
+    console.log('Processing clips for', selectedVideo.name);
+    if (!selectedVideo?.tags) return;
+
+    console.log('Selected video tags:', selectedVideo.tags);
+    // Sort tags by frame
+    const sortedTags = [...selectedVideo.tags].sort((a, b) => a.startFrame - b.startFrame);
+    const newTags = [];
+    console.log('Sorted tags:', sortedTags);
+    
+    let currentPossession = null;
+
+    sortedTags.forEach((tag) => {
+      if (tag.name === 'home_possession') {
+        currentPossession = tag;
+      } else if (tag.name === 'home_turnover') {
+        currentPossession = null;
+      } else if (tag.name === 'home_score' && currentPossession) {
+        // Create a new scoring possession tag
+        newTags.push({
+          name: 'scoring_possession',
+          startFrame: currentPossession.frame,
+          endFrame: tag.frame
+        });
+        currentPossession = null;
+      }
+    });
+
+    setProposedTags(newTags);
+    if (newTags.length > 0) {
+      console.log('Proposed tags:', newTags);
+    } else {
+      console.log('No new tags proposed');
+    }
+  };
+
+  const handleApproveProposedTags = async () => {
+    if (!selectedVideo || proposedTags.length === 0) return;
+
+    try {
+      // Get existing metadata and add new tags
+      const metadata = selectedVideo.metadata ? JSON.parse(selectedVideo.metadata) : {};
+      const existingTags = metadata.tags || [];
+      const updatedTags = [...existingTags, ...proposedTags];
+
+      const response = await fetch(`http://localhost:5000/api/videos/${selectedVideo.id}/metadata`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          metadata: JSON.stringify({ ...metadata, tags: updatedTags })
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save tags');
+
+      // Refresh video data
+      await fetchVideos();
+      
+      // Update the selected video with fresh data
+      const updatedVideos = await (await fetch('http://localhost:5000/api/videos/with-tags')).json();
+      const refreshedVideo = updatedVideos.find(v => v.id === selectedVideo.id);
+      setSelectedVideo(refreshedVideo);
+      
+      // Clear proposed tags
+      setProposedTags([]);
+    } catch (error) {
+      console.error('Error saving proposed tags:', error);
+    }
   };
 
   return (
@@ -48,31 +121,59 @@ function ClipMaker() {
 
         {/* Tags Table */}
         {selectedVideo && (
-          <div className="tags-table-container">
-            <h2>Tags for {selectedVideo.name}</h2>
-            <table className="tags-table">
-              <thead>
-                <tr>
-                  <th>Tag Name</th>
-                  <th>Frame Range</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedVideo.tags.map((tag, index) => (
-                  <tr key={index}>
-                    <td>{tag.name}</td>
-                    <td>{tag.startFrame}-{tag.endFrame}</td>
-                    <td>
-                      <button onClick={() => console.log('Create clip from tag:', tag)}>
-                        Create Clip
-                      </button>
-                    </td>
+          <>
+            <div className="tags-table-container">
+              <h2>Tags for {selectedVideo.name}</h2>
+              <button 
+                className="process-button"
+                onClick={processClips}
+              >
+                Process Scoring Possessions
+              </button>
+              <table className="tags-table">
+                <thead>
+                  <tr>
+                    <th>Tag Name</th>
+                    <th>Frame Range</th>
+                    <th>Frame</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {selectedVideo.tags.map((tag, index) => (
+                    <tr key={index}>
+                      <td>{tag.name}</td>
+                      <td>{tag.startFrame}-{tag.endFrame}</td>
+                      <td>{tag.frame}</td>
+                      <td>
+                        <button onClick={() => console.log('Create clip from tag:', tag)}>
+                          Create Clip
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {proposedTags.length > 0 && (
+              <div className="proposed-tags-container">
+                <h2>Proposed Scoring Possession Tags</h2>
+                <textarea
+                  readOnly
+                  value={JSON.stringify(proposedTags, null, 2)}
+                  rows={10}
+                  className="proposed-tags-textarea"
+                />
+                <button 
+                  className="approve-button"
+                  onClick={handleApproveProposedTags}
+                >
+                  Approve and Save Tags
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </Layout>

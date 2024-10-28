@@ -57,3 +57,46 @@
 .tags-table button:hover {
   background-color: #0056b3;
 }
+
+.process-button {
+  margin: 10px 0;
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.process-button:hover {
+  background-color: #45a049;
+}
+
+.proposed-tags-container {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.proposed-tags-textarea {
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px;
+  font-family: monospace;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.approve-button {
+  padding: 8px 16px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.approve-button:hover {
+  background-color: #1976D2;
+}
