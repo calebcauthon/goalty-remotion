@@ -26,7 +26,7 @@ const VideoPlayer = ({ selectedVideos, videos, selectedTags }) => {
   return (
     <AbsoluteFill>
       {/* First sequence: All videos together */}
-      <Sequence from={0} durationInFrames={calculateTotalDuration(selectedTags)}>
+      <Sequence from={0} durationInFrames={10 * 30}>
         <AbsoluteFill>
           {tagArray.map((tagInfo, index) => {
             const video = videos.find(v => v.id === tagInfo.videoId);
@@ -72,11 +72,17 @@ const VideoPlayer = ({ selectedVideos, videos, selectedTags }) => {
         const video = videos.find(v => v.id === tagInfo.videoId);
         if (!video) return null;
         
-        const startFrame = tagArray.slice(0, index).reduce((total, tag) => {
+        const durationOfPreview = 30 * 10;//calculateTotalDuration(selectedTags);
+        const tagsBefore = tagArray.slice(0, index);
+        console.log(`tags before index ${index}`, tagsBefore);
+        console.log('durationOfPreview', durationOfPreview);
+        const startFrame = tagsBefore.reduce((total, tag) => {
           return total + (parseInt(tag.endFrame, 10) - parseInt(tag.startFrame, 10));
-        }, calculateTotalDuration(selectedTags));
+        }, durationOfPreview);
 
         const tagDuration = parseInt(tagInfo.endFrame, 10) - parseInt(tagInfo.startFrame, 10);
+
+        console.log('sequence props', {startFrame, tagDuration, key: tagInfo.key});
         
         return (
           <Sequence
@@ -136,7 +142,7 @@ function ViewFilm() {
           video.tags
             .filter(tag => tag.startFrame && tag.endFrame) // Only include tags with frame ranges
             .map(tag => ({
-              key: `${video.id}-${tag.name}-${tag.frame}`,
+              key: `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}`,
               videoId: video.id,
               videoName: video.name,
               videoFilepath: video.filepath,
@@ -278,7 +284,7 @@ function ViewFilm() {
                 videos,
                 selectedTags
               }}
-              durationInFrames={calculateTotalDuration(selectedTags)}
+              durationInFrames={calculateTotalDuration(selectedTags) + 10 * 30}
               compositionWidth={1280}
               compositionHeight={720}
               fps={30}
