@@ -96,16 +96,22 @@ function ViewFilm() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [selectedVideos, setSelectedVideos] = useState(new Set());
+  const [selectedTags, setSelectedTags] = useState(new Set());
 
   useEffect(() => {
     fetchFilm();
     fetchVideos();
   }, [id]);
 
-  // Add this effect to initialize selected videos when videos are loaded
+  // Initialize selected tags when videos are loaded
   useEffect(() => {
     if (videos.length > 0) {
-      setSelectedVideos(new Set(videos.map(video => video.id)));
+      const allTags = new Set(
+        videos.flatMap(video => 
+          video.tags.map(tag => `${video.id}-${tag.name}-${tag.frame}`)
+        )
+      );
+      setSelectedTags(allTags);
     }
   }, [videos]);
 
@@ -157,6 +163,19 @@ function ViewFilm() {
         newSet.delete(videoId);
       } else {
         newSet.add(videoId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleTagToggle = (videoId, tagName, frame) => {
+    const tagKey = `${videoId}-${tagName}-${frame}`;
+    setSelectedTags(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(tagKey)) {
+        newSet.delete(tagKey);
+      } else {
+        newSet.add(tagKey);
       }
       return newSet;
     });
@@ -216,7 +235,8 @@ function ViewFilm() {
               component={VideoPlayer}
               inputProps={{
                 selectedVideos,
-                videos
+                videos,
+                selectedTags
               }}
               durationInFrames={calculateTotalDuration()}
               compositionWidth={1280}
@@ -278,6 +298,7 @@ function ViewFilm() {
           <table className="tags-table">
             <thead>
               <tr>
+                <th>Show</th>
                 <th>Video Name</th>
                 <th>Tag Name</th>
                 <th>Frame</th>
@@ -287,13 +308,23 @@ function ViewFilm() {
               {videos
                 .filter(video => selectedVideos.has(video.id))
                 .flatMap((video) =>
-                  video.tags.map((tag, index) => (
-                    <tr key={`${video.id}-${index}`}>
-                      <td>{video.name}</td>
-                      <td>{tag.name}</td>
-                      <td>{tag.frame}</td>
-                    </tr>
-                  ))
+                  video.tags.map((tag, index) => {
+                    const tagKey = `${video.id}-${tag.name}-${tag.frame}`;
+                    return (
+                      <tr key={`${video.id}-${index}`}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selectedTags.has(tagKey)}
+                            onChange={() => handleTagToggle(video.id, tag.name, tag.frame)}
+                          />
+                        </td>
+                        <td>{video.name}</td>
+                        <td>{tag.name}</td>
+                        <td>{tag.frame}</td>
+                      </tr>
+                    );
+                  })
               )}
             </tbody>
           </table>
