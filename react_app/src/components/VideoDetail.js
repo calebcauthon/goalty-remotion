@@ -20,6 +20,7 @@ function VideoDetail() {
   const [parsedMetadata, setParsedMetadata] = useState({});
   const [jsonError, setJsonError] = useState(null);
   const [hotkeyMode, setHotkeyMode] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -90,9 +91,20 @@ function VideoDetail() {
     });
   }, [setMetadata, setParsedMetadata]);
 
+  const playbackRateRef = useRef(playbackRate);
+  useEffect(() => {
+    playbackRateRef.current = playbackRate;
+  }, [playbackRate]);
+  const getPlaybackRate = useCallback(() => playbackRateRef.current, []);
+
   const { registerHotkey } = useHotkeys(
     hotkeyMode,
-    { updateMetadata, playerRef },
+    { 
+      updateMetadata, 
+      playerRef,
+      getPlaybackRate,
+      setPlaybackRate
+    },
     currentFrame
   );
 
@@ -141,6 +153,7 @@ function VideoDetail() {
             durationInFrames={30 * 60}
             compositionWidth={640}
             compositionHeight={360}
+            playbackRate={playbackRate}
             fps={30}
             controls
             renderLoading={() => <div>Loading...</div>}
@@ -151,6 +164,7 @@ function VideoDetail() {
           <p><strong>Size:</strong> {(video.size / 1024 / 1024).toFixed(2)} MB</p>
           <p><strong>Filepath:</strong> {video.filepath}</p>
           <p><strong>Current Frame:</strong> {currentFrame}</p>
+          <p><strong>Playback Speed:</strong> {playbackRate}x</p>
           <div className={`hotkey-indicator ${hotkeyMode ? 'active' : ''}`}>
             Hotkey Mode: {hotkeyMode ? 'ON' : 'OFF'}
           </div>

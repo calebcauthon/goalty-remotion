@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 import { useTagAdder } from './hotkeys/TagAdder';
 import { useVideoSeeker } from './hotkeys/VideoSeeker';
 import { useHighlightAdder } from './hotkeys/HighlightAdder';
+import { useSpeedController } from './hotkeys/SpeedController';
 
 export const hotkeyDescriptions = {
   '1': 'Add game start tag',
@@ -9,6 +10,9 @@ export const hotkeyDescriptions = {
   'ArrowLeft': 'Move back 5 frames',
   'ArrowRight': 'Move forward 5 frames',
   'h': 'Add highlight tag and pause video',
+  ',': 'Slow down video',
+  '.': 'Speed up video',
+  ';': 'Reset video speed to 1x',
 };
 
 export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
@@ -21,6 +25,7 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
   const addTag = useTagAdder(playerTools, currentFrame);
   const { seekBackward, seekForward } = useVideoSeeker(playerTools, currentFrame);
   const addHighlight = useHighlightAdder(playerTools, currentFrame);
+  const { slowDown, speedUp, resetSpeed } = useSpeedController(playerTools);
 
   const [hotkeyMap, setHotkeyMap] = useState({
     '1': () => addTag('game_start'),
@@ -28,6 +33,9 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
     'ArrowLeft': seekBackward,
     'ArrowRight': seekForward,
     'h': addHighlight,
+    ',': slowDown,
+    '.': speedUp,
+    ';': resetSpeed,
   });
 
   const [unregisteredHotkeys, setUnregisteredHotkeys] = useState({});
