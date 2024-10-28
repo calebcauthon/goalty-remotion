@@ -3,16 +3,23 @@ import { useTagAdder } from './hotkeys/TagAdder';
 import { useVideoSeeker } from './hotkeys/VideoSeeker';
 import { useHighlightAdder } from './hotkeys/HighlightAdder';
 import { useSpeedController } from './hotkeys/SpeedController';
+import { usePlayPauseController } from './hotkeys/PlayPauseController';
 
 export const hotkeyDescriptions = {
   '1': 'Add game start tag',
   '9': 'Add game end tag',
+  'p': 'Add home possession tag',
+  'c': 'Add home clear tag',
+  't': 'Add home turnover tag',
+  's': 'Add home score tag',
+  'n': 'Add new player possession tag',
   'ArrowLeft': 'Move back 5 frames',
   'ArrowRight': 'Move forward 5 frames',
   'h': 'Add highlight tag and pause video',
   ',': 'Slow down video',
   '.': 'Speed up video',
   ';': 'Reset video speed to 1x',
+  ' ': 'Play/Pause', // Space character
 };
 
 export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
@@ -26,16 +33,23 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
   const { seekBackward, seekForward } = useVideoSeeker(playerTools, currentFrame);
   const addHighlight = useHighlightAdder(playerTools, currentFrame);
   const { slowDown, speedUp, resetSpeed } = useSpeedController(playerTools);
+  const { togglePlayPause } = usePlayPauseController(playerTools);
 
   const [hotkeyMap, setHotkeyMap] = useState({
     '1': () => addTag('game_start'),
     '9': () => addTag('game_end'),
+    'p': () => addTag('home_possession'),
+    'c': () => addTag('home_clear'),
+    't': () => addTag('home_turnover'), 
+    's': () => addTag('home_score'),
+    'n': () => addTag('new_player_possession'),
     'ArrowLeft': seekBackward,
     'ArrowRight': seekForward,
     'h': addHighlight,
     ',': slowDown,
     '.': speedUp,
     ';': resetSpeed,
+    'k': togglePlayPause, // Space character
   });
 
   const [unregisteredHotkeys, setUnregisteredHotkeys] = useState({});
