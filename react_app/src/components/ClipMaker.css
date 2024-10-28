@@ -100,3 +100,20 @@
 .approve-button:hover {
   background-color: #1976D2;
 }
+
+.delete-button {
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background-color: #cc0000;
+}
+
+.tags-table td {
+  padding: 8px;
+}

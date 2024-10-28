@@ -98,6 +98,54 @@ function ClipMaker() {
     }
   };
 
+  const handleDeleteTag = async (tagToDelete) => {
+    if (!selectedVideo) return;
+    
+    try {
+      // Get existing metadata
+      const metadata = selectedVideo.metadata ? JSON.parse(selectedVideo.metadata) : {};
+      const existingTags = metadata.tags || [];
+      
+      // Find the index of the first matching tag
+      const tagIndex = existingTags.findIndex(tag => 
+        tag.name === tagToDelete.name && 
+        tag.frame === tagToDelete.frame &&
+        tag.startFrame === tagToDelete.startFrame &&
+        tag.endFrame === tagToDelete.endFrame
+      );
+
+      if (tagIndex === -1) return; // Tag not found
+
+      // Create new array with the tag removed
+      const updatedTags = [
+        ...existingTags.slice(0, tagIndex),
+        ...existingTags.slice(tagIndex + 1)
+      ];
+
+      const response = await fetch(`http://localhost:5000/api/videos/${selectedVideo.id}/metadata`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          metadata: JSON.stringify({ ...metadata, tags: updatedTags })
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to delete tag');
+
+      // Refresh video data
+      await fetchVideos();
+      
+      // Update the selected video with fresh data
+      const updatedVideos = await (await fetch('http://localhost:5000/api/videos/with-tags')).json();
+      const refreshedVideo = updatedVideos.find(v => v.id === selectedVideo.id);
+      setSelectedVideo(refreshedVideo);
+    } catch (error) {
+      console.error('Error deleting tag:', error);
+    }
+  };
+
   return (
     <Layout>
       <div className="clipmaker-container">
@@ -136,6 +184,7 @@ function ClipMaker() {
                     <th>Tag Name</th>
                     <th>Frame Range</th>
                     <th>Frame</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -144,6 +193,14 @@ function ClipMaker() {
                       <td>{tag.name}</td>
                       <td>{tag.startFrame}-{tag.endFrame}</td>
                       <td>{tag.frame}</td>
+                      <td>
+                        <button 
+                          className="delete-button"
+                          onClick={() => handleDeleteTag(tag)}
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
