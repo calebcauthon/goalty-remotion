@@ -5,15 +5,28 @@ import { Player } from '@remotion/player';
 import { AbsoluteFill, Video, Sequence } from 'remotion';
 import './ViewFilm.css';
 
-// Updated VideoPlayer component using Remotion Video
-const VideoPlayer = ({ selectedVideos, videos, selectedTags }) => {
-  const SEGMENT_DURATION = 150;
+// Add export at the top with the function
+export const calculateTotalDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
   
+  // Calculate total duration from all selected tags
+  const totalFrames = tagArray.reduce((total, tagInfo) => {
+    const duration = parseInt(tagInfo.endFrame || '0', 10) - parseInt(tagInfo.startFrame || '0', 10);
+    return total + duration;
+  }, 0);
+
+  // Return total frames for all segments (all videos together + individual segments)
+  return totalFrames * 2; // Multiply by 2 because we show all videos together and then individually
+};
+
+// Updated VideoPlayer component using Remotion Video
+const VideoPlayer = ({ selectedVideos, videos, selectedTags }) => { 
+  const tagArray = Array.from(selectedTags);
+
   return (
     <AbsoluteFill>
       {/* First sequence: All videos together */}
-      <Sequence from={0} durationInFrames={SEGMENT_DURATION}>
+      <Sequence from={0} durationInFrames={calculateTotalDuration(selectedTags)}>
         <AbsoluteFill>
           {tagArray.map((tagInfo, index) => {
             const video = videos.find(v => v.id === tagInfo.videoId);
@@ -41,8 +54,8 @@ const VideoPlayer = ({ selectedVideos, videos, selectedTags }) => {
                 </p>
                 <Video
                   src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
-                  startFrom={parseInt(tagInfo.startFrame, 10)}
-                  endAt={parseInt(tagInfo.endFrame, 10)}
+                  startFrom={parseInt(tagInfo.startFrame || '0', 10)}
+                  endAt={parseInt(tagInfo.endFrame || '0', 10)}
                   style={{
                     width: '100%',
                     height: '90%'
@@ -59,13 +72,17 @@ const VideoPlayer = ({ selectedVideos, videos, selectedTags }) => {
         const video = videos.find(v => v.id === tagInfo.videoId);
         if (!video) return null;
         
-        const startFrame = SEGMENT_DURATION + (index * SEGMENT_DURATION);
+        const startFrame = tagArray.slice(0, index).reduce((total, tag) => {
+          return total + (parseInt(tag.endFrame, 10) - parseInt(tag.startFrame, 10));
+        }, calculateTotalDuration(selectedTags));
+
+        const tagDuration = parseInt(tagInfo.endFrame, 10) - parseInt(tagInfo.startFrame, 10);
         
         return (
           <Sequence
             key={tagInfo.key}
             from={startFrame}
-            durationInFrames={SEGMENT_DURATION}
+            durationInFrames={tagDuration}
           >
             <AbsoluteFill>
               <div
@@ -116,18 +133,19 @@ function ViewFilm() {
     if (videos.length > 0) {
       const allTags = new Set(
         videos.flatMap(video => 
-          video.tags.map(tag => ({
-            key: `${video.id}-${tag.name}-${tag.frame}`,
-            videoId: video.id,
-            videoName: video.name,
-            videoFilepath: video.filepath,
-            tagName: tag.name,
-            frame: tag.frame,
-            startFrame: tag.startFrame,
-            endFrame: tag.endFrame
-          }))
-        )
-      );
+          video.tags
+            .filter(tag => tag.startFrame && tag.endFrame) // Only include tags with frame ranges
+            .map(tag => ({
+              key: `${video.id}-${tag.name}-${tag.frame}`,
+              videoId: video.id,
+              videoName: video.name,
+              videoFilepath: video.filepath,
+              tagName: tag.name,
+              frame: tag.frame,
+              startFrame: tag.startFrame,
+              endFrame: tag.endFrame
+            }))
+      ));
       setSelectedTags(allTags);
     }
   }, [videos]);
@@ -210,13 +228,6 @@ function ViewFilm() {
     });
   };
 
-  // Update the Player component's duration calculation
-  const calculateTotalDuration = () => {
-    const SEGMENT_DURATION = 150; // 5 seconds * 30fps
-    // Duration = first segment (all videos) + individual segments
-    return SEGMENT_DURATION * (selectedVideos.size + 1);
-  };
-
   if (!film) {
     return <Layout>Loading...</Layout>;
   }
@@ -267,7 +278,7 @@ function ViewFilm() {
                 videos,
                 selectedTags
               }}
-              durationInFrames={calculateTotalDuration()}
+              durationInFrames={calculateTotalDuration(selectedTags)}
               compositionWidth={1280}
               compositionHeight={720}
               fps={30}
@@ -330,6 +341,7 @@ function ViewFilm() {
                 <th>Show</th>
                 <th>Video Name</th>
                 <th>Tag Name</th>
+                <th>Frame</th>
                 <th>Frame Range</th>
               </tr>
             </thead>
@@ -340,27 +352,33 @@ function ViewFilm() {
                   video.tags.map((tag, index) => {
                     const tagKey = `${video.id}-${tag.name}-${tag.frame}`;
                     const isSelected = Array.from(selectedTags).some(t => t.key === tagKey);
+                    const hasFrameRange = tag.startFrame && tag.endFrame;
                     
                     return (
                       <tr key={`${video.id}-${index}`}>
                         <td>
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => handleTagToggle(
-                              video.id,
-                              tag.name,
-                              tag.frame,
-                              video.name,
-                              video.filepath,
-                              tag.startFrame,
-                              tag.endFrame
-                            )}
-                          />
+                          {hasFrameRange ? (
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleTagToggle(
+                                video.id,
+                                tag.name,
+                                tag.frame,
+                                video.name,
+                                video.filepath,
+                                tag.startFrame,
+                                tag.endFrame
+                              )}
+                            />
+                          ) : (
+                            "N/A"
+                          )}
                         </td>
                         <td>{video.name}</td>
                         <td>{tag.name}</td>
-                        <td>{tag.startFrame}-{tag.endFrame}</td>
+                        <td>{tag.frame}</td>
+                        <td>{hasFrameRange ? `${tag.startFrame}-${tag.endFrame}` : 'No range'}</td>
                       </tr>
                     );
                   })
