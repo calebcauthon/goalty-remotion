@@ -21,6 +21,15 @@ function ClipMaker() {
     }
   };
 
+  const refreshVideoData = async () => {
+    await fetchVideos();
+    if (selectedVideo) {
+      const updatedVideos = await (await fetch('http://localhost:5000/api/videos/with-tags')).json();
+      const refreshedVideo = updatedVideos.find(v => v.id === selectedVideo.id);
+      setSelectedVideo(refreshedVideo);
+    }
+  };
+
   const handleVideoSelect = (videoId) => {
     const video = videos.find(v => v.id === videoId);
     setSelectedVideo(video);
@@ -63,12 +72,7 @@ function ClipMaker() {
       if (!response.ok) throw new Error('Failed to delete tag');
 
       // Refresh video data
-      await fetchVideos();
-      
-      // Update the selected video with fresh data
-      const updatedVideos = await (await fetch('http://localhost:5000/api/videos/with-tags')).json();
-      const refreshedVideo = updatedVideos.find(v => v.id === selectedVideo.id);
-      setSelectedVideo(refreshedVideo);
+      await refreshVideoData();
     } catch (error) {
       console.error('Error deleting tag:', error);
     }
@@ -102,12 +106,7 @@ function ClipMaker() {
               <h2>Tags for {selectedVideo.name}</h2>
               <ScoringPossessionProcessor 
                 selectedVideo={selectedVideo}
-                onTagsApproved={async () => {
-                  await fetchVideos();
-                  const updatedVideos = await (await fetch('http://localhost:5000/api/videos/with-tags')).json();
-                  const refreshedVideo = updatedVideos.find(v => v.id === selectedVideo.id);
-                  setSelectedVideo(refreshedVideo);
-                }}
+                onTagsApproved={refreshVideoData}
                 startTagName="home_possession"
                 endTagName="home_score"
                 excludeTagName="home_turnover"
