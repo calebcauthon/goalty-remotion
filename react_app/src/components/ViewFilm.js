@@ -6,17 +6,18 @@ import { AbsoluteFill, Video, Sequence } from 'remotion';
 import './ViewFilm.css';
 
 // Updated VideoPlayer component using Remotion Video
-const VideoPlayer = ({ selectedVideos, videos }) => {
+const VideoPlayer = ({ selectedVideos, videos, selectedTags }) => {
   const SEGMENT_DURATION = 150; // 5 seconds * 30fps = 150 frames
   const videoArray = Array.from(selectedVideos);
+  const tagArray = Array.from(selectedTags);
   
   return (
     <AbsoluteFill>
       {/* First sequence: All videos together */}
       <Sequence from={0} durationInFrames={SEGMENT_DURATION}>
         <AbsoluteFill>
-          {videoArray.map((videoId, index) => {
-            const video = videos.find(v => v.id === videoId);
+          {tagArray.map((tagInfo, index) => {
+            const video = videos.find(v => v.id === tagInfo.videoId);
             if (!video) return null;
             
             const columns = Math.min(selectedVideos.size, 2);
@@ -26,7 +27,7 @@ const VideoPlayer = ({ selectedVideos, videos }) => {
             
             return (
               <div
-                key={videoId}
+                key={tagInfo.key}
                 style={{
                   position: 'absolute',
                   left: `${col * width}%`,
@@ -36,7 +37,7 @@ const VideoPlayer = ({ selectedVideos, videos }) => {
                   padding: '10px'
                 }}
               >
-                <p className="video-name">{video.name}</p>
+                <p className="video-name">{`${video.name} - ${tagInfo.tagName} (Frame: ${tagInfo.frame})`}</p>
                 <Video
                   src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
                   style={{
@@ -51,15 +52,15 @@ const VideoPlayer = ({ selectedVideos, videos }) => {
       </Sequence>
 
       {/* Individual video sequences */}
-      {videoArray.map((videoId, index) => {
-        const video = videos.find(v => v.id === videoId);
+      {tagArray.map((tagInfo, index) => {
+        const video = videos.find(v => v.id === tagInfo.videoId);
         if (!video) return null;
         
         const startFrame = SEGMENT_DURATION + (index * SEGMENT_DURATION);
         
         return (
           <Sequence
-            key={videoId}
+            key={tagInfo.key}
             from={startFrame}
             durationInFrames={SEGMENT_DURATION}
           >
@@ -72,7 +73,7 @@ const VideoPlayer = ({ selectedVideos, videos }) => {
                   padding: '10px'
                 }}
               >
-                <p className="video-name">{video.name}</p>
+                <p className="video-name">{`${video.name} - ${tagInfo.tagName} (Frame: ${tagInfo.frame})`}</p>
                 <Video
                   src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
                   style={{
@@ -108,7 +109,14 @@ function ViewFilm() {
     if (videos.length > 0) {
       const allTags = new Set(
         videos.flatMap(video => 
-          video.tags.map(tag => `${video.id}-${tag.name}-${tag.frame}`)
+          video.tags.map(tag => ({
+            key: `${video.id}-${tag.name}-${tag.frame}`,
+            videoId: video.id,
+            videoName: video.name,
+            videoFilepath: video.filepath,
+            tagName: tag.name,
+            frame: tag.frame
+          }))
         )
       );
       setSelectedTags(allTags);
@@ -168,14 +176,25 @@ function ViewFilm() {
     });
   };
 
-  const handleTagToggle = (videoId, tagName, frame) => {
-    const tagKey = `${videoId}-${tagName}-${frame}`;
+  const handleTagToggle = (videoId, tagName, frame, videoName, videoFilepath) => {
+    const tagInfo = {
+      key: `${videoId}-${tagName}-${frame}`,
+      videoId,
+      videoName,
+      videoFilepath,
+      tagName,
+      frame
+    };
+    
     setSelectedTags(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(tagKey)) {
-        newSet.delete(tagKey);
+      // Find if a tag with the same key exists
+      const existingTag = Array.from(newSet).find(t => t.key === tagInfo.key);
+      
+      if (existingTag) {
+        newSet.delete(existingTag);
       } else {
-        newSet.add(tagKey);
+        newSet.add(tagInfo);
       }
       return newSet;
     });
@@ -310,13 +329,21 @@ function ViewFilm() {
                 .flatMap((video) =>
                   video.tags.map((tag, index) => {
                     const tagKey = `${video.id}-${tag.name}-${tag.frame}`;
+                    const isSelected = Array.from(selectedTags).some(t => t.key === tagKey);
+                    
                     return (
                       <tr key={`${video.id}-${index}`}>
                         <td>
                           <input
                             type="checkbox"
-                            checked={selectedTags.has(tagKey)}
-                            onChange={() => handleTagToggle(video.id, tag.name, tag.frame)}
+                            checked={isSelected}
+                            onChange={() => handleTagToggle(
+                              video.id,
+                              tag.name,
+                              tag.frame,
+                              video.name,
+                              video.filepath
+                            )}
                           />
                         </td>
                         <td>{video.name}</td>
