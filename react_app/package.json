@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@remotion/bundler": "^4.0.223",
+    "@remotion/cli": "^4.0.223",
     "@remotion/media-utils": "^4.0.223",
     "@remotion/player": "^4.0.223",
     "@testing-library/jest-dom": "^5.17.0",

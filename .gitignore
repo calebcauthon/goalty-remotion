@@ -2,3 +2,4 @@ downloads
 **/node_modules
 videos.db
 **/*.pyc
+react_app/out

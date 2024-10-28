@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { Composition } from 'remotion';
 import { useParams } from 'react-router-dom';
 import Layout from './Layout';
 import { Player } from '@remotion/player';
 import { AbsoluteFill, Video, Sequence } from 'remotion';
 import './ViewFilm.css';
+import { RenderCommand } from './RenderCommand';
 
 // Add export at the top with the function
 export const calculateTotalDuration = (selectedTags) => {
@@ -20,103 +22,103 @@ export const calculateTotalDuration = (selectedTags) => {
 };
 
 // Updated VideoPlayer component using Remotion Video
-const VideoPlayer = ({ selectedVideos, videos, selectedTags }) => { 
+export const VideoPlayer = ({ selectedVideos, videos, selectedTags }) => { 
   const tagArray = Array.from(selectedTags);
 
   return (
-    <AbsoluteFill>
-      {/* First sequence: All videos together */}
-      <Sequence from={0} durationInFrames={10 * 30}>
-        <AbsoluteFill>
-          {tagArray.map((tagInfo, index) => {
-            const video = videos.find(v => v.id === tagInfo.videoId);
-            if (!video) return null;
-            
-            const columns = Math.min(selectedVideos.size, 2);
-            const width = 100 / columns;
-            const row = Math.floor(index / columns);
-            const col = index % columns;
-            
-            return (
-              <div
-                key={tagInfo.key}
-                style={{
-                  position: 'absolute',
-                  left: `${col * width}%`,
-                  top: `${row * 50}%`,
-                  width: `${width}%`,
-                  height: '50%',
-                  padding: '10px'
-                }}
-              >
-                <p className="video-name">
-                  {`${video.name} - ${tagInfo.tagName} (${tagInfo.startFrame}-${tagInfo.endFrame})`}
-                </p>
-                <Video
-                  src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
-                  startFrom={parseInt(tagInfo.startFrame || '0', 10)}
-                  endAt={parseInt(tagInfo.endFrame || '0', 10)}
+      <AbsoluteFill>
+        {/* First sequence: All videos together */}
+        <Sequence from={0} durationInFrames={10 * 30}>
+          <AbsoluteFill>
+            {tagArray.map((tagInfo, index) => {
+              const video = videos.find(v => v.id === tagInfo.videoId);
+              if (!video) return null;
+              
+              const columns = Math.min(selectedVideos.size, 2);
+              const width = 100 / columns;
+              const row = Math.floor(index / columns);
+              const col = index % columns;
+              
+              return (
+                <div
+                  key={tagInfo.key}
                   style={{
-                    width: '100%',
-                    height: '90%'
+                    position: 'absolute',
+                    left: `${col * width}%`,
+                    top: `${row * 50}%`,
+                    width: `${width}%`,
+                    height: '50%',
+                    padding: '10px'
                   }}
-                />
-              </div>
-            );
-          })}
-        </AbsoluteFill>
-      </Sequence>
+                >
+                  <p className="video-name">
+                    {`${video.name} - ${tagInfo.tagName} (${tagInfo.startFrame}-${tagInfo.endFrame})`}
+                  </p>
+                  <Video
+                    src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
+                    startFrom={parseInt(tagInfo.startFrame || '0', 10)}
+                    endAt={parseInt(tagInfo.endFrame || '0', 10)}
+                    style={{
+                      width: '100%',
+                      height: '90%'
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </AbsoluteFill>
+        </Sequence>
 
-      {/* Individual video sequences */}
-      {tagArray.map((tagInfo, index) => {
-        const video = videos.find(v => v.id === tagInfo.videoId);
-        if (!video) return null;
-        
-        const durationOfPreview = 30 * 10;//calculateTotalDuration(selectedTags);
-        const tagsBefore = tagArray.slice(0, index);
-        console.log(`tags before index ${index}`, tagsBefore);
-        console.log('durationOfPreview', durationOfPreview);
-        const startFrame = tagsBefore.reduce((total, tag) => {
-          return total + (parseInt(tag.endFrame, 10) - parseInt(tag.startFrame, 10));
-        }, durationOfPreview);
+        {/* Individual video sequences */}
+        {tagArray.map((tagInfo, index) => {
+          const video = videos.find(v => v.id === tagInfo.videoId);
+          if (!video) return null;
+          
+          const durationOfPreview = 30 * 10;//calculateTotalDuration(selectedTags);
+          const tagsBefore = tagArray.slice(0, index);
+          console.log(`tags before index ${index}`, tagsBefore);
+          console.log('durationOfPreview', durationOfPreview);
+          const startFrame = tagsBefore.reduce((total, tag) => {
+            return total + (parseInt(tag.endFrame, 10) - parseInt(tag.startFrame, 10));
+          }, durationOfPreview);
 
-        const tagDuration = parseInt(tagInfo.endFrame, 10) - parseInt(tagInfo.startFrame, 10);
+          const tagDuration = parseInt(tagInfo.endFrame, 10) - parseInt(tagInfo.startFrame, 10);
 
-        console.log('sequence props', {startFrame, tagDuration, key: tagInfo.key});
-        
-        return (
-          <Sequence
-            key={tagInfo.key}
-            from={startFrame}
-            durationInFrames={tagDuration}
-          >
-            <AbsoluteFill>
-              <div
-                style={{
-                  position: 'absolute',
-                  width: '100%',
-                  height: '100%',
-                  padding: '10px'
-                }}
-              >
-                <p className="video-name">
-                  {`${video.name} - ${tagInfo.tagName} (${tagInfo.startFrame}-${tagInfo.endFrame})`}
-                </p>
-                <Video
-                  src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
-                  startFrom={parseInt(tagInfo.startFrame, 10)}
-                  endAt={parseInt(tagInfo.endFrame, 10)}
+          console.log('sequence props', {startFrame, tagDuration, key: tagInfo.key});
+          
+          return (
+            <Sequence
+              key={tagInfo.key}
+              from={startFrame}
+              durationInFrames={tagDuration}
+            >
+              <AbsoluteFill>
+                <div
                   style={{
+                    position: 'absolute',
                     width: '100%',
-                    height: '90%'
+                    height: '100%',
+                    padding: '10px'
                   }}
-                />
-              </div>
-            </AbsoluteFill>
-          </Sequence>
-        );
-      })}
-    </AbsoluteFill>
+                >
+                  <p className="video-name">
+                    {`${video.name} - ${tagInfo.tagName} (${tagInfo.startFrame}-${tagInfo.endFrame})`}
+                  </p>
+                  <Video
+                    src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
+                    startFrom={parseInt(tagInfo.startFrame, 10)}
+                    endAt={parseInt(tagInfo.endFrame, 10)}
+                    style={{
+                      width: '100%',
+                      height: '90%'
+                    }}
+                  />
+                </div>
+              </AbsoluteFill>
+            </Sequence>
+          );
+        })}
+      </AbsoluteFill>
   );
 };
 
@@ -277,24 +279,36 @@ function ViewFilm() {
         
         <div className="video-player">
           {selectedVideos.size > 0 ? (
-            <Player
-              component={VideoPlayer}
-              inputProps={{
-                selectedVideos,
-                videos,
-                selectedTags
-              }}
-              durationInFrames={calculateTotalDuration(selectedTags) + 10 * 30}
-              compositionWidth={1280}
-              compositionHeight={720}
-              fps={30}
-              controls
-              loop
-              style={{
-                width: '100%',
-                aspectRatio: '16/9'
-              }}
-            />
+            <>
+              <Player
+                component={VideoPlayer}
+                inputProps={{
+                  selectedVideos,
+                  videos,
+                  selectedTags
+                }}
+                durationInFrames={calculateTotalDuration(selectedTags) + 10 * 30}
+                compositionWidth={1280}
+                compositionHeight={720}
+                fps={30}
+                controls
+                loop
+                style={{
+                  width: '100%',
+                  aspectRatio: '16/9'
+                }}
+              />
+              <RenderCommand 
+                selectedVideos={Array.from(selectedVideos)}
+                videos={videos}
+                selectedTags={Array.from(selectedTags)}
+                outputFileName={`${film.name.replace(/\s+/g, '_')}.mp4`}
+                durationInFrames={calculateTotalDuration(selectedTags) + 10 * 30}
+                fps={30}
+                width={1280}
+                height={720}
+              />
+            </>
           ) : (
             <div style={{
               width: '100%',
