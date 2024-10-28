@@ -160,3 +160,12 @@ def update_film_name(film_id, name):
         return cursor.rowcount > 0
     finally:
         conn.close()
+
+def delete_film(film_id):
+    try:
+        query = "DELETE FROM films WHERE id = ?"
+        commit_query(query, (film_id,))
+        return True
+    except Exception as e:
+        print(f"Error deleting film: {e}")
+        return False

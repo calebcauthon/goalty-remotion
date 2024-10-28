@@ -212,6 +212,17 @@ def update_film_name(film_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Add this new route after the other film routes
+@app.route('/api/films/<int:film_id>', methods=['DELETE'])
+def delete_film(film_id):
+    try:
+        success = database.delete_film(film_id)
+        if not success:
+            return jsonify({'error': 'Film not found'}), 404
+        return jsonify({'message': 'Film deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Run the Flask app with optional test mode.')

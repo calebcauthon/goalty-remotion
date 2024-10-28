@@ -5,6 +5,7 @@ import './StudioHome.css';
 
 function StudioHome() {
   const [films, setFilms] = useState([]);
+  const [filmToDelete, setFilmToDelete] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,6 +38,28 @@ function StudioHome() {
     }
   };
 
+  const handleDeleteClick = (e, film) => {
+    e.stopPropagation(); // Prevent navigation when clicking delete
+    setFilmToDelete(film);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/films/${filmToDelete.id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setFilms(films.filter(film => film.id !== filmToDelete.id));
+        setFilmToDelete(null);
+      } else {
+        console.error('Failed to delete film');
+      }
+    } catch (error) {
+      console.error('Error deleting film:', error);
+    }
+  };
+
   return (
     <Layout>
       <div className="studio-home">
@@ -49,9 +72,29 @@ function StudioHome() {
             <div key={film.id} className="film-card" onClick={() => navigate(`/studio/films/${film.id}`)}>
               <h3>{film.name}</h3>
               <p>Created: {new Date(film.created_date).toLocaleDateString()}</p>
+              <button 
+                className="delete-film-btn"
+                onClick={(e) => handleDeleteClick(e, film)}
+              >
+                Delete
+              </button>
             </div>
           ))}
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {filmToDelete && (
+          <div className="modal-overlay">
+            <div className="modal">
+              <h3>Confirm Delete</h3>
+              <p>Are you sure you want to delete "{filmToDelete.name}"?</p>
+              <div className="modal-buttons">
+                <button onClick={confirmDelete}>Yes, Delete</button>
+                <button onClick={() => setFilmToDelete(null)}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );
