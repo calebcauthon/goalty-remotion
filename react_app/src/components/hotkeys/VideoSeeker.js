@@ -1,14 +1,14 @@
 import { useCallback } from 'react';
 
 export function useVideoSeeker({ playerRef }, currentFrame) {
-  const seekBackward = useCallback(() => {
+  const seekBackward = useCallback((frames = 25) => {
     const currentPlayerFrame = playerRef.current?.getCurrentFrame();
-    playerRef.current?.seekTo(Math.max(currentPlayerFrame - 5, 0));
+    playerRef.current?.seekTo(Math.max(currentPlayerFrame - frames, 0));
   }, [currentFrame, playerRef]);
 
-  const seekForward = useCallback(() => {
+  const seekForward = useCallback((frames = 25) => {
     const currentPlayerFrame = playerRef.current?.getCurrentFrame();
-    playerRef.current?.seekTo(currentPlayerFrame + 5);
+    playerRef.current?.seekTo(currentPlayerFrame + frames);
   }, [currentFrame, playerRef]);
 
   return { seekBackward, seekForward };

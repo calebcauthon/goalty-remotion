@@ -13,13 +13,13 @@ export const hotkeyDescriptions = {
   't': 'Add home turnover tag',
   's': 'Add home score tag',
   'n': 'Add new player possession tag',
-  'ArrowLeft': 'Move back 5 frames',
-  'ArrowRight': 'Move forward 5 frames',
+  'ArrowLeft': 'Move back 25 frames',
+  'ArrowRight': 'Move forward 25 frames',
   'h': 'Add highlight tag and pause video',
   ',': 'Slow down video',
   '.': 'Speed up video',
   ';': 'Reset video speed to 1x',
-  ' ': 'Play/Pause', // Space character
+  ' ': 'Play/Pause',
 };
 
 export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
@@ -43,13 +43,13 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
     't': () => addTag('home_turnover'), 
     's': () => addTag('home_score'),
     'n': () => addTag('new_player_possession'),
-    'ArrowLeft': seekBackward,
-    'ArrowRight': seekForward,
+    'ArrowLeft': () => seekBackward(100),
+    'ArrowRight': () => seekForward(100),
     'h': addHighlight,
     ',': slowDown,
     '.': speedUp,
     ';': resetSpeed,
-    'k': togglePlayPause, // Space character
+    'k': togglePlayPause,
   });
 
   const [unregisteredHotkeys, setUnregisteredHotkeys] = useState({});
