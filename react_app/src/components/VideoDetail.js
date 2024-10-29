@@ -24,9 +24,9 @@ function VideoDetail() {
   const [playbackRate, setPlaybackRate] = useState(1);
   const [durationInFrames, setDurationInFrames] = useState(30 * 60); // Default fallback
   const [videoMetadata, setVideoMetadata] = useState(null);
-  const [hotkeysExpanded, setHotkeysExpanded] = useState(true);
-  const [metadataExpanded, setMetadataExpanded] = useState(true);
-  const [videoInfoExpanded, setVideoInfoExpanded] = useState(true);
+  const [hotkeysExpanded, setHotkeysExpanded] = useState(false);
+  const [metadataExpanded, setMetadataExpanded] = useState(false);
+  const [videoInfoExpanded, setVideoInfoExpanded] = useState(false);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
