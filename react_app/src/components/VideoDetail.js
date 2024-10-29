@@ -159,6 +159,12 @@ function VideoDetail() {
     });
   };
 
+  const handleTagFrameClick = (frame) => {
+    if (playerRef.current) {
+      playerRef.current.seekTo(frame);
+    }
+  };
+
   if (loading) {
     return <Layout><div>Loading...</div></Layout>;
   }
@@ -231,7 +237,12 @@ function VideoDetail() {
                 <tbody>
                   {getSortedTags().map((tag, index) => (
                     <tr key={index}>
-                      <td>{tag.startFrame || tag.frame || 'N/A'}</td>
+                      <td 
+                        onClick={() => handleTagFrameClick(tag.startFrame || tag.frame)}
+                        style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        {tag.startFrame || tag.frame || 'N/A'}
+                      </td>
                       <td>{tag.name || ''}</td>
                     </tr>
                   ))}
