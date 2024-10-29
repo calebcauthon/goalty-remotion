@@ -57,19 +57,42 @@
 
 .metadata-container {
   margin-top: 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.metadata-header {
+  padding: 10px;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  user-select: none;
+}
+
+.metadata-header:hover {
+  background-color: #e5e5e5;
+}
+
+.metadata-header h2 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  font-size: 1.5em;
 }
 
 .metadata-container textarea {
-  width: 100%;
-  margin-bottom: 10px;
+  width: calc(100% - 20px);
+  margin: 10px;
+  padding: 10px;
 }
 
 .metadata-container button {
+  margin: 0 10px 10px 10px;
   padding: 10px 20px;
   background-color: #007bff;
   color: white;
   border: none;
   cursor: pointer;
+  border-radius: 4px;
 }
 
 .metadata-container button:hover {
@@ -80,7 +103,7 @@
   background-color: #ffebee;
   color: #c62828;
   padding: 10px;
-  margin-bottom: 10px;
+  margin: 10px;
   border-radius: 4px;
   font-size: 14px;
 }

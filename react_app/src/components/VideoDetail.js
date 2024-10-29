@@ -25,6 +25,7 @@ function VideoDetail() {
   const [durationInFrames, setDurationInFrames] = useState(30 * 60); // Default fallback
   const [videoMetadata, setVideoMetadata] = useState(null);
   const [hotkeysExpanded, setHotkeysExpanded] = useState(true);
+  const [metadataExpanded, setMetadataExpanded] = useState(true);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -206,23 +207,29 @@ function VideoDetail() {
           )}
         </div>
         <div className="metadata-container">
-          <h2>Metadata</h2>
-          {jsonError && <div className="json-error">{jsonError}</div>}
-          <div style={{ background: '#272822', padding: '10px', borderRadius: '5px' }}>
-            <JSONTree
-              data={parsedMetadata}
-              theme={theme}
-              invertTheme={false}
-              shouldExpandNode={() => true}
-            />
+          <div className="metadata-header" onClick={() => setMetadataExpanded(!metadataExpanded)}>
+            <h2>Metadata {metadataExpanded ? '▼' : '▶'}</h2>
           </div>
-          <textarea
-            value={metadata}
-            onChange={handleMetadataChange}
-            rows={10}
-            cols={50}
-          />
-          <button onClick={handleSaveMetadata} disabled={!!jsonError}>{saveButtonText}</button>
+          {metadataExpanded && (
+            <>
+              {jsonError && <div className="json-error">{jsonError}</div>}
+              <div style={{ background: '#272822', padding: '10px', borderRadius: '5px' }}>
+                <JSONTree
+                  data={parsedMetadata}
+                  theme={theme}
+                  invertTheme={false}
+                  shouldExpandNode={() => true}
+                />
+              </div>
+              <textarea
+                value={metadata}
+                onChange={handleMetadataChange}
+                rows={10}
+                cols={50}
+              />
+              <button onClick={handleSaveMetadata} disabled={!!jsonError}>{saveButtonText}</button>
+            </>
+          )}
         </div>
       </div>
     </Layout>
