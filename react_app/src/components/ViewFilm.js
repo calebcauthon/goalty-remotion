@@ -6,7 +6,12 @@ import { Player } from '@remotion/player';
 import { AbsoluteFill, Video, Sequence } from 'remotion';
 import './ViewFilm.css';
 import { RenderCommand } from './RenderCommand';
-import { VideoPreviewThenBackToBack, VideoFirstFiveSeconds } from './templates';
+import { 
+  VideoPreviewThenBackToBack, 
+  VideoFirstFiveSeconds,
+  calculatePreviewThenBackToBackDuration,
+  calculateFirstFiveSecondsDuration 
+} from './templates';
 
 export const calculateTotalDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
@@ -137,6 +142,17 @@ function ViewFilm() {
     }
   };
 
+  const calculateDuration = () => {
+    switch (selectedTemplate) {
+      case 'VideoPreviewThenBackToBack':
+        return calculatePreviewThenBackToBackDuration(selectedTags);
+      case 'VideoFirstFiveSeconds':
+        return calculateFirstFiveSecondsDuration(selectedTags);
+      default:
+        return calculatePreviewThenBackToBackDuration(selectedTags);
+    }
+  };
+
   return (
     <Layout>
       <div className="view-film">
@@ -196,7 +212,7 @@ function ViewFilm() {
                   videos,
                   selectedTags
                 }}
-                durationInFrames={calculateTotalDuration(selectedTags) + 10 * 30}
+                durationInFrames={calculateDuration()}
                 compositionWidth={1280}
                 compositionHeight={720}
                 fps={30}
@@ -212,7 +228,7 @@ function ViewFilm() {
                 videos={videos}
                 selectedTags={Array.from(selectedTags)}
                 outputFileName={`${film.name.replace(/\s+/g, '_')}.mp4`}
-                durationInFrames={calculateTotalDuration(selectedTags) + 10 * 30}
+                durationInFrames={calculateDuration()}
                 fps={30}
                 width={1280}
                 height={720}

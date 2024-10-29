@@ -1,6 +1,12 @@
 import React from 'react';
 import { AbsoluteFill, Video, Sequence } from 'remotion';
 
+export const calculateFirstFiveSecondsDuration = (selectedTags) => {
+  const tagArray = Array.from(selectedTags);
+  // 5 seconds per clip
+  return tagArray.length * 5 * 30;
+};
+
 export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags }) => {
   const tagArray = Array.from(selectedTags);
 

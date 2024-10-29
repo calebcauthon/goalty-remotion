@@ -1,6 +1,19 @@
 import React from 'react';
 import { AbsoluteFill, Video, Sequence } from 'remotion';
 
+export const calculatePreviewThenBackToBackDuration = (selectedTags) => {
+  const tagArray = Array.from(selectedTags);
+  
+  // Calculate total duration from all selected tags
+  const totalFrames = tagArray.reduce((total, tagInfo) => {
+    const duration = parseInt(tagInfo.endFrame || '0', 10) - parseInt(tagInfo.startFrame || '0', 10);
+    return total + duration;
+  }, 0);
+
+  // Preview duration (10 seconds) + all clips back to back
+  return (10 * 30) + totalFrames;
+};
+
 export const VideoPreviewThenBackToBack = ({ selectedVideos, videos, selectedTags }) => { 
   const tagArray = Array.from(selectedTags);
 

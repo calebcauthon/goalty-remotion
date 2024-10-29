@@ -1,2 +1,2 @@
-export { VideoPreviewThenBackToBack } from './VideoPreviewThenBackToBack';
-export { VideoFirstFiveSeconds } from './VideoFirstFiveSeconds'; 
+export { VideoPreviewThenBackToBack, calculatePreviewThenBackToBackDuration } from './VideoPreviewThenBackToBack';
+export { VideoFirstFiveSeconds, calculateFirstFiveSecondsDuration } from './VideoFirstFiveSeconds';
