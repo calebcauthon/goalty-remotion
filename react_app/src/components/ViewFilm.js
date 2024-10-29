@@ -7,27 +7,20 @@ import { AbsoluteFill, Video, Sequence } from 'remotion';
 import './ViewFilm.css';
 import { RenderCommand } from './RenderCommand';
 
-// Add export at the top with the function
 export const calculateTotalDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
-  
-  // Calculate total duration from all selected tags
   const totalFrames = tagArray.reduce((total, tagInfo) => {
     const duration = parseInt(tagInfo.endFrame || '0', 10) - parseInt(tagInfo.startFrame || '0', 10);
     return total + duration;
   }, 0);
-
-  // Return total frames for all segments (all videos together + individual segments)
-  return totalFrames * 2; // Multiply by 2 because we show all videos together and then individually
+  return totalFrames * 2;
 };
 
-// Updated VideoPlayer component using Remotion Video
 export const VideoPreviewThenBackToBack = ({ selectedVideos, videos, selectedTags }) => { 
   const tagArray = Array.from(selectedTags);
 
   return (
       <AbsoluteFill>
-        {/* First sequence: All videos together */}
         <Sequence from={0} durationInFrames={10 * 30}>
           <AbsoluteFill>
             {tagArray.map((tagInfo, index) => {
@@ -69,22 +62,17 @@ export const VideoPreviewThenBackToBack = ({ selectedVideos, videos, selectedTag
           </AbsoluteFill>
         </Sequence>
 
-        {/* Individual video sequences */}
         {tagArray.map((tagInfo, index) => {
           const video = videos.find(v => v.id === tagInfo.videoId);
           if (!video) return null;
           
-          const durationOfPreview = 30 * 10;//calculateTotalDuration(selectedTags);
+          const durationOfPreview = 30 * 10;
           const tagsBefore = tagArray.slice(0, index);
-          console.log(`tags before index ${index}`, tagsBefore);
-          console.log('durationOfPreview', durationOfPreview);
           const startFrame = tagsBefore.reduce((total, tag) => {
             return total + (parseInt(tag.endFrame, 10) - parseInt(tag.startFrame, 10));
           }, durationOfPreview);
 
           const tagDuration = parseInt(tagInfo.endFrame, 10) - parseInt(tagInfo.startFrame, 10);
-
-          console.log('sequence props', {startFrame, tagDuration, key: tagInfo.key});
           
           return (
             <Sequence
@@ -122,6 +110,51 @@ export const VideoPreviewThenBackToBack = ({ selectedVideos, videos, selectedTag
   );
 };
 
+export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags }) => {
+  const tagArray = Array.from(selectedTags);
+
+  return (
+    <AbsoluteFill>
+      {tagArray.map((tagInfo, index) => {
+        const video = videos.find(v => v.id === tagInfo.videoId);
+        if (!video) return null;
+
+        return (
+          <Sequence
+            key={tagInfo.key}
+            from={index * 5 * 30} // 5 seconds per clip
+            durationInFrames={5 * 30} // 5 seconds
+          >
+            <AbsoluteFill>
+              <div
+                style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%',
+                  padding: '10px'
+                }}
+              >
+                <p className="video-name">
+                  {`${video.name} - ${tagInfo.tagName} (${tagInfo.startFrame}-${tagInfo.endFrame})`}
+                </p>
+                <Video
+                  src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
+                  startFrom={parseInt(tagInfo.startFrame, 10)}
+                  endAt={parseInt(tagInfo.startFrame, 10) + 5 * 30} // First 5 seconds
+                  style={{
+                    width: '100%',
+                    height: '90%'
+                  }}
+                />
+              </div>
+            </AbsoluteFill>
+          </Sequence>
+        );
+      })}
+    </AbsoluteFill>
+  );
+};
+
 function ViewFilm() {
   const [film, setFilm] = useState(null);
   const [videos, setVideos] = useState([]);
@@ -130,13 +163,13 @@ function ViewFilm() {
   const [editedName, setEditedName] = useState('');
   const [selectedVideos, setSelectedVideos] = useState(new Set());
   const [selectedTags, setSelectedTags] = useState(new Set());
+  const [selectedTemplate, setSelectedTemplate] = useState('VideoPreviewThenBackToBack');
 
   useEffect(() => {
     fetchFilm();
     fetchVideos();
   }, [id]);
 
-  // Initialize selected tags when videos are loaded
   useEffect(() => {
     if (videos.length > 0) {
       setSelectedTags(new Set());
@@ -231,6 +264,17 @@ function ViewFilm() {
     return <Layout>Loading...</Layout>;
   }
 
+  const renderPlayerComponent = () => {
+    switch (selectedTemplate) {
+      case 'VideoPreviewThenBackToBack':
+        return VideoPreviewThenBackToBack;
+      case 'VideoFirstFiveSeconds':
+        return VideoFirstFiveSeconds;
+      default:
+        return VideoPreviewThenBackToBack;
+    }
+  };
+
   return (
     <Layout>
       <div className="view-film">
@@ -268,11 +312,23 @@ function ViewFilm() {
           )}
         </div>
         
+        <div className="template-selector">
+          <label htmlFor="template-select">Select Video Template: </label>
+          <select
+            id="template-select"
+            value={selectedTemplate}
+            onChange={(e) => setSelectedTemplate(e.target.value)}
+          >
+            <option value="VideoPreviewThenBackToBack">Preview Then Back-to-Back</option>
+            <option value="VideoFirstFiveSeconds">First 5 Seconds of Each Clip</option>
+          </select>
+        </div>
+
         <div className="video-player">
           {selectedVideos.size > 0 ? (
             <>
               <Player
-                component={VideoPreviewThenBackToBack}
+                component={renderPlayerComponent()}
                 inputProps={{
                   selectedVideos,
                   videos,
