@@ -1,0 +1,43 @@
+.render-command {
+  margin: 20px 0;
+  width: 100%;
+  max-width: 800px;
+}
+
+.command-container {
+  display: flex;
+  align-items: center;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  padding: 12px;
+  gap: 12px;
+}
+
+.command-text {
+  margin: 0;
+  flex-grow: 1;
+  font-family: monospace;
+  font-size: 14px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.copy-button {
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.copy-button:hover {
+  background-color: #0056b3;
+}
+
+.additional-info {
+  margin-top: 12px;
+  font-size: 14px;
+} 

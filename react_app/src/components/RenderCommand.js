@@ -1,39 +1,51 @@
-import React from 'react';
+import React, { useState } from 'react';
+import './RenderCommand.css';
 
-export const RenderCommand = ({ tags, outputFileName, ...otherProps }) => {
-  const propsJson = JSON.stringify({ tags, ...otherProps });
-  const command = `npx remotion render Root out/${outputFileName || 'video.mp4'} --props='${propsJson}'`;
+export const RenderCommand = ({ 
+  selectedVideos, 
+  videos, 
+  selectedTags, 
+  outputFileName,
+  durationInFrames,
+  fps,
+  width,
+  height,
+  showFirstPartOnly = false
+}) => {
+  const [copied, setCopied] = useState(false);
+  
+  const command = `npx remotion render src/index.js VideoComposition --props='${JSON.stringify({
+    selectedVideos,
+    videos,
+    selectedTags
+  })}' --codec=h264 ${outputFileName}`;
 
-  const copyToClipboard = () => {
+  const truncatedCommand = command.slice(0, 50) + '...';
+
+  const handleCopy = () => {
     navigator.clipboard.writeText(command);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div style={{ margin: '20px 0' }}>
-      <div style={{ 
-        fontFamily: 'Courier New', 
-        backgroundColor: '#f5f5f5', 
-        padding: '15px',
-        borderRadius: '4px',
-        marginBottom: '10px',
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-all'
-      }}>
-        {command}
+    <div className="render-command">
+      <div className="command-container">
+        <pre className="command-text">{truncatedCommand}</pre>
+        <button className="copy-button" onClick={handleCopy}>
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
       </div>
-      <button 
-        onClick={copyToClipboard}
-        style={{
-          padding: '8px 16px',
-          backgroundColor: '#007bff',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer'
-        }}
-      >
-        Copy to Clipboard
-      </button>
+      {!showFirstPartOnly && (
+        <div className="additional-info">
+          <p>Additional rendering options:</p>
+          <ul>
+            <li>Duration: {durationInFrames} frames</li>
+            <li>FPS: {fps}</li>
+            <li>Resolution: {width}x{height}</li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 };
