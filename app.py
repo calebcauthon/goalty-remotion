@@ -223,6 +223,27 @@ def delete_film(film_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Add this new route for deleting videos
+@app.route('/api/videos/<int:video_id>', methods=['DELETE'])
+def delete_video(video_id):
+    try:
+        # Get the video information first
+        video = get_video(video_id)
+        if not video:
+            return jsonify({'error': 'Video not found'}), 404
+
+        # Delete the file from the filesystem
+        if os.path.exists(video['filepath']):
+            os.remove(video['filepath'])
+
+        # Delete from database
+        query = "DELETE FROM videos WHERE id = ?"
+        commit_query(query, (video_id,))
+
+        return jsonify({'message': 'Video deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Run the Flask app with optional test mode.')
