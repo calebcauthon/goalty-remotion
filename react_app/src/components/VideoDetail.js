@@ -27,6 +27,7 @@ function VideoDetail() {
   const [hotkeysExpanded, setHotkeysExpanded] = useState(false);
   const [metadataExpanded, setMetadataExpanded] = useState(false);
   const [videoInfoExpanded, setVideoInfoExpanded] = useState(false);
+  const [tagsExpanded, setTagsExpanded] = useState(false);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -148,6 +149,16 @@ function VideoDetail() {
     base0F: '#cc6633'
   };
 
+  const getSortedTags = () => {
+    if (!parsedMetadata || !parsedMetadata.tags) return [];
+    
+    return [...parsedMetadata.tags].sort((a, b) => {
+      const aFrame = a.startFrame || a.frame || 0;
+      const bFrame = b.startFrame || b.frame || 0;
+      return bFrame - aFrame;
+    });
+  };
+
   if (loading) {
     return <Layout><div>Loading...</div></Layout>;
   }
@@ -179,6 +190,7 @@ function VideoDetail() {
             renderLoading={() => <div>Loading...</div>}
           />
         </div>
+
         <div className="video-info">
           <div className="video-info-header" onClick={() => setVideoInfoExpanded(!videoInfoExpanded)}>
             <h3>Video Info {videoInfoExpanded ? '▼' : '▶'}</h3>
@@ -202,6 +214,33 @@ function VideoDetail() {
             </div>
           )}
         </div>
+
+        <div className="tags-container">
+          <div className="tags-header" onClick={() => setTagsExpanded(!tagsExpanded)}>
+            <h3>Tags {tagsExpanded ? '▼' : '▶'}</h3>
+          </div>
+          {tagsExpanded && (
+            <div className="tags-content">
+              <table className="tags-table">
+                <thead>
+                  <tr>
+                    <th>Frame</th>
+                    <th>Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getSortedTags().map((tag, index) => (
+                    <tr key={index}>
+                      <td>{tag.startFrame || tag.frame || 'N/A'}</td>
+                      <td>{tag.name || ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
         <div className="hotkey-instructions">
           <div className="hotkey-header" onClick={() => setHotkeysExpanded(!hotkeysExpanded)}>
             <h3>Hotkeys {hotkeysExpanded ? '▼' : '▶'}</h3>
@@ -214,6 +253,7 @@ function VideoDetail() {
             </ul>
           )}
         </div>
+
         <div className="metadata-container">
           <div className="metadata-header" onClick={() => setMetadataExpanded(!metadataExpanded)}>
             <h3>Metadata {metadataExpanded ? '▼' : '▶'}</h3>
@@ -238,7 +278,7 @@ function VideoDetail() {
               <button onClick={handleSaveMetadata} disabled={!!jsonError}>{saveButtonText}</button>
             </>
           )}
-        </div>
+        </div> 
       </div>
     </Layout>
   );
