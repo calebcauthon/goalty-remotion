@@ -139,22 +139,7 @@ function ViewFilm() {
   // Initialize selected tags when videos are loaded
   useEffect(() => {
     if (videos.length > 0) {
-      const allTags = new Set(
-        videos.flatMap(video => 
-          video.tags
-            .filter(tag => tag.startFrame && tag.endFrame) // Only include tags with frame ranges
-            .map(tag => ({
-              key: `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}`,
-              videoId: video.id,
-              videoName: video.name,
-              videoFilepath: video.filepath,
-              tagName: tag.name,
-              frame: tag.frame,
-              startFrame: tag.startFrame,
-              endFrame: tag.endFrame
-            }))
-      ));
-      setSelectedTags(allTags);
+      setSelectedTags(new Set());
     }
   }, [videos]);
 
@@ -213,7 +198,7 @@ function ViewFilm() {
 
   const handleTagToggle = (videoId, tagName, frame, videoName, videoFilepath, startFrame, endFrame) => {
     const tagInfo = {
-      key: `${videoId}-${tagName}-${frame}`,
+      key: `${videoId}-${tagName}-${frame}-${startFrame}-${endFrame}`,
       videoId,
       videoName,
       videoFilepath,
@@ -225,7 +210,13 @@ function ViewFilm() {
     
     setSelectedTags(prev => {
       const newSet = new Set(prev);
-      const existingTag = Array.from(newSet).find(t => t.key === tagInfo.key);
+      const existingTag = Array.from(newSet).find(t => 
+        t.videoId === tagInfo.videoId && 
+        t.tagName === tagInfo.tagName && 
+        t.frame === tagInfo.frame &&
+        t.startFrame === tagInfo.startFrame &&
+        t.endFrame === tagInfo.endFrame
+      );
       
       if (existingTag) {
         newSet.delete(existingTag);
@@ -371,7 +362,7 @@ function ViewFilm() {
                 .filter(video => selectedVideos.has(video.id))
                 .flatMap((video) =>
                   video.tags.map((tag, index) => {
-                    const tagKey = `${video.id}-${tag.name}-${tag.frame}`;
+                    const tagKey = `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}`;
                     const isSelected = Array.from(selectedTags).some(t => t.key === tagKey);
                     const hasFrameRange = tag.startFrame && tag.endFrame;
                     
