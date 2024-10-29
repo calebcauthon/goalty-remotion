@@ -179,6 +179,9 @@ function VideoDetail() {
           />
         </div>
         <div className="video-info">
+          <div className="video-info-header">
+            <h3>Video Info</h3>
+          </div>
           <p><strong>ID:</strong> {video.id}</p>
           <p><strong>Size:</strong> {(video.size / 1024 / 1024).toFixed(2)} MB</p>
           <p><strong>Filepath:</strong> {video.filepath}</p>
@@ -208,7 +211,7 @@ function VideoDetail() {
         </div>
         <div className="metadata-container">
           <div className="metadata-header" onClick={() => setMetadataExpanded(!metadataExpanded)}>
-            <h2>Metadata {metadataExpanded ? '▼' : '▶'}</h2>
+            <h3>Metadata {metadataExpanded ? '▼' : '▶'}</h3>
           </div>
           {metadataExpanded && (
             <>
