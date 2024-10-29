@@ -26,6 +26,7 @@ function VideoDetail() {
   const [videoMetadata, setVideoMetadata] = useState(null);
   const [hotkeysExpanded, setHotkeysExpanded] = useState(true);
   const [metadataExpanded, setMetadataExpanded] = useState(true);
+  const [videoInfoExpanded, setVideoInfoExpanded] = useState(true);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -179,23 +180,27 @@ function VideoDetail() {
           />
         </div>
         <div className="video-info">
-          <div className="video-info-header">
-            <h3>Video Info</h3>
+          <div className="video-info-header" onClick={() => setVideoInfoExpanded(!videoInfoExpanded)}>
+            <h3>Video Info {videoInfoExpanded ? '▼' : '▶'}</h3>
           </div>
-          <p><strong>ID:</strong> {video.id}</p>
-          <p><strong>Size:</strong> {(video.size / 1024 / 1024).toFixed(2)} MB</p>
-          <p><strong>Filepath:</strong> {video.filepath}</p>
-          <p><strong>Duration:</strong> {videoMetadata?.durationInSeconds.toFixed(2)}s ({durationInFrames} frames)</p>
-          <p><strong>Resolution:</strong> {videoMetadata?.width}x{videoMetadata?.height}</p>
-          <p><strong>FPS:</strong> {videoMetadata?.fps}</p>
-          <p><strong>Current Frame:</strong> {currentFrame}</p>
-          <p><strong>Playback Speed:</strong> {playbackRate}x</p>
-          <div className={`hotkey-indicator ${hotkeyMode ? 'active' : ''}`}>
-            Hotkey Mode: {hotkeyMode ? 'ON' : 'OFF'}
-          </div>
-          <button onClick={toggleHotkeyMode}>
-            {hotkeyMode ? 'Disable Hotkey Mode' : 'Enable Hotkey Mode'}
-          </button>
+          {videoInfoExpanded && (
+            <div className="video-info-content">
+              <p><strong>ID:</strong> {video.id}</p>
+              <p><strong>Size:</strong> {(video.size / 1024 / 1024).toFixed(2)} MB</p>
+              <p><strong>Filepath:</strong> {video.filepath}</p>
+              <p><strong>Duration:</strong> {videoMetadata?.durationInSeconds.toFixed(2)}s ({durationInFrames} frames)</p>
+              <p><strong>Resolution:</strong> {videoMetadata?.width}x{videoMetadata?.height}</p>
+              <p><strong>FPS:</strong> {videoMetadata?.fps}</p>
+              <p><strong>Current Frame:</strong> {currentFrame}</p>
+              <p><strong>Playback Speed:</strong> {playbackRate}x</p>
+              <div className={`hotkey-indicator ${hotkeyMode ? 'active' : ''}`}>
+                Hotkey Mode: {hotkeyMode ? 'ON' : 'OFF'}
+              </div>
+              <button onClick={toggleHotkeyMode}>
+                {hotkeyMode ? 'Disable Hotkey Mode' : 'Enable Hotkey Mode'}
+              </button>
+            </div>
+          )}
         </div>
         <div className="hotkey-instructions">
           <div className="hotkey-header" onClick={() => setHotkeysExpanded(!hotkeysExpanded)}>

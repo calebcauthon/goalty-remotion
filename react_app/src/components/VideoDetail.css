@@ -11,9 +11,24 @@
 }
 
 .video-info {
+  margin-top: 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.video-info-header {
+  padding: 10px;
   background-color: #f5f5f5;
+  cursor: pointer;
+  user-select: none;
+}
+
+.video-info-header:hover {
+  background-color: #e5e5e5;
+}
+
+.video-info-content {
   padding: 15px;
-  border-radius: 5px;
 }
 
 .video-info p {
@@ -24,6 +39,20 @@
 .video-info strong {
   font-weight: bold;
   margin-right: 5px;
+}
+
+.video-info button {
+  margin-top: 10px;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.video-info button:hover {
+  background-color: #0056b3;
 }
 
 /* Add styles for video player if you decide to add one */
