@@ -22,7 +22,7 @@ export const calculateTotalDuration = (selectedTags) => {
 };
 
 // Updated VideoPlayer component using Remotion Video
-export const VideoPlayer = ({ selectedVideos, videos, selectedTags }) => { 
+export const VideoPreviewThenBackToBack = ({ selectedVideos, videos, selectedTags }) => { 
   const tagArray = Array.from(selectedTags);
 
   return (
@@ -272,7 +272,7 @@ function ViewFilm() {
           {selectedVideos.size > 0 ? (
             <>
               <Player
-                component={VideoPlayer}
+                component={VideoPreviewThenBackToBack}
                 inputProps={{
                   selectedVideos,
                   videos,

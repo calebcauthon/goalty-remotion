@@ -1,7 +1,7 @@
 import React from "react";
 import { Composition } from "remotion";
 import { MyComponent } from "./testComp";
-import { VideoPlayer } from "../components/ViewFilm";
+import { VideoPreviewThenBackToBack } from "../components/ViewFilm";
 
 export const Root: React.FC = () => {
   return (
@@ -25,7 +25,7 @@ export const Root: React.FC = () => {
         height={1080}
         fps={30}
         durationInFrames={30 * 30}
-        component={VideoPlayer}
+        component={VideoPreviewThenBackToBack}
         defaultProps={{
           selectedVideos: [],
           videos: [],
