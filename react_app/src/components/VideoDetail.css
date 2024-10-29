@@ -106,16 +106,29 @@
 }
 
 .hotkey-instructions {
-  margin-top: 20px;
-  padding: 10px;
-  background-color: #f0f0f0;
-  border-radius: 5px;
+  margin: 20px 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 
-.hotkey-instructions h3 {
-  margin-top: 0;
+.hotkey-header {
+  padding: 10px;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  user-select: none;
+}
+
+.hotkey-header:hover {
+  background-color: #e5e5e5;
+}
+
+.hotkey-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
 }
 
 .hotkey-instructions ul {
-  padding-left: 20px;
+  margin: 0;
+  padding: 15px 30px;
 }

@@ -24,6 +24,7 @@ function VideoDetail() {
   const [playbackRate, setPlaybackRate] = useState(1);
   const [durationInFrames, setDurationInFrames] = useState(30 * 60); // Default fallback
   const [videoMetadata, setVideoMetadata] = useState(null);
+  const [hotkeysExpanded, setHotkeysExpanded] = useState(true);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -193,12 +194,16 @@ function VideoDetail() {
           </button>
         </div>
         <div className="hotkey-instructions">
-          <h3>Hotkeys:</h3>
-          <ul>
-            {Object.entries(hotkeyDescriptions).map(([key, description]) => (
-              <li key={key}>'{key}': {description}</li>
-            ))}
-          </ul>
+          <div className="hotkey-header" onClick={() => setHotkeysExpanded(!hotkeysExpanded)}>
+            <h3>Hotkeys {hotkeysExpanded ? '▼' : '▶'}</h3>
+          </div>
+          {hotkeysExpanded && (
+            <ul>
+              {Object.entries(hotkeyDescriptions).map(([key, description]) => (
+                <li key={key}>'{key}': {description}</li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="metadata-container">
           <h2>Metadata</h2>
