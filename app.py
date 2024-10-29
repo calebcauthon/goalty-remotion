@@ -4,12 +4,16 @@ import yt_dlp
 import os
 import argparse
 from database import add_video, get_video, get_tables, get_table_data, execute_query, update_video_metadata, commit_query
+import database
 from datetime import datetime
 from routes.films import films_bp
 from routes.videos import videos_bp
 
+
 app = Flask(__name__, static_folder='react_app/build', template_folder='templates')
 CORS(app)
+CORS(films_bp)
+CORS(videos_bp)
 
 app.register_blueprint(films_bp, url_prefix='/api/films')
 app.register_blueprint(videos_bp, url_prefix='/api/videos')

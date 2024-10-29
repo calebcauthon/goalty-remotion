@@ -197,6 +197,14 @@ function VideoDetail() {
           />
         </div>
 
+
+        <div className={`hotkey-indicator ${hotkeyMode ? 'active' : ''}`}>
+          Hotkey Mode: {hotkeyMode ? 'ON' : 'OFF'}
+        </div>
+        <button onClick={toggleHotkeyMode}>
+          {hotkeyMode ? 'Disable Hotkey Mode' : 'Enable Hotkey Mode'}
+        </button>
+
         <div className="video-info">
           <div className="video-info-header" onClick={() => setVideoInfoExpanded(!videoInfoExpanded)}>
             <h3>Video Info {videoInfoExpanded ? '▼' : '▶'}</h3>
@@ -210,13 +218,7 @@ function VideoDetail() {
               <p><strong>Resolution:</strong> {videoMetadata?.width}x{videoMetadata?.height}</p>
               <p><strong>FPS:</strong> {videoMetadata?.fps}</p>
               <p><strong>Current Frame:</strong> {currentFrame}</p>
-              <p><strong>Playback Speed:</strong> {playbackRate}x</p>
-              <div className={`hotkey-indicator ${hotkeyMode ? 'active' : ''}`}>
-                Hotkey Mode: {hotkeyMode ? 'ON' : 'OFF'}
-              </div>
-              <button onClick={toggleHotkeyMode}>
-                {hotkeyMode ? 'Disable Hotkey Mode' : 'Enable Hotkey Mode'}
-              </button>
+              <p><strong>Playback Speed:</strong> {playbackRate}x</p> 
             </div>
           )}
         </div>

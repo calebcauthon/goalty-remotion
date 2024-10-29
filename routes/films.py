@@ -12,7 +12,7 @@ def get_films():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@films_bp.route('/', methods=['POST'])
+@films_bp.route('', methods=['POST'])
 def create_film():
     try:
         name = request.json.get('name', 'Untitled Film')
