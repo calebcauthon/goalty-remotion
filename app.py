@@ -4,12 +4,15 @@ import yt_dlp
 import os
 import argparse
 import json
-from database import add_video, get_video, get_tables, get_table_data, execute_query, update_video_metadata, commit_query, get_films, create_film, get_film_by_id
+from database import add_video, get_video, get_tables, get_table_data, execute_query, update_video_metadata, commit_query
 import database
 from datetime import datetime
+from routes.films import films_bp
 
 app = Flask(__name__, static_folder='react_app/build', template_folder='templates')
 CORS(app)
+
+app.register_blueprint(films_bp, url_prefix='/api/films')
 
 DOWNLOAD_DIRECTORY = 'downloads'
 
@@ -158,68 +161,6 @@ def save_video_metadata(video_id):
         return jsonify({'message': 'Metadata saved successfully'}), 200
     except json.JSONDecodeError:
         return jsonify({'error': 'Invalid JSON in metadata'}), 400
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/films', methods=['GET'])
-def get_films():
-    try:
-        films = database.get_films()
-        return jsonify(films), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/films', methods=['POST'])
-def create_film():
-    try:
-        name = request.json.get('name', 'Untitled Film')
-        created_date = datetime.now().isoformat()
-        
-        film_id = database.create_film(name, created_date)
-        
-        return jsonify({
-            'id': film_id,
-            'name': name,
-            'created_date': created_date,
-            'data': {}
-        }), 201
-    except Exception as e:
-        print(e)
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/films/<int:film_id>', methods=['GET'])
-def get_film(film_id):
-    try:
-        film = database.get_film_by_id(film_id)
-        if not film:
-            return jsonify({'error': 'Film not found'}), 404
-        return jsonify(film), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/films/<int:film_id>/name', methods=['PUT'])
-def update_film_name(film_id):
-    try:
-        name = request.json.get('name')
-        if not name:
-            return jsonify({'error': 'Name is required'}), 400
-            
-        success = database.update_film_name(film_id, name)
-        if not success:
-            return jsonify({'error': 'Film not found'}), 404
-            
-        return jsonify({'message': 'Film name updated successfully'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# Add this new route after the other film routes
-@app.route('/api/films/<int:film_id>', methods=['DELETE'])
-def delete_film(film_id):
-    try:
-        success = database.delete_film(film_id)
-        if not success:
-            return jsonify({'error': 'Film not found'}), 404
-        return jsonify({'message': 'Film deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

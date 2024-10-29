@@ -41,6 +41,22 @@ function Videos() {
     navigate(`/videos/${id}`);
   };
 
+  const handleDelete = async (id, e) => {
+    // Stop the row click event from triggering
+    e.stopPropagation();
+    
+    if (window.confirm('Are you sure you want to delete this video?')) {
+      try {
+        await axios.delete(`http://localhost:5000/api/videos/${id}`);
+        setMessage('Video deleted successfully');
+        fetchVideos(); // Refresh the list
+      } catch (error) {
+        setMessage('Error deleting video');
+        console.error('Error:', error);
+      }
+    }
+  };
+
   return (
     <Layout>
       <div className="videos-container">
@@ -65,6 +81,7 @@ function Videos() {
               <th>Title</th>
               <th>Size</th>
               <th>Filepath</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -74,6 +91,14 @@ function Videos() {
                 <td>{video.title}</td>
                 <td>{(video.size / 1024 / 1024).toFixed(2)} MB</td>
                 <td>{video.filepath}</td>
+                <td>
+                  <button 
+                    onClick={(e) => handleDelete(video.id, e)}
+                    className="delete-button"
+                  >
+                    Delete
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
