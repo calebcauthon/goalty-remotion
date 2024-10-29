@@ -8,15 +8,18 @@ import database
 from datetime import datetime
 from routes.films import films_bp
 from routes.videos import videos_bp
+from routes.hotkeys import hotkeys_bp
 
 
 app = Flask(__name__, static_folder='react_app/build', template_folder='templates')
 CORS(app)
 CORS(films_bp)
 CORS(videos_bp)
+CORS(hotkeys_bp)
 
 app.register_blueprint(films_bp, url_prefix='/api/films')
 app.register_blueprint(videos_bp, url_prefix='/api/videos')
+app.register_blueprint(hotkeys_bp, url_prefix='/api/hotkeys')
 
 DOWNLOAD_DIRECTORY = 'downloads'
 

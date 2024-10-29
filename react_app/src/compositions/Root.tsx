@@ -1,7 +1,7 @@
 import React from "react";
 import { Composition } from "remotion";
 import { MyComponent } from "./testComp";
-import { VideoPreviewThenBackToBack } from "../components/ViewFilm";
+import { VideoPreviewThenBackToBack, VideoFirstFiveSeconds, calculateFirstFiveSecondsDuration } from "../components/templates";
 
 export const Root: React.FC = () => {
   return (
@@ -24,12 +24,32 @@ export const Root: React.FC = () => {
         width={1080}
         height={1080}
         fps={30}
-        durationInFrames={30 * 30}
+        durationInFrames={30 * 20}
         component={VideoPreviewThenBackToBack}
         defaultProps={{
           selectedVideos: [],
           videos: [],
           selectedTags: [],
+        }}
+      />
+
+
+      <Composition
+        id="FirstFive"
+        width={1080}
+        height={1080}
+        fps={30}
+        durationInFrames={30 * 20}
+        component={VideoFirstFiveSeconds}
+        defaultProps={{
+          selectedVideos: [],
+          videos: [],
+          selectedTags: [],
+        }}
+        calculateMetadata={({ props, defaultProps, abortSignal }) => {
+          return {
+            durationInFrames: calculateFirstFiveSecondsDuration(props.selectedTags)
+          }
         }}
       />
     </>

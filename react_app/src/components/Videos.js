@@ -88,7 +88,7 @@ function Videos() {
             {videos.map((video) => (
               <tr key={video.id} onClick={() => handleVideoClick(video.id)} className="clickable-row">
                 <td>{video.id}</td>
-                <td>{video.title}</td>
+                <td className="video-title">{video.title}</td>
                 <td>{(video.size / 1024 / 1024).toFixed(2)} MB</td>
                 <td>{video.filepath}</td>
                 <td>

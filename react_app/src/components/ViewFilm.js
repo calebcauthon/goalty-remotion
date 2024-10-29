@@ -145,11 +145,11 @@ function ViewFilm() {
   const calculateDuration = () => {
     switch (selectedTemplate) {
       case 'VideoPreviewThenBackToBack':
-        return calculatePreviewThenBackToBackDuration(selectedTags);
+        return calculatePreviewThenBackToBackDuration(selectedTags) || 1;
       case 'VideoFirstFiveSeconds':
-        return calculateFirstFiveSecondsDuration(selectedTags);
+        return calculateFirstFiveSecondsDuration(selectedTags) || 1;
       default:
-        return calculatePreviewThenBackToBackDuration(selectedTags);
+        return calculatePreviewThenBackToBackDuration(selectedTags) || 1;
     }
   };
 
@@ -295,15 +295,15 @@ function ViewFilm() {
               {videos
                 .filter(video => selectedVideos.has(video.id))
                 .flatMap((video) =>
-                  video.tags.map((tag, index) => {
-                    const tagKey = `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}`;
-                    const isSelected = Array.from(selectedTags).some(t => t.key === tagKey);
-                    const hasFrameRange = tag.startFrame && tag.endFrame;
-                    
-                    return (
-                      <tr key={`${video.id}-${index}`}>
-                        <td>
-                          {hasFrameRange ? (
+                  video.tags
+                    .filter(tag => tag.startFrame && tag.endFrame)
+                    .map((tag, index) => {
+                      const tagKey = `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}`;
+                      const isSelected = Array.from(selectedTags).some(t => t.key === tagKey);
+                      
+                      return (
+                        <tr key={`${video.id}-${index}`}>
+                          <td>
                             <input
                               type="checkbox"
                               checked={isSelected}
@@ -317,18 +317,15 @@ function ViewFilm() {
                                 tag.endFrame
                               )}
                             />
-                          ) : (
-                            "N/A"
-                          )}
-                        </td>
-                        <td>{video.name}</td>
-                        <td>{tag.name}</td>
-                        <td>{tag.frame}</td>
-                        <td>{hasFrameRange ? `${tag.startFrame}-${tag.endFrame}` : 'No range'}</td>
-                      </tr>
-                    );
-                  })
-              )}
+                          </td>
+                          <td>{video.name}</td>
+                          <td>{tag.name}</td>
+                          <td>{tag.frame}</td>
+                          <td>{`${tag.startFrame}-${tag.endFrame}`}</td>
+                        </tr>
+                      );
+                    })
+                )}
             </tbody>
           </table>
         </div>

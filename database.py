@@ -31,6 +31,38 @@ def init_db():
                 data TEXT
             )
         ''')
+
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS hotkeys (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                shortcuts TEXT NOT NULL
+            )
+        ''')
+
+        # Check if default hotkeys exist
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM hotkeys')
+        count = cursor.fetchone()[0]
+
+        # Insert default hotkeys if none exist
+        if count == 0:
+            default_shortcuts = {
+                't': {'action': 'addTag', 'description': 'Add a tag at the current frame'},
+                'ArrowLeft': {'action': 'seekBackward', 'description': 'Move backward in the video'},
+                'ArrowRight': {'action': 'seekForward', 'description': 'Move forward in the video'},
+                'h': {'action': 'addHighlight', 'description': 'Add a highlight at the current frame'},
+                '[': {'action': 'slowDown', 'description': 'Decrease playback speed'},
+                ']': {'action': 'speedUp', 'description': 'Increase playback speed'},
+                '\\': {'action': 'resetSpeed', 'description': 'Reset playback speed to normal'},
+                ' ': {'action': 'togglePlayPause', 'description': 'Play or pause the video'}
+            }
+            
+            cursor.execute('''
+                INSERT INTO hotkeys (name, shortcuts)
+                VALUES (?, ?)
+            ''', ('Default Group (Auto-Created)', json.dumps(default_shortcuts)))
+            
         conn.commit()
     finally:
         conn.close()
@@ -168,4 +200,56 @@ def delete_film(film_id):
         return True
     except Exception as e:
         print(f"Error deleting film: {e}")
+        return False
+
+# Add these new functions for hotkey management
+def get_all_hotkeys():
+    query = 'SELECT * FROM hotkeys'
+    data, columns = execute_query(query)
+    hotkeys = []
+    for row in data:
+        hotkey = dict(zip(columns, row))
+        hotkey['shortcuts'] = json.loads(hotkey['shortcuts'])
+        hotkeys.append(hotkey)
+    return hotkeys
+
+def add_hotkey_group(name, shortcuts):
+    query = 'INSERT INTO hotkeys (name, shortcuts) VALUES (?, ?)'
+    return commit_query(query, (name, json.dumps(shortcuts)))
+
+def update_hotkey_group(group_id, name, shortcuts):
+    query = 'UPDATE hotkeys SET name = ?, shortcuts = ? WHERE id = ?'
+    return commit_query(query, (name, json.dumps(shortcuts), group_id))
+
+def update_hotkey_group_name(group_id, new_name):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE hotkeys SET name = ? WHERE id = ?",
+            (new_name, group_id)
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Error updating hotkey group name: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+def update_hotkey_shortcuts(group_id, shortcuts):
+    try:
+        # Assuming you have a hotkeys table with columns: id, name, shortcuts
+        query = """
+            UPDATE hotkeys 
+            SET shortcuts = ?
+            WHERE id = ?
+        """
+        # Convert shortcuts dict to JSON string if your DB stores it as text
+        shortcuts_json = json.dumps(shortcuts)
+        commit_query(query, (shortcuts_json, group_id))
+        return True
+    except Exception as e:
+        print(f"Error updating hotkey shortcuts: {e}")
         return False

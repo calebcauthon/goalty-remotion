@@ -139,15 +139,19 @@
 
 .hotkey-indicator {
   display: inline-block;
-  padding: 5px 10px;
+  padding: 8px 12px;
   border-radius: 5px;
   font-weight: bold;
   margin-bottom: 10px;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
 }
 
 .hotkey-indicator.active {
   background-color: #ffa500;
+  border-color: #ff8c00;
+  color: #fff;
   animation: blink 1s infinite;
 }
 
@@ -237,4 +241,107 @@
 
 .tags-table td {
   font-family: monospace;
+}
+
+.video-title {
+  margin-bottom: 20px;
+}
+
+.video-title h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title-edit-icon {
+  cursor: pointer;
+  font-size: 0.6em;
+  color: #666;
+  transition: color 0.2s;
+}
+
+.title-edit-icon:hover {
+  color: #333;
+}
+
+.title-edit-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title-edit-input {
+  font-size: 2em;
+  font-weight: bold;
+  padding: 5px 10px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  width: 80%;
+}
+
+.title-save-icon {
+  cursor: pointer;
+  font-size: 1.5em;
+  color: #4CAF50;
+  transition: color 0.2s;
+}
+
+.title-save-icon:hover {
+  color: #45a049;
+}
+
+/* Add these styles to your existing CSS file */
+.hotkey-controls {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.hotkey-controls button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.hotkey-controls button:hover {
+  background-color: #e0e0e0;
+}
+
+.hotkey-set-selector {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 150px;
+  transition: all 0.2s ease;
+}
+
+.hotkey-set-selector:hover {
+  background-color: #e0e0e0;
+  border-color: #999;
+}
+
+.hotkey-set-selector:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.delete-tag-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 14px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.delete-tag-button:hover {
+  opacity: 1;
 }

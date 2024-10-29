@@ -7,8 +7,14 @@ import { getVideoMetadata } from '@remotion/media-utils';
 import VideoPlayer from './VideoPlayer';
 import { JSONTree } from 'react-json-tree';
 import './VideoDetail.css';
-import { useHotkeys, hotkeyDescriptions } from './Hotkeys';
+import { useHotkeys } from './Hotkeys';
+import { useTagAdder } from './hotkeys/TagAdder';
+import { useVideoSeeker } from './hotkeys/VideoSeeker';
+import { useHighlightAdder } from './hotkeys/HighlightAdder';
+import { useSpeedController } from './hotkeys/SpeedController';
+import { usePlayPauseController } from './hotkeys/PlayPauseController';
 import { debounce } from 'lodash';
+import { FaPencilAlt, FaSave } from 'react-icons/fa';
 
 function VideoDetail() {
   const { id } = useParams();
@@ -28,6 +34,11 @@ function VideoDetail() {
   const [metadataExpanded, setMetadataExpanded] = useState(false);
   const [videoInfoExpanded, setVideoInfoExpanded] = useState(false);
   const [tagsExpanded, setTagsExpanded] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [activeHotkeySet, setActiveHotkeySet] = useState('set1');
+  const [hotkeyGroups, setHotkeyGroups] = useState([]);
+  const [activeGroupId, setActiveGroupId] = useState(null);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -57,6 +68,22 @@ function VideoDetail() {
 
     fetchVideoDetails();
   }, [id]);
+
+  useEffect(() => {
+    const fetchHotkeys = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/hotkeys/');
+        setHotkeyGroups(response.data);
+        if (response.data.length > 0) {
+          setActiveGroupId(response.data[0].id);
+        }
+      } catch (error) {
+        console.error('Error fetching hotkeys:', error);
+      }
+    };
+
+    fetchHotkeys();
+  }, []);
 
   const handleFrameUpdate = useCallback((frame) => {
     setCurrentFrame(frame);
@@ -116,7 +143,34 @@ function VideoDetail() {
   }, [playbackRate]);
   const getPlaybackRate = useCallback(() => playbackRateRef.current, []);
 
-  const { registerHotkey } = useHotkeys(
+  const addTag = useTagAdder({ updateMetadata, playerRef }, currentFrame);
+  const { seekBackward, seekForward } = useVideoSeeker({ playerRef }, currentFrame);
+  const addHighlight = useHighlightAdder({ updateMetadata, playerRef }, currentFrame);
+  const { slowDown, speedUp, resetSpeed } = useSpeedController({ getPlaybackRate, setPlaybackRate });
+  const { togglePlayPause } = usePlayPauseController({ playerRef });
+
+  const getCurrentHotkeys = useCallback(() => {
+    if (!hotkeyGroups.length || activeGroupId === null) return {};
+    
+    const currentGroup = hotkeyGroups.find(group => group.id === activeGroupId);
+    if (!currentGroup || !currentGroup.shortcuts) return {};
+
+    const hotkeys = {};
+    Object.entries(currentGroup.shortcuts).forEach(([key, shortcut]) => {
+      hotkeys[key] = () => {
+        try {
+          // Evaluate the action string in the context of available functions
+          eval(shortcut.action);
+        } catch (error) {
+          console.error('Error executing hotkey action:', error);
+        }
+      };
+    });
+    
+    return hotkeys;
+  }, [hotkeyGroups, activeGroupId]);
+
+  const { registerHotkey, setHotkeys } = useHotkeys(
     hotkeyMode,
     { 
       updateMetadata, 
@@ -124,10 +178,41 @@ function VideoDetail() {
       getPlaybackRate,
       setPlaybackRate
     },
-    currentFrame
+    currentFrame,
+    getCurrentHotkeys()
   );
 
-  // Custom theme for JSONTree
+  useEffect(() => {
+    setHotkeys(getCurrentHotkeys());
+  }, [activeGroupId, setHotkeys, getCurrentHotkeys]);
+
+  const renderHotkeyGroupSelector = () => (
+    <select 
+      value={activeGroupId || ''} 
+      onChange={(e) => setActiveGroupId(Number(e.target.value))}
+      className="hotkey-set-selector"
+    >
+      {hotkeyGroups.map(group => (
+        <option key={group.id} value={group.id}>{group.name}</option>
+      ))}
+    </select>
+  );
+
+  const renderHotkeyInstructions = () => {
+    if (!hotkeyGroups.length || activeGroupId === null) return null;
+    
+    const currentGroup = hotkeyGroups.find(group => group.id === activeGroupId);
+    if (!currentGroup || !currentGroup.shortcuts) return null;
+
+    return (
+      <ul>
+        {Object.entries(currentGroup.shortcuts).map(([key, shortcut]) => (
+          <li key={key}>'{key}': {shortcut.description}</li>
+        ))}
+      </ul>
+    );
+  };
+
   const theme = {
     scheme: 'monokai',
     author: 'wimer hazenberg (http://www.monokai.nl)',
@@ -165,6 +250,32 @@ function VideoDetail() {
     }
   };
 
+  const handleTitleSave = async () => {
+    try {
+      await axios.put(`http://localhost:5000/api/videos/${id}/title`, {
+        title: editedTitle
+      });
+      setVideo(prev => ({ ...prev, title: editedTitle }));
+      setIsEditingTitle(false);
+    } catch (error) {
+      console.error('Error updating title:', error);
+      alert('Failed to update title');
+    }
+  };
+
+  const handleDeleteTag = (frameNumber, tagName) => {
+    updateMetadata(prevMetadata => {
+      const newMetadata = { ...prevMetadata };
+      newMetadata.tags = newMetadata.tags.filter(tag => {
+        const tagFrame = tag.startFrame || tag.frame || 0;
+        return !(tagFrame === frameNumber && tag.name === tagName);
+      });
+      return newMetadata;
+    });
+    // Trigger save
+    handleSaveMetadata();
+  };
+
   if (loading) {
     return <Layout><div>Loading...</div></Layout>;
   }
@@ -178,7 +289,33 @@ function VideoDetail() {
   return (
     <Layout>
       <div className="video-detail-container">
-        <h1>{video.title}</h1>
+        <div className="video-title">
+          {isEditingTitle ? (
+            <div className="title-edit-container">
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                className="title-edit-input"
+              />
+              <FaSave 
+                className="title-save-icon"
+                onClick={handleTitleSave}
+              />
+            </div>
+          ) : (
+            <h1>
+              {video.title}
+              <FaPencilAlt 
+                className="title-edit-icon"
+                onClick={() => {
+                  setEditedTitle(video.title);
+                  setIsEditingTitle(true);
+                }}
+              />
+            </h1>
+          )}
+        </div>
         <div className="video-player">
           <Player
             ref={playerRef}
@@ -197,13 +334,29 @@ function VideoDetail() {
           />
         </div>
 
+        <div className="hotkey-controls">
+          <button onClick={toggleHotkeyMode}>
+            {hotkeyMode ? 'Disable Hotkey Mode' : 'Enable Hotkey Mode'}
+          </button>
+          {renderHotkeyGroupSelector()}
+        </div>
 
         <div className={`hotkey-indicator ${hotkeyMode ? 'active' : ''}`}>
-          Hotkey Mode: {hotkeyMode ? 'ON' : 'OFF'}
+          Hotkeys: {hotkeyMode ? 'ENABLED' : 'DISABLED'} | 
+          Group: {hotkeyGroups.find(g => g.id === activeGroupId)?.name || 'None'}
         </div>
-        <button onClick={toggleHotkeyMode}>
-          {hotkeyMode ? 'Disable Hotkey Mode' : 'Enable Hotkey Mode'}
-        </button>
+
+        <div className="hotkey-instructions">
+          <div className="hotkey-header" onClick={() => setHotkeysExpanded(!hotkeysExpanded)}>
+            <h3>Hotkeys {hotkeysExpanded ? '▼' : '▶'}</h3>
+          </div>
+          {hotkeysExpanded && (
+            <>
+              <h4>Current Group: {hotkeyGroups.find(g => g.id === activeGroupId)?.name}</h4>
+              {renderHotkeyInstructions()}
+            </>
+          )}
+        </div>
 
         <div className="video-info">
           <div className="video-info-header" onClick={() => setVideoInfoExpanded(!videoInfoExpanded)}>
@@ -234,6 +387,7 @@ function VideoDetail() {
                   <tr>
                     <th>Frame</th>
                     <th>Name</th>
+                    <th>Delete</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -246,24 +400,23 @@ function VideoDetail() {
                         {tag.startFrame || tag.frame || 'N/A'}
                       </td>
                       <td>{tag.name || ''}</td>
+                      <td>
+                        <button
+                          onClick={() => handleDeleteTag(
+                            tag.startFrame || tag.frame || 0,
+                            tag.name
+                          )}
+                          className="delete-tag-button"
+                          title="Delete tag"
+                        >
+                          🗑️
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
-
-        <div className="hotkey-instructions">
-          <div className="hotkey-header" onClick={() => setHotkeysExpanded(!hotkeysExpanded)}>
-            <h3>Hotkeys {hotkeysExpanded ? '▼' : '▶'}</h3>
-          </div>
-          {hotkeysExpanded && (
-            <ul>
-              {Object.entries(hotkeyDescriptions).map(([key, description]) => (
-                <li key={key}>'{key}': {description}</li>
-              ))}
-            </ul>
           )}
         </div>
 

@@ -72,3 +72,13 @@
 .video-table th:last-child {
   width: 100px;
 }
+
+.video-title {
+  color: #0066cc;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.video-title:hover {
+  color: #003d7a;
+}

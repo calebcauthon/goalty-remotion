@@ -5,24 +5,7 @@ import { useHighlightAdder } from './hotkeys/HighlightAdder';
 import { useSpeedController } from './hotkeys/SpeedController';
 import { usePlayPauseController } from './hotkeys/PlayPauseController';
 
-export const hotkeyDescriptions = {
-  '1': 'Add game start tag',
-  '9': 'Add game end tag',
-  'p': 'Add home possession tag',
-  'c': 'Add home clear tag',
-  't': 'Add home turnover tag',
-  's': 'Add home score tag',
-  'n': 'Add new player possession tag',
-  'ArrowLeft': 'Move back 25 frames',
-  'ArrowRight': 'Move forward 25 frames',
-  'h': 'Add highlight tag and pause video',
-  ',': 'Slow down video',
-  '.': 'Speed up video',
-  ';': 'Reset video speed to 1x',
-  ' ': 'Play/Pause',
-};
-
-export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
+export function useHotkeys(hotkeyMode, playerTools, currentFrame, initialHotkeys) {
   playerTools.registerHotkey = (...args) => { return registerHotkey(...args) };
   playerTools.unregisterHotkey = (...args) => { return unregisterHotkey(...args) };
   playerTools.registerTemporaryHotkey = (...args) => { return registerTemporaryHotkey(...args) };
@@ -35,22 +18,7 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
   const { slowDown, speedUp, resetSpeed } = useSpeedController(playerTools);
   const { togglePlayPause } = usePlayPauseController(playerTools);
 
-  const [hotkeyMap, setHotkeyMap] = useState({
-    '1': () => addTag('game_start'),
-    '9': () => addTag('game_end'),
-    'p': () => addTag('home_possession'),
-    'c': () => addTag('home_clear'),
-    't': () => addTag('home_turnover'), 
-    's': () => addTag('home_score'),
-    'n': () => addTag('new_player_possession'),
-    'ArrowLeft': () => seekBackward(100),
-    'ArrowRight': () => seekForward(100),
-    'h': addHighlight,
-    ',': slowDown,
-    '.': speedUp,
-    ';': resetSpeed,
-    'k': togglePlayPause,
-  });
+  const [hotkeyMap, setHotkeyMap] = useState(initialHotkeys);
 
   const [unregisteredHotkeys, setUnregisteredHotkeys] = useState({});
   const [temporaryHotkeys, setTemporaryHotkeys] = useState({});
@@ -121,7 +89,10 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
     
     const action = hotkeyMapRef.current[event.key];
     if (action) {
+      console.log(`Executing action for hotkey ${event.key}`);
       action();
+    } else {
+      console.log(`No action for hotkey ${event.key}, key code ${event.code}`);
     }
   }, [hotkeyMode]);
 
@@ -132,12 +103,20 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame) {
     };
   }, [handleHotkey]);
 
+  const setHotkeys = useCallback((newHotkeys) => {
+    setHotkeyMap(newHotkeys);
+    hotkeyMapRef.current = newHotkeys;
+    // Clear temporary and unregistered hotkeys when setting new hotkeys
+    clearTemporaryHotkeys();
+    clearUnregisteredHotkeys();
+  }, [clearTemporaryHotkeys, clearUnregisteredHotkeys]);
+
   return { 
     registerHotkey, 
     unregisterHotkey, 
     registerTemporaryHotkey, 
     clearTemporaryHotkeys, 
     clearUnregisteredHotkeys,
-    hotkeyDescriptions 
+    setHotkeys,
   };
 }

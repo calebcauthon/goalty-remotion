@@ -87,3 +87,17 @@ def delete_video(video_id):
         return jsonify({'message': 'Video deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@videos_bp.route('/<int:video_id>/title', methods=['PUT'])
+def update_video_title(video_id):
+    try:
+        new_title = request.json.get('title')
+        if not new_title:
+            return jsonify({'error': 'No title provided'}), 400
+
+        query = "UPDATE videos SET title = ? WHERE id = ?"
+        commit_query(query, (new_title, video_id))
+
+        return jsonify({'message': 'Title updated successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

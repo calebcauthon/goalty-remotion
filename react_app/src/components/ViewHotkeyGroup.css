@@ -1,0 +1,258 @@
+.view-hotkey-group {
+  padding: 20px;
+}
+
+.shortcuts-container {
+  margin-top: 20px;
+}
+
+.shortcuts-container table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.shortcuts-container th,
+.shortcuts-container td {
+  padding: 12px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.shortcuts-container th {
+  background-color: #f5f5f5;
+}
+
+.key {
+  font-family: monospace;
+  background-color: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.actions {
+  margin-top: 20px;
+}
+
+.actions button {
+  padding: 8px 16px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+.edit-button {
+  background: none;
+  border: none;
+  font-size: 0.8em;
+  cursor: pointer;
+  padding: 0 5px;
+  margin-left: 10px;
+}
+
+.edit-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.edit-title input {
+  font-size: 2em;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.edit-title button {
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.edit-key-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 5px;
+  font-size: 0.9em;
+}
+
+.key-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.key-overlay-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  min-width: 300px;
+}
+
+.key-display {
+  margin: 20px 0;
+  padding: 15px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  font-size: 1.2em;
+  min-height: 30px;
+}
+
+.key-overlay-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.key-overlay-actions button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.key-overlay-actions button:first-child {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.key-overlay-actions button:last-child {
+  background-color: #f44336;
+  color: white;
+}
+
+.key-overlay-actions button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.edit-action {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.edit-action input {
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.action-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.edit-action-button,
+.save-action-button,
+.cancel-action-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.edit-action-button:hover,
+.save-action-button:hover,
+.cancel-action-button:hover {
+  opacity: 0.7;
+}
+
+.action-examples {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.action-examples h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.action-examples ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.action-examples li {
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.action-examples code {
+  background-color: #e0e0e0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: monospace;
+  margin-right: 8px;
+}
+
+.action-examples code.clickable {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.action-examples code.clickable:hover {
+  background-color: #ccc;
+}
+
+/* Add a subtle visual indicator when examples are clickable */
+.action-examples code.clickable::before {
+  content: "📋";
+  margin-right: 4px;
+  font-size: 0.9em;
+  opacity: 0.7;
+}
+
+.shortcuts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.add-hotkey-button {
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-hotkey-button:hover {
+  background-color: #45a049;
+}
+
+.delete-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 1.2em;
+  color: #dc3545;
+  transition: opacity 0.2s;
+}
+
+.delete-button:hover {
+  opacity: 0.7;
+}
+
+.delete-cell {
+  text-align: center;
+  width: 50px;
+} 
