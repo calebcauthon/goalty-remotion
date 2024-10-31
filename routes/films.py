@@ -63,4 +63,19 @@ def delete_film(film_id):
             return jsonify({'error': 'Film not found'}), 404
         return jsonify({'message': 'Film deleted successfully'}), 200
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@films_bp.route('/<int:film_id>/data', methods=['PUT'])
+def update_film_data(film_id):
+    try:
+        data = request.json.get('data')
+        if data is None:
+            return jsonify({'error': 'Data is required'}), 400
+            
+        success = database.update_film_data(film_id, data)
+        if not success:
+            return jsonify({'error': 'Film not found'}), 404
+            
+        return jsonify({'message': 'Film data updated successfully'}), 200
+    except Exception as e:
         return jsonify({'error': str(e)}), 500 

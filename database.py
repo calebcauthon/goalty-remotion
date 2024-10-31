@@ -175,7 +175,14 @@ def get_film_by_id(film_id):
     data, columns = execute_query(query, (film_id,))
     if not data:
         return None
-    return dict(zip(columns, data[0]))
+    film = dict(zip(columns, data[0]))
+    # Parse the data JSON if it exists
+    if film.get('data'):
+        try:
+            film['data'] = json.loads(film['data'])
+        except json.JSONDecodeError:
+            film['data'] = {}
+    return film
 
 def update_film_name(film_id, name):
     """Update a film's name and return True if successful"""
@@ -252,4 +259,18 @@ def update_hotkey_shortcuts(group_id, shortcuts):
         return True
     except Exception as e:
         print(f"Error updating hotkey shortcuts: {e}")
+        return False
+
+def update_film_data(film_id, data):
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'UPDATE films SET data = ? WHERE id = ?',
+                (json.dumps(data), film_id)
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Error updating film data: {e}")
         return False

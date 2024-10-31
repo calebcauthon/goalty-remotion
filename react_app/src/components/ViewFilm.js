@@ -31,6 +31,7 @@ function ViewFilm() {
   const [selectedVideos, setSelectedVideos] = useState(new Set());
   const [selectedTags, setSelectedTags] = useState(new Set());
   const [selectedTemplate, setSelectedTemplate] = useState('VideoPreviewThenBackToBack');
+  const [includedClips, setIncludedClips] = useState([]);
 
   useEffect(() => {
     fetchFilm();
@@ -38,15 +39,19 @@ function ViewFilm() {
   }, [id]);
 
   useEffect(() => {
-    if (videos.length > 0) {
-      setSelectedTags(new Set());
+    if (film?.data?.clips) {
+      setIncludedClips(film.data.clips);
+      setSelectedTags(new Set(film.data.clips));
     }
-  }, [videos]);
+  }, [film]);
 
   const fetchFilm = async () => {
     try {
       const response = await fetch(`http://localhost:5000/api/films/${id}`);
       const data = await response.json();
+      if (data.data && typeof data.data === 'string') {
+        data.data = JSON.parse(data.data);
+      }
       setFilm(data);
     } catch (error) {
       console.error('Error fetching film:', error);
@@ -127,6 +132,62 @@ function ViewFilm() {
     });
   };
 
+  const saveClipsToFilm = async (newClips) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/films/${id}/data`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          data: {
+            ...film.data,
+            clips: newClips
+          }
+        }),
+      });
+      
+      if (response.ok) {
+        setFilm({ 
+          ...film, 
+          data: {
+            ...film.data,
+            clips: newClips
+          }
+        });
+      } else {
+        console.error('Failed to update film clips');
+      }
+    } catch (error) {
+      console.error('Error updating film clips:', error);
+    }
+  };
+
+  const handleAddClip = (videoId, tagName, frame, videoName, videoFilepath, startFrame, endFrame) => {
+    const newClip = {
+      key: `${videoId}-${tagName}-${frame}-${startFrame}-${endFrame}`,
+      videoId,
+      videoName,
+      videoFilepath,
+      tagName,
+      frame,
+      startFrame,
+      endFrame
+    };
+    
+    const newClips = [...includedClips, newClip];
+    setIncludedClips(newClips);
+    setSelectedTags(new Set(newClips));
+    saveClipsToFilm(newClips);
+  };
+
+  const handleRemoveClip = (clipKey) => {
+    const newClips = includedClips.filter(clip => clip.key !== clipKey);
+    setIncludedClips(newClips);
+    setSelectedTags(new Set(newClips));
+    saveClipsToFilm(newClips);
+  };
+
   if (!film) {
     return <Layout>Loading...</Layout>;
   }
@@ -200,6 +261,39 @@ function ViewFilm() {
             <option value="VideoPreviewThenBackToBack">Preview Then Back-to-Back</option>
             <option value="VideoFirstFiveSeconds">First 5 Seconds of Each Clip</option>
           </select>
+        </div>
+
+        <div className="included-clips-container">
+          <h2>Included Clips</h2>
+          <table className="included-clips-table">
+            <thead>
+              <tr>
+                <th>Video Name</th>
+                <th>Tag Name</th>
+                <th>Frame</th>
+                <th>Frame Range</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {includedClips.map((clip) => (
+                <tr key={clip.key}>
+                  <td>{clip.videoName}</td>
+                  <td>{clip.tagName}</td>
+                  <td>{clip.frame}</td>
+                  <td>{`${clip.startFrame}-${clip.endFrame}`}</td>
+                  <td>
+                    <button 
+                      onClick={() => handleRemoveClip(clip.key)}
+                      className="remove-clip-button"
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         <div className="video-player">
@@ -284,7 +378,7 @@ function ViewFilm() {
           <table className="tags-table">
             <thead>
               <tr>
-                <th>Show</th>
+                <th>Actions</th>
                 <th>Video Name</th>
                 <th>Tag Name</th>
                 <th>Frame</th>
@@ -299,24 +393,27 @@ function ViewFilm() {
                     .filter(tag => tag.startFrame && tag.endFrame)
                     .map((tag, index) => {
                       const tagKey = `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}`;
-                      const isSelected = Array.from(selectedTags).some(t => t.key === tagKey);
+                      const isIncluded = includedClips.some(clip => clip.key === tagKey);
                       
                       return (
                         <tr key={`${video.id}-${index}`}>
                           <td>
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => handleTagToggle(
-                                video.id,
-                                tag.name,
-                                tag.frame,
-                                video.name,
-                                video.filepath,
-                                tag.startFrame,
-                                tag.endFrame
-                              )}
-                            />
+                            {!isIncluded && (
+                              <button
+                                onClick={() => handleAddClip(
+                                  video.id,
+                                  tag.name,
+                                  tag.frame,
+                                  video.name,
+                                  video.filepath,
+                                  tag.startFrame,
+                                  tag.endFrame
+                                )}
+                                className="add-clip-button"
+                              >
+                                Add
+                              </button>
+                            )}
                           </td>
                           <td>{video.name}</td>
                           <td>{tag.name}</td>

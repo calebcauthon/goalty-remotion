@@ -153,3 +153,50 @@
   width: 100%;
   margin: 20px 0;
 }
+
+.included-clips-container {
+  margin: 20px 0;
+}
+
+.included-clips-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.included-clips-table th,
+.included-clips-table td {
+  padding: 8px;
+  text-align: left;
+  border: 1px solid #ddd;
+}
+
+.included-clips-table th {
+  background-color: #f4f4f4;
+}
+
+.remove-clip-button {
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.remove-clip-button:hover {
+  background-color: #cc0000;
+}
+
+.add-clip-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-clip-button:hover {
+  background-color: #45a049;
+}
