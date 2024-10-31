@@ -1,5 +1,35 @@
 import React, { useState } from 'react';
 
+export const findValidSequences = (tags, startTagName, endTagName, excludeTagName, outputTagName) => {
+  const sortedTags = [...tags].sort((a, b) => a.startFrame - b.startFrame);
+  const sequences = [];
+  
+  sortedTags.forEach((startTag, startIndex) => {
+    if (startTag.name === startTagName) {
+      for (let i = startIndex + 1; i < sortedTags.length; i++) {
+        const currentTag = sortedTags[i];
+        
+        if (currentTag.name === endTagName) {
+          const hasExcludeTag = sortedTags
+            .slice(startIndex + 1, i)
+            .some(tag => tag.name === excludeTagName);
+
+          if (!hasExcludeTag) {
+            sequences.push({
+              name: outputTagName,
+              startFrame: startTag.frame,
+              endFrame: currentTag.frame
+            });
+          }
+          break;
+        }
+      }
+    }
+  });
+
+  return sequences;
+};
+
 function ScoringPossessionProcessor({ 
   selectedVideo, 
   onTagsApproved,
@@ -10,36 +40,6 @@ function ScoringPossessionProcessor({
   buttonText
 }) {
   const [proposedTags, setProposedTags] = useState([]);
-
-  const findValidSequences = (tags, startTagName, endTagName, excludeTagName, outputTagName) => {
-    const sortedTags = [...tags].sort((a, b) => a.startFrame - b.startFrame);
-    const sequences = [];
-    
-    sortedTags.forEach((startTag, startIndex) => {
-      if (startTag.name === startTagName) {
-        for (let i = startIndex + 1; i < sortedTags.length; i++) {
-          const currentTag = sortedTags[i];
-          
-          if (currentTag.name === endTagName) {
-            const hasExcludeTag = sortedTags
-              .slice(startIndex + 1, i)
-              .some(tag => tag.name === excludeTagName);
-
-            if (!hasExcludeTag) {
-              sequences.push({
-                name: outputTagName,
-                startFrame: startTag.frame,
-                endFrame: currentTag.frame
-              });
-            }
-            break;
-          }
-        }
-      }
-    });
-
-    return sequences;
-  };
 
   const processClips = () => {
     if (!selectedVideo?.tags) return;
