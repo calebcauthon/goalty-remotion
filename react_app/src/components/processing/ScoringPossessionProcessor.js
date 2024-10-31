@@ -47,6 +47,7 @@ function ScoringPossessionProcessor({
   const [proposedTags, setProposedTags] = useState([]);
 
   const processClips = () => {
+    console.log("Processing clips for ", { selectedVideo });
     if (!selectedVideo?.tags) return;
 
     const newTags = findValidSequences(

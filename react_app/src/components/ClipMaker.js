@@ -109,9 +109,18 @@ function ClipMaker() {
                 onTagsApproved={refreshVideoData}
                 startTagName="home_possession"
                 endTagName="home_score"
-                excludeTagName="home_turnover"
+                excludeTagName={["home_turnover"]}
                 outputTagName="scoring_possession"
                 buttonText="Process Scoring Possessions"
+              />
+              <ScoringPossessionProcessor 
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                startTagName="home_touch_attacking"
+                endTagName="score"
+                excludeTagName={["away_touch_clearing"]}
+                outputTagName="home_scoring_possession"
+                buttonText="Find Clips: Successful Attacks by Home Team"
               />
               <table className="tags-table">
                 <thead>
