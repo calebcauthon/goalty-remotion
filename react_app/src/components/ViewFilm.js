@@ -340,7 +340,7 @@ function ViewFilm() {
         </div>
 
         <div className="video-player">
-          {selectedVideos.size > 0 ? (
+          {selectedTags.size > 0 ? (
             <>
               <Player
                 component={renderPlayerComponent()}
