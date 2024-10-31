@@ -14,9 +14,15 @@ export const RenderCommand = ({
 }) => {
   const [copied, setCopied] = useState(false);
   
+  // Create a copy of videos without the metadata column
+  const videosWithoutMetadata = videos.map(video => {
+    const { metadata, ...videoWithoutMetadata } = video;
+    return videoWithoutMetadata;
+  });
+  
   const command = `npx remotion render src/index.js VideoComposition --props='${JSON.stringify({
     selectedVideos,
-    videos,
+    videos: videosWithoutMetadata,
     selectedTags
   })}' --codec=h264 ${outputFileName}`;
 
