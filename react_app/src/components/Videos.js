@@ -17,7 +17,13 @@ function Videos() {
   const fetchVideos = async () => {
     try {
       const response = await axios.get('http://localhost:5000/api/videos');
-      setVideos(response.data);
+      
+      const videos = response.data;
+      videos.forEach(video => {
+        video.metadata = JSON.parse(video.metadata);
+      });
+
+      setVideos(videos);
     } catch (error) {
       console.error('Error fetching videos:', error);
     }
@@ -81,6 +87,7 @@ function Videos() {
               <th>Title</th>
               <th>Size</th>
               <th>Filepath</th>
+              <th>Tags</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -91,6 +98,7 @@ function Videos() {
                 <td className="video-title">{video.title}</td>
                 <td>{(video.size / 1024 / 1024).toFixed(2)} MB</td>
                 <td>{video.filepath}</td>
+                <td>{video.metadata?.tags?.length || 0}</td>
                 <td>
                   <button 
                     onClick={(e) => handleDelete(video.id, e)}
