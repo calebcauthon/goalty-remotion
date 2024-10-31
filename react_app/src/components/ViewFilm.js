@@ -48,15 +48,17 @@ function ViewFilm() {
   }, [id]);
 
   useEffect(() => {
-    if (film?.data?.clips) {
-      setIncludedClips(film.data.clips);
-      setSelectedTags(new Set(film.data.clips));
-    }
-  }, [film]);
-
-  useEffect(() => {
-    if (film?.data?.template) {
-      setSelectedTemplate(film.data.template);
+    if (film?.data) {
+      if (film.data.clips) {
+        setIncludedClips(film.data.clips);
+        setSelectedTags(new Set(film.data.clips));
+      }
+      if (film.data.selectedVideos) {
+        setSelectedVideos(new Set(film.data.selectedVideos));
+      }
+      if (film.data.template) {
+        setSelectedTemplate(film.data.template);
+      }
     }
   }, [film]);
 
@@ -104,7 +106,7 @@ function ViewFilm() {
     }
   };
 
-  const handleVideoToggle = (videoId) => {
+  const handleVideoToggle = async (videoId) => {
     setSelectedVideos(prev => {
       const newSet = new Set(prev);
       if (newSet.has(videoId)) {
@@ -114,6 +116,35 @@ function ViewFilm() {
       }
       return newSet;
     });
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/films/${id}/data`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          data: {
+            ...film.data,
+            selectedVideos: Array.from(selectedVideos).concat(videoId)
+          }
+        }),
+      });
+      
+      if (response.ok) {
+        setFilm({ 
+          ...film, 
+          data: {
+            ...film.data,
+            selectedVideos: Array.from(selectedVideos).concat(videoId)
+          }
+        });
+      } else {
+        console.error('Failed to update selected videos');
+      }
+    } catch (error) {
+      console.error('Error updating selected videos:', error);
+    }
   };
 
   const handleTagToggle = (videoId, tagName, frame, videoName, videoFilepath, startFrame, endFrame) => {

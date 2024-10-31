@@ -16,7 +16,7 @@ export const RenderCommand = ({
   
   // Create a copy of videos without the metadata column
   const videosWithoutMetadata = videos.map(video => {
-    const { metadata, ...videoWithoutMetadata } = video;
+    const { metadata, tags, ...videoWithoutMetadata } = video;
     return videoWithoutMetadata;
   });
   
