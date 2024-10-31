@@ -200,3 +200,8 @@
 .add-clip-button:hover {
   background-color: #45a049;
 }
+
+.clickable-frame-range:hover {
+  color: #003d7a;
+  text-decoration: underline;
+}

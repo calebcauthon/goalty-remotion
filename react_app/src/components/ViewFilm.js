@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Composition } from 'remotion';
 import { useParams } from 'react-router-dom';
 import Layout from './Layout';
@@ -22,6 +22,14 @@ export const calculateTotalDuration = (selectedTags) => {
   return totalFrames * 2;
 };
 
+const calculateStartFrameForClip = (clips, currentIndex) => {
+  return clips
+    .slice(0, currentIndex)
+    .reduce((total, clip) => {
+      return total + (clip.endFrame - clip.startFrame);
+    }, 0);
+};
+
 function ViewFilm() {
   const [film, setFilm] = useState(null);
   const [videos, setVideos] = useState([]);
@@ -32,6 +40,7 @@ function ViewFilm() {
   const [selectedTags, setSelectedTags] = useState(new Set());
   const [selectedTemplate, setSelectedTemplate] = useState('VideoPreviewThenBackToBack');
   const [includedClips, setIncludedClips] = useState([]);
+  const playerRef = useRef(null);
 
   useEffect(() => {
     fetchFilm();
@@ -231,6 +240,12 @@ function ViewFilm() {
     saveTemplateToFilm(newTemplate);
   };
 
+  const handleSeekToFrame = (frameNumber) => {
+    if (playerRef.current) {
+      playerRef.current.seekTo(frameNumber);
+    }
+  };
+
   if (!film) {
     return <Layout>Loading...</Layout>;
   }
@@ -315,26 +330,46 @@ function ViewFilm() {
                 <th>Tag Name</th>
                 <th>Frame</th>
                 <th>Frame Range</th>
+                <th>Frame Range of Output</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {includedClips.map((clip) => (
-                <tr key={clip.key}>
-                  <td>{clip.videoName}</td>
-                  <td>{clip.tagName}</td>
-                  <td>{clip.frame}</td>
-                  <td>{`${clip.startFrame}-${clip.endFrame}`}</td>
-                  <td>
-                    <button 
-                      onClick={() => handleRemoveClip(clip.key)}
-                      className="remove-clip-button"
-                    >
-                      Remove
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {includedClips.map((clip, index) => {
+                const startFrame = calculateStartFrameForClip(includedClips, index);
+                const clipDuration = clip.endFrame - clip.startFrame;
+                const endFrame = startFrame + clipDuration;
+                
+                return (
+                  <tr key={clip.key}>
+                    <td>{clip.videoName}</td>
+                    <td>{clip.tagName}</td>
+                    <td>{clip.frame}</td>
+                    <td>{`${clip.startFrame}-${clip.endFrame}`}</td>
+                    <td>
+                      <span 
+                        className="clickable-frame-range"
+                        onClick={() => handleSeekToFrame(startFrame)}
+                        style={{ 
+                          cursor: 'pointer',
+                          color: '#0066cc',
+                          textDecoration: 'underline'
+                        }}
+                      >
+                        {`${startFrame}-${endFrame}`}
+                      </span>
+                    </td>
+                    <td>
+                      <button 
+                        onClick={() => handleRemoveClip(clip.key)}
+                        className="remove-clip-button"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -343,6 +378,7 @@ function ViewFilm() {
           {selectedTags.size > 0 ? (
             <>
               <Player
+                ref={playerRef}
                 component={renderPlayerComponent()}
                 inputProps={{
                   selectedVideos,
