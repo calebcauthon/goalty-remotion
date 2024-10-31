@@ -45,6 +45,12 @@ function ViewFilm() {
     }
   }, [film]);
 
+  useEffect(() => {
+    if (film?.data?.template) {
+      setSelectedTemplate(film.data.template);
+    }
+  }, [film]);
+
   const fetchFilm = async () => {
     try {
       const response = await fetch(`http://localhost:5000/api/films/${id}`);
@@ -188,6 +194,43 @@ function ViewFilm() {
     saveClipsToFilm(newClips);
   };
 
+  const saveTemplateToFilm = async (template) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/films/${id}/data`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          data: {
+            ...film.data,
+            template: template
+          }
+        }),
+      });
+      
+      if (response.ok) {
+        setFilm({ 
+          ...film, 
+          data: {
+            ...film.data,
+            template: template
+          }
+        });
+      } else {
+        console.error('Failed to update film template');
+      }
+    } catch (error) {
+      console.error('Error updating film template:', error);
+    }
+  };
+
+  const handleTemplateChange = (e) => {
+    const newTemplate = e.target.value;
+    setSelectedTemplate(newTemplate);
+    saveTemplateToFilm(newTemplate);
+  };
+
   if (!film) {
     return <Layout>Loading...</Layout>;
   }
@@ -256,7 +299,7 @@ function ViewFilm() {
           <select
             id="template-select"
             value={selectedTemplate}
-            onChange={(e) => setSelectedTemplate(e.target.value)}
+            onChange={handleTemplateChange}
           >
             <option value="VideoPreviewThenBackToBack">Preview Then Back-to-Back</option>
             <option value="VideoFirstFiveSeconds">First 5 Seconds of Each Clip</option>
