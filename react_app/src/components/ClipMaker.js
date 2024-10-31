@@ -125,7 +125,9 @@ function ClipMaker() {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedVideo.tags.map((tag, index) => (
+                  {[...selectedVideo.tags]
+                    .sort((a, b) => (a.frame || 0) - (b.frame || 0))
+                    .map((tag, index) => (
                     <tr key={index}>
                       <td>{tag.name}</td>
                       <td>{tag.startFrame}-{tag.endFrame}</td>
