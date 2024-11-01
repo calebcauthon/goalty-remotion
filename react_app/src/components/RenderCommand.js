@@ -10,7 +10,8 @@ export const RenderCommand = ({
   fps,
   width,
   height,
-  showFirstPartOnly = false
+  showFirstPartOnly = false,
+  compositionId = 'viewFilm'
 }) => {
   const [copied, setCopied] = useState(false);
   
@@ -20,7 +21,7 @@ export const RenderCommand = ({
     return videoWithoutMetadata;
   });
   
-  const command = `npx remotion render src/index.js VideoComposition --props='${JSON.stringify({
+  const command = `npx remotion render src/index.js ${compositionId} --props='${JSON.stringify({
     selectedVideos,
     videos: videosWithoutMetadata,
     selectedTags

@@ -437,6 +437,7 @@ function ViewFilm() {
                 width={1280}
                 height={720}
                 showFirstPartOnly={true}
+                compositionId={selectedTemplate}
               />
             </>
           ) : (
