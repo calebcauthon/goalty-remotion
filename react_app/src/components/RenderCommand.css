@@ -7,10 +7,11 @@
 .command-container {
   display: flex;
   align-items: center;
+  gap: 8px;
   background-color: #f5f5f5;
-  border-radius: 4px;
   padding: 12px;
-  gap: 12px;
+  border-radius: 4px;
+  margin-bottom: 8px;
 }
 
 .command-text {
@@ -21,6 +22,7 @@
   overflow-x: auto;
   white-space: pre-wrap;
   word-break: break-all;
+  background: transparent;
 }
 
 .copy-button {
@@ -40,4 +42,75 @@
 .additional-info {
   margin-top: 12px;
   font-size: 14px;
+}
+
+.edit-button {
+  padding: 4px 8px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-size: 16px;
+}
+
+.output-filename {
+  margin-top: 8px;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.filename-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.filename-modal {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.filename-modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filename-modal input {
+  margin-top: 8px;
+  padding: 8px;
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.modal-buttons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-buttons button[type="submit"] {
+  background: #007bff;
+  color: white;
+}
+
+.modal-buttons button[type="button"] {
+  background: #6c757d;
+  color: white;
 } 
