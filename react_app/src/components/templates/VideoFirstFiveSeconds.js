@@ -61,16 +61,39 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags }) 
                 <div style={{
                   position: 'absolute',
                   bottom: 20,
-                  right: 150,
-                  background: 'rgba(0, 0, 0, 0.7)',
-                  color: 'white',
-                  padding: '5px 10px',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  zIndex: 1
+                  right: 20,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  alignItems: 'flex-end'
                 }}>
-                  {`Clip ${index + 1}/${tagArray.length} • Next in ${secondsRemaining}s...`}
+                  <div style={{
+                    background: 'rgba(0, 0, 0, 0.7)',
+                    color: 'white',
+                    padding: '5px 10px',
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    zIndex: 1
+                  }}>
+                    {`Clip ${index + 1}/${tagArray.length} • Next in ${secondsRemaining}s...`}
+                  </div>
+                  <div style={{
+                    width: '100%',
+                    height: 4,
+                    background: 'rgba(255, 255, 255, 0.3)',
+                    borderRadius: 2,
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      position: 'relative',
+                      height: '100%',
+                      width: `${(framesSinceSequenceStart / clipDuration) * 100}%`,
+                      background: 'white',
+                      borderRadius: 2,
+                      transition: 'width 0.1s linear'
+                    }} />
+                  </div>
                 </div>
               </div>
             </AbsoluteFill>
