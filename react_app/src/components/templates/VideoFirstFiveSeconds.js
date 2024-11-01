@@ -61,7 +61,7 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags }) 
                 <div style={{
                   position: 'absolute',
                   bottom: 20,
-                  right: 20,
+                  right: 300,
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '8px',

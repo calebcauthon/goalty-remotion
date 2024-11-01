@@ -23,8 +23,8 @@ export const Root: React.FC = () => {
 
       <Composition
         id="VideoFirstFiveSeconds"
-        width={1080}
-        height={1080}
+        width={1980}
+        height={1020}
         fps={30}
         durationInFrames={30 * 20}
         component={VideoFirstFiveSeconds}
