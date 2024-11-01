@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './RenderCommand.css';
 
 export const RenderCommand = ({ 
@@ -13,10 +13,38 @@ export const RenderCommand = ({
   showFirstPartOnly = false,
   compositionId = 'viewFilm'
 }) => {
+  // Generate default filename with date/time
+  const getDefaultFileName = () => {
+    const now = new Date();
+    const dateStr = now.toISOString()
+      .replace(/[:.]/g, '-')
+      .replace('T', '_')
+      .slice(0, 19);
+    const baseName = outputFileName.replace(/\.[^/.]+$/, ''); // Remove extension
+    const extension = outputFileName.split('.').pop(); // Get extension
+    return `${baseName}_${dateStr}.${extension}`;
+  };
+
   const [copied, setCopied] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
-  const [localOutputFileName, setLocalOutputFileName] = useState(outputFileName);
+  const [localOutputFileName, setLocalOutputFileName] = useState(getDefaultFileName());
   
+  // Update filename when outputFileName prop changes
+  useEffect(() => {
+    setLocalOutputFileName(getDefaultFileName());
+  }, [outputFileName]);
+
+  // Update timestamp every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!showOverlay) { // Don't update if user is editing
+        setLocalOutputFileName(getDefaultFileName());
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [outputFileName, showOverlay]);
+
   // Create a copy of videos without the metadata column
   const videosWithoutMetadata = videos.map(video => {
     const { metadata, tags, ...videoWithoutMetadata } = video;
