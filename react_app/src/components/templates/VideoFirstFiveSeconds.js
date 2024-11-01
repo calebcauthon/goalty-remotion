@@ -46,28 +46,22 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags }) 
                 style={{
                   position: 'absolute',
                   width: '100%',
-                  height: '100%',
-                  padding: '10px'
+                  height: '100%'
                 }}
               >
-                <div style={{ position: 'relative' }}>
-                  <p className="video-name">
-                    {`${video.name} - ${tagInfo.tagName} (${tagInfo.startFrame}-${tagInfo.endFrame})`}
-                  </p>
-                </div>
                 <Video
                   src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
                   startFrom={parseInt(tagInfo.startFrame, 10)}
                   endAt={parseInt(tagInfo.endFrame, 10)}
                   style={{
                     width: '100%',
-                    height: '90%'
+                    height: '100%'
                   }}
                 />
                 <div style={{
                   position: 'absolute',
                   bottom: 20,
-                  right: 20,
+                  right: 150,
                   background: 'rgba(0, 0, 0, 0.7)',
                   color: 'white',
                   padding: '5px 10px',
