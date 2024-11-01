@@ -2,6 +2,7 @@ import React from "react";
 import { Composition } from "remotion";
 import { MyComponent } from "./testComp";
 import { VideoPreviewThenBackToBack, VideoFirstFiveSeconds, calculateFirstFiveSecondsDuration } from "../components/templates";
+import { getVideoMetadata } from "../components/templates/videoUtils";
 
 export const Root: React.FC = () => {
   return (
@@ -32,10 +33,15 @@ export const Root: React.FC = () => {
           videos: [],
           selectedTags: [],
         }}
-        calculateMetadata={({ props, defaultProps, abortSignal }) => {
+        calculateMetadata={({ props, defaultProps }) => {
+          const firstVideo = props.videos?.[0];
+          const { width, height } = getVideoMetadata(firstVideo);
+          
           return {
-            durationInFrames: calculateFirstFiveSecondsDuration(props.selectedTags)
-          }
+            durationInFrames: calculateFirstFiveSecondsDuration(props.selectedTags),
+            width,
+            height,
+          };
         }}
       />
     </>
