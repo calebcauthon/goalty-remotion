@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Composition } from 'remotion';
 import { useParams } from 'react-router-dom';
 import Layout from './Layout';
 import { Player } from '@remotion/player';
-import { AbsoluteFill, Video, Sequence } from 'remotion';
 import './ViewFilm.css';
 import { RenderCommand } from './RenderCommand';
 import { 
@@ -41,26 +39,6 @@ function ViewFilm() {
   const [selectedTemplate, setSelectedTemplate] = useState('VideoPreviewThenBackToBack');
   const [includedClips, setIncludedClips] = useState([]);
   const playerRef = useRef(null);
-
-  useEffect(() => {
-    fetchFilm();
-    fetchVideos();
-  }, [id]);
-
-  useEffect(() => {
-    if (film?.data) {
-      if (film.data.clips) {
-        setIncludedClips(film.data.clips);
-        setSelectedTags(new Set(film.data.clips));
-      }
-      if (film.data.selectedVideos) {
-        setSelectedVideos(new Set(film.data.selectedVideos));
-      }
-      if (film.data.template) {
-        setSelectedTemplate(film.data.template);
-      }
-    }
-  }, [film]);
 
   const fetchFilm = async () => {
     try {
@@ -145,37 +123,6 @@ function ViewFilm() {
     } catch (error) {
       console.error('Error updating selected videos:', error);
     }
-  };
-
-  const handleTagToggle = (videoId, tagName, frame, videoName, videoFilepath, startFrame, endFrame) => {
-    const tagInfo = {
-      key: `${videoId}-${tagName}-${frame}-${startFrame}-${endFrame}`,
-      videoId,
-      videoName,
-      videoFilepath,
-      tagName,
-      frame,
-      startFrame,
-      endFrame
-    };
-    
-    setSelectedTags(prev => {
-      const newSet = new Set(prev);
-      const existingTag = Array.from(newSet).find(t => 
-        t.videoId === tagInfo.videoId && 
-        t.tagName === tagInfo.tagName && 
-        t.frame === tagInfo.frame &&
-        t.startFrame === tagInfo.startFrame &&
-        t.endFrame === tagInfo.endFrame
-      );
-      
-      if (existingTag) {
-        newSet.delete(existingTag);
-      } else {
-        newSet.add(tagInfo);
-      }
-      return newSet;
-    });
   };
 
   const saveClipsToFilm = async (newClips) => {
@@ -277,10 +224,6 @@ function ViewFilm() {
     }
   };
 
-  if (!film) {
-    return <Layout>Loading...</Layout>;
-  }
-
   const renderPlayerComponent = () => {
     switch (selectedTemplate) {
       case 'VideoPreviewThenBackToBack':
@@ -302,6 +245,30 @@ function ViewFilm() {
         return calculatePreviewThenBackToBackDuration(selectedTags) || 1;
     }
   };
+
+  useEffect(() => {
+    fetchFilm();
+    fetchVideos();
+  }, [id]);
+
+  useEffect(() => {
+    if (film?.data) {
+      if (film.data.clips) {
+        setIncludedClips(film.data.clips);
+        setSelectedTags(new Set(film.data.clips));
+      }
+      if (film.data.selectedVideos) {
+        setSelectedVideos(new Set(film.data.selectedVideos));
+      }
+      if (film.data.template) {
+        setSelectedTemplate(film.data.template);
+      }
+    }
+  }, [film]);
+
+  if (!film) {
+    return <Layout>Loading...</Layout>;
+  }
 
   return (
     <Layout>

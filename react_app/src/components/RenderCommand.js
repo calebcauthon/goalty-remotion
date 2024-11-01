@@ -21,7 +21,7 @@ export const RenderCommand = ({
     return videoWithoutMetadata;
   });
   
-  const command = `npx remotion render src/index.js ${compositionId} --props='${JSON.stringify({
+  const command = `npx remotion render src/index_studio.js ${compositionId} --props='${JSON.stringify({
     selectedVideos,
     videos: videosWithoutMetadata,
     selectedTags
