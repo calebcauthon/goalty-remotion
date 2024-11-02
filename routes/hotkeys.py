@@ -60,4 +60,14 @@ def update_hotkey_shortcuts(group_id):
             return jsonify({'message': 'Shortcuts updated successfully'})
         return jsonify({'error': 'Failed to update shortcuts'}), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 500 
+        return jsonify({'error': str(e)}), 500
+
+@hotkeys_bp.route('/<int:group_id>', methods=['DELETE'])
+def delete_hotkey_group(group_id):
+    try:
+        success = database.delete_hotkey_group(group_id)
+        if success:
+            return jsonify({'message': 'Hotkey group deleted successfully'}), 200
+        return jsonify({'error': 'Hotkey group not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

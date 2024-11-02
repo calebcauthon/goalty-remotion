@@ -35,6 +35,28 @@ function HotkeyConfig() {
     }
   };
 
+  const handleDelete = async (groupId) => {
+    if (!window.confirm('Are you sure you want to delete this hotkey group?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/hotkeys/${groupId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        // Update the local state to remove the deleted group
+        setHotkeyGroups(hotkeyGroups.filter(group => group.id !== groupId));
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to delete hotkey group');
+      }
+    } catch (err) {
+      setError('Failed to delete hotkey group');
+    }
+  };
+
   const renderShortcuts = (shortcuts) => {
     if (!shortcuts || Object.keys(shortcuts).length === 0) {
       return <em>No shortcuts configured</em>;
@@ -84,12 +106,28 @@ function HotkeyConfig() {
                     {renderShortcuts(group.shortcuts)}
                   </td>
                   <td className="actions-cell">
-                    <button 
-                      onClick={() => navigate(`/hotkeys/${group.id}`)}
-                      className="primary-button"
-                    >
-                      View/Edit
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button 
+                        onClick={() => navigate(`/hotkeys/${group.id}`)}
+                        className="primary-button"
+                      >
+                        View/Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(group.id)}
+                        className="delete-button"
+                        style={{
+                          backgroundColor: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          padding: '6px 12px',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

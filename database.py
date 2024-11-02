@@ -274,3 +274,27 @@ def update_film_data(film_id, data):
     except Exception as e:
         print(f"Error updating film data: {e}")
         return False
+
+def delete_hotkey_group(group_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # First check if this is the last group - don't allow deletion if it is
+        cursor.execute('SELECT COUNT(*) FROM hotkeys')
+        count = cursor.fetchone()[0]
+        
+        if count <= 1:
+            return False  # Don't allow deletion of the last group
+            
+        cursor.execute('DELETE FROM hotkeys WHERE id = ?', (group_id,))
+        conn.commit()
+        
+        # Return True if a row was actually deleted
+        return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Error deleting hotkey group: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
