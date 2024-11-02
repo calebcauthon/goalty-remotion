@@ -35,6 +35,7 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags }) 
         const framesRemaining = Math.max(0, clipDuration - framesSinceSequenceStart);
         const secondsRemaining = (framesRemaining / 30).toFixed(1);
 
+        const VIDEO_BASE_URL = process.env.REACT_APP_VIDEO_BASE_URL || 'http://localhost:5000/downloads';
         return (
           <Sequence
             key={tagInfo.key}
@@ -50,7 +51,7 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags }) 
                 }}
               >
                 <Video
-                  src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
+                  src={`${VIDEO_BASE_URL}/${video.filepath.split('/').pop()}`}
                   startFrom={parseInt(tagInfo.startFrame, 10)}
                   endAt={parseInt(tagInfo.endFrame, 10)}
                   style={{
