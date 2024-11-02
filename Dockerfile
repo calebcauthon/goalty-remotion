@@ -19,6 +19,7 @@ RUN apt install -y \
 # Copy everything from your project to the Docker image. Adjust if needed.
 COPY react_app/package.json ./
 COPY react_app/src ./src
+COPY react_app/render.mjs ./render.mjs
 # If you have a public folder:
 #COPY public ./public
 
