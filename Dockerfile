@@ -1,12 +1,5 @@
 FROM node:20-bookworm
 
-# Install Python and pip
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    && rm -rf /var/lib/apt/lists/* \
-    && ln -s /usr/bin/python3 /usr/bin/python
-
 # Install Chrome dependencies
 RUN apt-get update
 RUN apt install -y \
