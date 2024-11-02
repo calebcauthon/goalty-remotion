@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, Video, Sequence, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, Video, Sequence, useCurrentFrame, staticFile } from 'remotion';
 
 export const calculateFirstFiveSecondsDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
@@ -35,7 +35,7 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags }) 
         const framesRemaining = Math.max(0, clipDuration - framesSinceSequenceStart);
         const secondsRemaining = (framesRemaining / 30).toFixed(1);
 
-        const VIDEO_BASE_URL = process.env.REACT_APP_VIDEO_BASE_URL || 'http://localhost:5000/downloads';
+        const VIDEO_BASE_URL = process.env.REACT_APP_VIDEO_BASE_URL ? staticFile(`${video.filepath.split('/').pop()}`) : `http://localhost:5000/downloads/${video.filepath.split('/').pop()}`;
         return (
           <Sequence
             key={tagInfo.key}
@@ -51,7 +51,7 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags }) 
                 }}
               >
                 <Video
-                  src={`${VIDEO_BASE_URL}/${video.filepath.split('/').pop()}`}
+                  src={VIDEO_BASE_URL}
                   startFrom={parseInt(tagInfo.startFrame, 10)}
                   endAt={parseInt(tagInfo.endFrame, 10)}
                   style={{
