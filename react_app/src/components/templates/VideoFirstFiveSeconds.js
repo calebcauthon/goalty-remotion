@@ -10,7 +10,7 @@ export const calculateFirstFiveSecondsDuration = (selectedTags) => {
   }, 0);
 };
 
-export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags }) => {
+export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, useStaticFile }) => {
   const tagArray = Array.from(selectedTags);
   const currentFrame = useCurrentFrame();
 
@@ -35,7 +35,7 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags }) 
         const framesRemaining = Math.max(0, clipDuration - framesSinceSequenceStart);
         const secondsRemaining = (framesRemaining / 30).toFixed(1);
 
-        const VIDEO_BASE_URL = process.env.REACT_APP_VIDEO_BASE_URL ? staticFile(`${video.filepath.split('/').pop()}`) : `http://localhost:5000/downloads/${video.filepath.split('/').pop()}`;
+        const VIDEO_BASE_URL = useStaticFile ? staticFile(`${video.filepath.split('/').pop()}`) : `http://localhost:5000/downloads/${video.filepath.split('/').pop()}`;
         return (
           <Sequence
             key={tagInfo.key}
