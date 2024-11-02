@@ -57,12 +57,14 @@ def download_video():
         # Get file size
         file_size = os.path.getsize(filename)
         
+        height = info['height']
+        width = info['width']
         # Add video to database
         video_id = add_video(
             title=info['title'],
             size=file_size,
             filepath=filename,
-            metadata={'youtube_url': url}
+            metadata={'youtube_url': url, 'extracted_yt_info': info, 'height': height, 'width': width}
         )
         
         return jsonify({
