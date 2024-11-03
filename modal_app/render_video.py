@@ -17,7 +17,12 @@ class RenderVideoRequest(BaseModel):
     props: dict
     output_file_name: str
 
-@app.function(image=remotion_image, timeout=60 * 20, gpu='any', secrets=[modal.Secret.from_name("backblaze-keys")])
+@app.function(
+    image=remotion_image, 
+    timeout=60 * 20, 
+    gpu='any', 
+    secrets=[modal.Secret.from_name("backblaze-keys")]
+)
 @modal.web_endpoint(method="POST")
 def render_video(render_params: RenderVideoRequest):
     import subprocess
