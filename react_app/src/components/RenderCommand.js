@@ -53,17 +53,22 @@ export const RenderCommand = ({
     })();
 
     const other = ((metadata) => {
-      const { tags: metadataTags, ...otherMetadata } = metadata;
+      const { tags: metadataTags, extracted_yt_info, ...otherMetadata } = metadata;
       return otherMetadata;
     })(JSON.parse(metadata));
 
     videoWithoutMetadata.metadata = other;
     return videoWithoutMetadata;
   });
+
+  // Filter videos to only include those in selectedVideos
+  const filteredVideosWithoutMetadata = videosWithoutMetadata.filter(video => 
+    selectedVideos.includes(video.id)
+  );
   
   const command = `npx remotion render src/index_studio.js ${compositionId} --props='${JSON.stringify({
     selectedVideos,
-    videos: videosWithoutMetadata,
+    videos: filteredVideosWithoutMetadata,
     selectedTags
   })}' --codec=h264 ${localOutputFileName}`;
 
