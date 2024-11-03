@@ -10,6 +10,7 @@ import {
   calculatePreviewThenBackToBackDuration,
   calculateFirstFiveSecondsDuration 
 } from './templates';
+import CloudRenderButton from './CloudRenderButton';
 
 export const calculateTotalDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
@@ -405,6 +406,12 @@ function ViewFilm() {
                 height={720}
                 showFirstPartOnly={true}
                 compositionId={selectedTemplate}
+              />
+              <CloudRenderButton 
+                selectedVideos={selectedVideos}
+                videos={videos}
+                selectedTags={selectedTags}
+                outputFileName={`${film.name.replace(/\s+/g, '_')}.mp4`}
               />
             </>
           ) : (

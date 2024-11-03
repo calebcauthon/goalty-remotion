@@ -9,6 +9,7 @@ from datetime import datetime
 from routes.films import films_bp
 from routes.videos import videos_bp
 from routes.hotkeys import hotkeys_bp
+import requests
 
 
 app = Flask(__name__, static_folder='react_app/build', template_folder='templates')
@@ -108,6 +109,20 @@ def serve(path):
 @app.route('/downloads/<path:filename>')
 def serve_video(filename):
     return send_from_directory(DOWNLOAD_DIRECTORY, filename)
+
+@app.route('/api/cloud-render', methods=['POST'])
+def cloud_render():
+    data = request.json
+    url = "https://calebcauthon-dev--remotion-goalty-render-video-render-video.modal.run"
+
+    try:
+        response = requests.post(url, json=data)
+        if response.status_code == 200:
+            return jsonify({'message': 'Cloud render initiated successfully'}), 200
+        else:
+            return jsonify({'error': 'Failed to initiate cloud render', 'status_code': response.status_code, 'response': response.json()}), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Set up argument parser

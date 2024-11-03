@@ -1,7 +1,7 @@
 import modal
 
 remotion_image = (
-  modal.Image.from_registry("ghcr.io/calebcauthon/goalty-remotion:docker", add_python="3.11")
+  modal.Image.from_registry("ghcr.io/calebcauthon/goalty-remotion:master", add_python="3.11")
   .pip_install("requests", "fastapi[standard]")
 )
 
@@ -124,4 +124,4 @@ def render_video(render_params: RenderVideoRequest):
     auth_data = authenticate_backblaze()
     download_videos(auth_data)
     render_mp4(render_params.props, render_params.output_file_name)
-    upload_video(render_params.output_file_name)
+    upload_video(auth_data, render_params.output_file_name)
