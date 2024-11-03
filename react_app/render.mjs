@@ -21,7 +21,13 @@ const require = createRequire(import.meta.url);
 
   console.log("Starting to render composition");
 
+ 
+  const onProgress = ({progress}) => {
+    console.log(`Rendering is ${progress * 100}% complete`);
+  };
+
   await renderMedia({
+    onProgress,
     codec: "h264",
     composition,
     serveUrl: bundled,
