@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Layout from './Layout';
 import './ClipMaker.css';
 import ScoringPossessionProcessor from './processing/ScoringPossessionProcessor';
+import { GlobalContext } from '../index';
 
 function ClipMaker() {
+  const globalData = useContext(GlobalContext);
   const [videos, setVideos] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null);
 
@@ -13,7 +15,7 @@ function ClipMaker() {
 
   const fetchVideos = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/videos/with-tags');
+      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/with-tags`);
       const data = await response.json();
       setVideos(data);
     } catch (error) {
@@ -24,7 +26,7 @@ function ClipMaker() {
   const refreshVideoData = async () => {
     await fetchVideos();
     if (selectedVideo) {
-      const updatedVideos = await (await fetch('http://localhost:5000/api/videos/with-tags')).json();
+      const updatedVideos = await (await fetch(`${globalData.APIbaseUrl}/api/videos/with-tags`)).json();
       const refreshedVideo = updatedVideos.find(v => v.id === selectedVideo.id);
       setSelectedVideo(refreshedVideo);
     }
@@ -59,7 +61,7 @@ function ClipMaker() {
         ...existingTags.slice(tagIndex + 1)
       ];
 
-      const response = await fetch(`http://localhost:5000/api/videos/${selectedVideo.id}/metadata`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/${selectedVideo.id}/metadata`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

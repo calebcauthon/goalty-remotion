@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './StudioHome.css';
+import { GlobalContext } from '../index';
 
 function StudioHome() {
+  const globalData = useContext(GlobalContext);
   const [films, setFilms] = useState([]);
   const [filmToDelete, setFilmToDelete] = useState(null);
   const navigate = useNavigate();
@@ -14,7 +16,7 @@ function StudioHome() {
 
   const fetchFilms = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/films');
+      const response = await fetch(`${globalData.APIbaseUrl}/api/films`);
       const data = await response.json();
       setFilms(data);
     } catch (error) {
@@ -24,7 +26,7 @@ function StudioHome() {
 
   const createNewFilm = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/films', {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/films`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,7 +47,7 @@ function StudioHome() {
 
   const confirmDelete = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/films/${filmToDelete.id}`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/films/${filmToDelete.id}`, {
         method: 'DELETE',
       });
       

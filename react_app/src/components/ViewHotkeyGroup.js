@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './ViewHotkeyGroup.css';
+import { GlobalContext } from '../index';
 
 function ViewHotkeyGroup() {
+  const globalData = useContext(GlobalContext);
   const { id } = useParams();
   const navigate = useNavigate();
   const [group, setGroup] = useState(null);
@@ -19,7 +21,7 @@ function ViewHotkeyGroup() {
   const [editedDescription, setEditedDescription] = useState('');
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/hotkeys/${id}`)
+    fetch(`${globalData.APIbaseUrl}/api/hotkeys/${id}`)
       .then(response => response.json())
       .then(data => {
         if (data.error) {
@@ -44,7 +46,7 @@ function ViewHotkeyGroup() {
 
   const handleSave = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/hotkeys/${id}/rename`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/hotkeys/${id}/rename`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -111,7 +113,7 @@ function ViewHotkeyGroup() {
       delete updatedShortcuts[editingKey];
       updatedShortcuts[newKey] = action;
 
-      const response = await fetch(`http://localhost:5000/api/hotkeys/${id}/update-shortcuts`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/hotkeys/${id}/update-shortcuts`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -148,7 +150,7 @@ function ViewHotkeyGroup() {
         action: editedAction
       };
 
-      const response = await fetch(`http://localhost:5000/api/hotkeys/${id}/update-shortcuts`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/hotkeys/${id}/update-shortcuts`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -189,7 +191,7 @@ function ViewHotkeyGroup() {
         description: editedDescription
       };
 
-      const response = await fetch(`http://localhost:5000/api/hotkeys/${id}/update-shortcuts`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/hotkeys/${id}/update-shortcuts`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -232,7 +234,7 @@ function ViewHotkeyGroup() {
         description: 'New hotkey description'
       };
 
-      const response = await fetch(`http://localhost:5000/api/hotkeys/${id}/update-shortcuts`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/hotkeys/${id}/update-shortcuts`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -256,7 +258,7 @@ function ViewHotkeyGroup() {
       const updatedShortcuts = { ...group.shortcuts };
       delete updatedShortcuts[keyToDelete];
 
-      const response = await fetch(`http://localhost:5000/api/hotkeys/${id}/update-shortcuts`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/hotkeys/${id}/update-shortcuts`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

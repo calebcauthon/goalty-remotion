@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
+import { GlobalContext } from '../index';
 
 export const CloudRenderButton = ({ selectedVideos, videos, selectedTags, outputFileName }) => {
+  const globalData = useContext(GlobalContext);
   const [isRendering, setIsRendering] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState(null);
 
@@ -36,14 +38,13 @@ export const CloudRenderButton = ({ selectedVideos, videos, selectedTags, output
     };
 
     try {
-      const response = await fetch('http://localhost:5000/api/cloud-render', {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/cloud-render`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
       });
-
 
       if (response.ok) {
         const data = await response.json();

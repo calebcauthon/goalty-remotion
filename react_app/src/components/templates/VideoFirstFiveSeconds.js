@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { AbsoluteFill, Video, Sequence, useCurrentFrame, staticFile } from 'remotion';
+import { GlobalContext } from '../../index';
 
 export const calculateFirstFiveSecondsDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
@@ -11,6 +12,7 @@ export const calculateFirstFiveSecondsDuration = (selectedTags) => {
 };
 
 export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, useStaticFile }) => {
+  const globalData = useContext(GlobalContext);
   const tagArray = Array.from(selectedTags);
   const currentFrame = useCurrentFrame();
 
@@ -35,7 +37,10 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
         const framesRemaining = Math.max(0, clipDuration - framesSinceSequenceStart);
         const secondsRemaining = (framesRemaining / 30).toFixed(1);
 
-        const VIDEO_BASE_URL = useStaticFile ? staticFile(`${video.filepath.split('/').pop()}`) : `http://localhost:5000/downloads/${video.filepath.split('/').pop()}`;
+        const VIDEO_BASE_URL = useStaticFile 
+          ? staticFile(`${video.filepath.split('/').pop()}`) 
+          : video.filepath;
+
         return (
           <Sequence
             key={tagInfo.key}

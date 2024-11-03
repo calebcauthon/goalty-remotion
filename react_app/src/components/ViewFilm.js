@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from './Layout';
 import { Player } from '@remotion/player';
@@ -11,6 +11,7 @@ import {
   calculateFirstFiveSecondsDuration 
 } from './templates';
 import { CloudRenderButton } from './CloudRenderButton';
+import { GlobalContext } from '../index';
 
 export const calculateTotalDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
@@ -30,6 +31,7 @@ const calculateStartFrameForClip = (clips, currentIndex) => {
 };
 
 function ViewFilm() {
+  const globalData = useContext(GlobalContext);
   const [film, setFilm] = useState(null);
   const [videos, setVideos] = useState([]);
   const { id } = useParams();
@@ -43,7 +45,7 @@ function ViewFilm() {
 
   const fetchFilm = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/films/${id}`);
+      const response = await fetch(`${globalData.APIbaseUrl}/api/films/${id}`);
       const data = await response.json();
       if (data.data && typeof data.data === 'string') {
         data.data = JSON.parse(data.data);
@@ -56,7 +58,7 @@ function ViewFilm() {
 
   const fetchVideos = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/videos/with-tags');
+      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/with-tags`);
       const data = await response.json();
       setVideos(data);
     } catch (error) {
@@ -66,7 +68,7 @@ function ViewFilm() {
 
   const handleSaveTitle = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/films/${id}/name`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/films/${id}/name`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +99,7 @@ function ViewFilm() {
     });
 
     try {
-      const response = await fetch(`http://localhost:5000/api/films/${id}/data`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -128,7 +130,7 @@ function ViewFilm() {
 
   const saveClipsToFilm = async (newClips) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/films/${id}/data`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -184,7 +186,7 @@ function ViewFilm() {
 
   const saveTemplateToFilm = async (template) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/films/${id}/data`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './HotkeyConfig.css';
+import { GlobalContext } from '../index';
 
 function HotkeyConfig() {
+  const globalData = useContext(GlobalContext);
   const [hotkeyGroups, setHotkeyGroups] = useState([]);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/hotkeys')
+    fetch(`${globalData.APIbaseUrl}/api/hotkeys`)
       .then(response => response.json())
       .then(data => setHotkeyGroups(data))
       .catch(err => setError('Failed to load hotkey configurations'));
@@ -17,7 +19,7 @@ function HotkeyConfig() {
 
   const handleAddNew = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/hotkeys/new', {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/hotkeys/new`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -41,7 +43,7 @@ function HotkeyConfig() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/hotkeys/${groupId}`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/hotkeys/${groupId}`, {
         method: 'DELETE',
       });
       

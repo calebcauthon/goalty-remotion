@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { AbsoluteFill, Video, Sequence } from 'remotion';
+import { GlobalContext } from '../../index';
 
 export const calculatePreviewThenBackToBackDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
@@ -15,6 +16,7 @@ export const calculatePreviewThenBackToBackDuration = (selectedTags) => {
 };
 
 export const VideoPreviewThenBackToBack = ({ selectedVideos, videos, selectedTags }) => { 
+  const globalData = useContext(GlobalContext);
   const tagArray = Array.from(selectedTags);
 
   return (
@@ -46,7 +48,7 @@ export const VideoPreviewThenBackToBack = ({ selectedVideos, videos, selectedTag
                     {`${video.name} - ${tagInfo.tagName} (${tagInfo.startFrame}-${tagInfo.endFrame})`}
                   </p>
                   <Video
-                    src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
+                    src={video.filepath}
                     startFrom={parseInt(tagInfo.startFrame || '0', 10)}
                     endAt={parseInt(tagInfo.endFrame || '0', 10)}
                     style={{
@@ -91,7 +93,7 @@ export const VideoPreviewThenBackToBack = ({ selectedVideos, videos, selectedTag
                     {`${video.name} - ${tagInfo.tagName} (${tagInfo.startFrame}-${tagInfo.endFrame})`}
                   </p>
                   <Video
-                    src={`http://localhost:5000/downloads/${video.filepath.split('/').pop()}`}
+                    src={video.filepath}
                     startFrom={parseInt(tagInfo.startFrame, 10)}
                     endAt={parseInt(tagInfo.endFrame, 10)}
                     style={{

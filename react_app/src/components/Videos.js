@@ -6,6 +6,7 @@ import { GlobalContext } from '../index';
 import './Videos.css';
 
 function Videos() {
+  const globalData = useContext(GlobalContext);
   const [url, setUrl] = useState('');
   const [message, setMessage] = useState('');
   const [videos, setVideos] = useState([]);
@@ -17,7 +18,7 @@ function Videos() {
 
   const fetchVideos = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/videos');
+      const response = await axios.get(`${globalData.APIbaseUrl}/api/videos`);
       
       const videos = response.data;
       videos.forEach(video => {
@@ -34,10 +35,10 @@ function Videos() {
     e.preventDefault();
     setMessage('Processing...');
     try {
-      const response = await axios.get(`http://localhost:5000/api/download?url=${encodeURIComponent(url)}`);
+      const response = await axios.get(`${globalData.APIbaseUrl}/api/download?url=${encodeURIComponent(url)}`);
       setMessage(`Video added successfully! ID: ${response.data.video_id}`);
       setUrl('');
-      fetchVideos(); // Refresh the video list after adding a new video
+      fetchVideos();
     } catch (error) {
       setMessage('Error adding video. Please try again.');
       console.error('Error:', error);
@@ -49,14 +50,13 @@ function Videos() {
   };
 
   const handleDelete = async (id, e) => {
-    // Stop the row click event from triggering
     e.stopPropagation();
     
     if (window.confirm('Are you sure you want to delete this video?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/videos/${id}`);
+        await axios.delete(`${globalData.APIbaseUrl}/api/videos/${id}`);
         setMessage('Video deleted successfully');
-        fetchVideos(); // Refresh the list
+        fetchVideos();
       } catch (error) {
         setMessage('Error deleting video');
         console.error('Error:', error);
@@ -64,11 +64,10 @@ function Videos() {
     }
   };
 
-  const globalData = useContext(GlobalContext);
   return (
     <Layout>
       <div className="videos-container">
-        <h1>Add YouTube Video {globalData.APIbaseUrl}</h1>
+        <h1>Add YouTube Video</h1>
         <form onSubmit={handleSubmit} className="video-form">
           <input
             type="text"

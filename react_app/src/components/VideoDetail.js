@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from './Layout';
 import axios from 'axios';
@@ -15,8 +15,10 @@ import { useSpeedController } from './hotkeys/SpeedController';
 import { usePlayPauseController } from './hotkeys/PlayPauseController';
 import { debounce } from 'lodash';
 import { FaPencilAlt, FaSave } from 'react-icons/fa';
+import { GlobalContext } from '../index'; 
 
 function VideoDetail() {
+  const globalData = useContext(GlobalContext);
   const { id } = useParams();
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ function VideoDetail() {
   useEffect(() => {
     const fetchVideoDetails = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/videos/${id}`);
+        const response = await axios.get(`${globalData.APIbaseUrl}/api/videos/${id}`);
         setVideo(response.data);
         setMetadata(JSON.stringify(response.data.metadata, null, 2));
         setParsedMetadata(response.data.metadata);
@@ -72,7 +74,7 @@ function VideoDetail() {
   useEffect(() => {
     const fetchHotkeys = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/hotkeys/');
+        const response = await axios.get(`${globalData.APIbaseUrl}/api/hotkeys/`);
         setHotkeyGroups(response.data);
         if (response.data.length > 0) {
           setActiveGroupId(response.data[0].id);
@@ -108,7 +110,7 @@ function VideoDetail() {
 
     setSaveButtonText('Saving...');
     try {
-      await axios.post(`http://localhost:5000/api/videos/${id}/metadata`, { metadata });
+      await axios.post(`${globalData.APIbaseUrl}/api/videos/${id}/metadata`, { metadata });
       setSaveButtonText('Saved ✅');
       setTimeout(() => {
         setSaveButtonText('Save Metadata');
@@ -252,7 +254,7 @@ function VideoDetail() {
 
   const handleTitleSave = async () => {
     try {
-      await axios.put(`http://localhost:5000/api/videos/${id}/title`, {
+      await axios.put(`${globalData.APIbaseUrl}/api/videos/${id}/title`, {
         title: editedTitle
       });
       setVideo(prev => ({ ...prev, title: editedTitle }));

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { GlobalContext } from '../../index';
 
 export const findValidSequences = (tags, startTagName, endTagName, excludeTagNames, outputTagName) => {
   const sortedTags = [...tags].sort((a, b) => a.startFrame - b.startFrame);
@@ -44,6 +45,7 @@ function ScoringPossessionProcessor({
   outputTagName,
   buttonText
 }) {
+  const globalData = useContext(GlobalContext);
   const [proposedTags, setProposedTags] = useState([]);
 
   const processClips = () => {
@@ -65,12 +67,11 @@ function ScoringPossessionProcessor({
     if (!selectedVideo || proposedTags.length === 0) return;
 
     try {
-      // Get existing metadata and add new tags
       const metadata = selectedVideo.metadata ? JSON.parse(selectedVideo.metadata) : {};
       const existingTags = metadata.tags || [];
       const updatedTags = [...existingTags, ...proposedTags];
 
-      const response = await fetch(`http://localhost:5000/api/videos/${selectedVideo.id}/metadata`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/${selectedVideo.id}/metadata`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,10 +83,7 @@ function ScoringPossessionProcessor({
 
       if (!response.ok) throw new Error('Failed to save tags');
 
-      // Clear proposed tags
       setProposedTags([]);
-      
-      // Notify parent component
       onTagsApproved();
     } catch (error) {
       console.error('Error saving proposed tags:', error);

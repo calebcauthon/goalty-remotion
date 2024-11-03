@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { GlobalContext } from '../../index';
 
 function PlaySequenceProcessor({ selectedVideo, onTagsApproved }) {
+  const globalData = useContext(GlobalContext);
   const [proposedTags, setProposedTags] = useState([]);
 
   const findClearSuccess = (tags) => {
@@ -138,7 +140,7 @@ function PlaySequenceProcessor({ selectedVideo, onTagsApproved }) {
       const existingTags = metadata.tags || [];
       const updatedTags = [...existingTags, ...proposedTags];
 
-      const response = await fetch(`http://localhost:5000/api/videos/${selectedVideo.id}/metadata`, {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/${selectedVideo.id}/metadata`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

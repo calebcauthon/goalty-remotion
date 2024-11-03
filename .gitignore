@@ -5,4 +5,4 @@ videos.db
 react_app/out
 *.mp4
 *.bak
-.env
+.env*
