@@ -49,7 +49,7 @@ function VideoDetail() {
         setParsedMetadata(response.data.metadata);
         
         // Get video metadata using Remotion
-        const videoUrl = `http://localhost:5000/downloads/${response.data.filepath.split('/').pop()}`;
+        const videoUrl = response.data.filepath;
         const metadata = await getVideoMetadata(videoUrl);
         const assumedFps = 30;
         metadata.fps = assumedFps;
@@ -321,7 +321,7 @@ function VideoDetail() {
             ref={playerRef}
             component={VideoPlayer}
             inputProps={{
-              src: `http://localhost:5000/downloads/${video.filepath.split('/').pop()}`,
+              src: video.filepath,
               onFrameUpdate: handleFrameUpdate
             }}
             durationInFrames={durationInFrames}
