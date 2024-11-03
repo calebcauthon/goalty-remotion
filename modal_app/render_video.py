@@ -76,10 +76,12 @@ def render_video(render_params: RenderVideoRequest):
     def render_mp4(props, output_file_name):
       # Write output filename to a temporary file
       with open('/tmp/filename.txt', 'w') as f:
+          print(f"Writing output filename to /tmp/filename.txt: {output_file_name}")
           f.write(output_file_name)
 
       # Write props to a temporary file
       with open('/tmp/props.json', 'w') as f:
+          print(f"Writing props to /tmp/props.json: {props}")
           json.dump(props, f)
 
       subprocess.run([

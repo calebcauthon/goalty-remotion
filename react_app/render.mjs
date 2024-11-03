@@ -9,6 +9,9 @@ const require = createRequire(import.meta.url);
   const inputProps = JSON.parse(require('fs').readFileSync('/tmp/props.json', 'utf8'));
   const outputFileName = require('fs').readFileSync('/tmp/filename.txt', 'utf8');
 
+  console.log(`Input props: ${JSON.stringify(inputProps)}`);
+  console.log(`Output filename: ${outputFileName}`);
+
   const bundled = await bundle({
     entryPoint: require.resolve("./src/index_studio.js"),
     // If you have a webpack override in remotion.config.ts, pass it here as well.
