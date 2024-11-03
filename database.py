@@ -1,8 +1,9 @@
 import sqlite3
 import json
 from pathlib import Path
+import os
 
-DATABASE_FILE = 'videos.db'
+DATABASE_FILE = os.getenv('DATABASE_FILE', 'videos.db')
 
 def get_db_connection():
     conn = sqlite3.connect(DATABASE_FILE)
