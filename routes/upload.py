@@ -10,6 +10,32 @@ DOWNLOAD_DIRECTORY = 'downloads'
 if not os.path.exists(DOWNLOAD_DIRECTORY):
     os.makedirs(DOWNLOAD_DIRECTORY)
 
+def download_from_youtube(url):
+    """
+    Downloads a video from YouTube and returns its information.
+    
+    Args:
+        url (str): YouTube URL to download from
+        
+    Returns:
+        tuple: (filename, video_id, info)
+        
+    Raises:
+        Exception: If download fails
+    """
+    ydl_opts = {
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'outtmpl': f'{DOWNLOAD_DIRECTORY}/%(title)s.%(ext)s'
+    }
+
+    info = None
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=True)
+        filename = ydl.prepare_filename(info)
+     
+    return filename, info
+
 @upload_bp.route('/download', methods=['GET'])
 def download_video():
     url = request.args.get('url')
@@ -26,33 +52,21 @@ def download_video():
             'video_id': 0
         }), 200
 
-    ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'outtmpl': f'{DOWNLOAD_DIRECTORY}/%(title)s.%(ext)s'
-    }
+    filename, info = download_from_youtube(url)
 
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            filename = ydl.prepare_filename(info)
-        
-        # Get file size
-        file_size = os.path.getsize(filename)
-        
-        height = info['height']
-        width = info['width']
-        # Add video to database
-        video_id = add_video(
-            title=info['title'],
-            size=file_size,
-            filepath=filename,
-            metadata={'youtube_url': url, 'extracted_yt_info': info, 'height': height, 'width': width}
-        )
-        
-        return jsonify({
-            'message': 'Video downloaded successfully',
-            'filename': os.path.basename(filename),
-            'video_id': video_id
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500 
+    file_size = os.path.getsize(filename)
+    height = info['height']
+    width = info['width']
+    
+    video_id = add_video(
+        title=info['title'],
+        size=file_size,
+        filepath=filename,
+        metadata={'youtube_url': url, 'extracted_yt_info': info, 'height': height, 'width': width}
+    )
+
+    return jsonify({
+        'message': 'Video downloaded successfully',
+        'filename': os.path.basename(filename),
+        'video_id': video_id
+    }), 200
