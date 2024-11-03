@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import axios from 'axios';
+import { GlobalContext } from '../index';
 import './Videos.css';
 
 function Videos() {
@@ -63,10 +64,11 @@ function Videos() {
     }
   };
 
+  const globalData = useContext(GlobalContext);
   return (
     <Layout>
       <div className="videos-container">
-        <h1>Add YouTube Video</h1>
+        <h1>Add YouTube Video {globalData.APIbaseUrl}</h1>
         <form onSubmit={handleSubmit} className="video-form">
           <input
             type="text"

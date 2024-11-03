@@ -2,16 +2,22 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
-//import reportWebVitals from './reportWebVitals';
+
+// Create a new context
+export const GlobalContext = React.createContext();
+
+// Define your global variables/state
+const globalState = {
+  // Read API base URL from environment variables with fallback
+  APIbaseUrl: process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000',
+  anotherVariable: 42,
+};
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <GlobalContext.Provider value={globalState}>
+      <App />
+    </GlobalContext.Provider>
   </React.StrictMode>
 );
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-//reportWebVitals();
