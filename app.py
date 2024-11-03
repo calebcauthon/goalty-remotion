@@ -10,6 +10,8 @@ from routes.films import films_bp
 from routes.videos import videos_bp
 from routes.hotkeys import hotkeys_bp
 import requests
+from b2sdk.v2 import *
+import time
 
 
 app = Flask(__name__, static_folder='react_app/build', template_folder='templates')
@@ -29,6 +31,18 @@ if not os.path.exists(DOWNLOAD_DIRECTORY):
 
 # Add a global variable to track test mode
 test_mode = False
+
+info = InMemoryAccountInfo()
+b2_api = B2Api(info)
+
+# Add your B2 credentials - you'll want to move these to environment variables
+B2_KEY_ID = os.getenv('B2_KEY_ID')
+B2_APPLICATION_KEY = os.getenv('B2_APP_KEY')
+B2_BUCKET_NAME = 'remotion-videos'
+
+# Initialize B2 connection
+b2_api.authorize_account("production", B2_KEY_ID, B2_APPLICATION_KEY)
+bucket = b2_api.get_bucket_by_name(B2_BUCKET_NAME)
 
 @app.route('/api/download', methods=['GET'])
 def download_video():
@@ -113,16 +127,24 @@ def serve_video(filename):
 @app.route('/api/cloud-render', methods=['POST'])
 def cloud_render():
     data = request.json
+    filename = data.get('output_file_name')
     url = "https://calebcauthon-dev--remotion-goalty-render-video-render-video.modal.run"
 
-    try:
-        response = requests.post(url, json=data)
-        if response.status_code == 200:
-            return jsonify({'message': 'Cloud render initiated successfully'}), 200
-        else:
-            return jsonify({'error': 'Failed to initiate cloud render', 'status_code': response.status_code, 'response': response.json()}), response.status_code
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    response = requests.post(url, json=data)
+    print(response.json())
+    if response.status_code == 200:
+        download_url = bucket.get_download_url(filename)
+
+        return jsonify({
+            'message': 'Cloud render completed successfully',
+            'download_url': download_url
+        }), 200
+    else:
+        return jsonify({
+            'error': 'Failed to initiate cloud render', 
+            'status_code': response.status_code, 
+            'response': response.json()
+        }), response.status_code
 
 if __name__ == '__main__':
     # Set up argument parser

@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
-function CloudRenderButton({ selectedVideos, videos, selectedTags, outputFileName }) {
+export const CloudRenderButton = ({ selectedVideos, videos, selectedTags, outputFileName }) => {
+  const [isRendering, setIsRendering] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState(null);
+
   const videosWithoutMetadata = videos.map(video => {
     const { videoWithoutMetadata, metadata } = (() => {
       const { metadata, tags: videoTags, ...rest } = video;
@@ -41,21 +44,43 @@ function CloudRenderButton({ selectedVideos, videos, selectedTags, outputFileNam
         body: JSON.stringify(payload),
       });
 
+
       if (response.ok) {
+        const data = await response.json();
         console.log('Cloud render initiated successfully');
+        setDownloadUrl(data.download_url);
+        setIsRendering(false);
       } else {
         console.error('Failed to initiate cloud render');
+        setIsRendering(false);
       }
     } catch (error) {
       console.error('Error initiating cloud render:', error);
+      setIsRendering(false);
     }
   };
 
   return (
-    <button onClick={handleCloudRender} className="cloud-render-button">
-      Cloud Render
-    </button>
+    <div>
+      <button 
+        onClick={() => {
+          setIsRendering(true);
+          handleCloudRender();
+        }} 
+        className="cloud-render-button"
+        disabled={isRendering}
+      >
+        {isRendering ? 'Rendering...' : 'Cloud Render'}
+      </button>
+      {downloadUrl && (
+        <div style={{marginTop: '10px'}}>
+          <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
+            Download Video
+          </a>
+        </div>
+      )}
+    </div>
   );
-}
+};
 
 export default CloudRenderButton; 

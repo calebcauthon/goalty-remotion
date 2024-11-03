@@ -113,4 +113,45 @@
 .modal-buttons button[type="button"] {
   background: #6c757d;
   color: white;
+}
+
+.cloud-render-container {
+  margin-top: 20px;
+}
+
+.cloud-render-button {
+  padding: 10px 20px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.cloud-render-button.rendering {
+  background-color: #ffd700;
+  cursor: not-allowed;
+  animation: pulse 1.5s infinite;
+}
+
+.cloud-render-button.complete {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.cloud-render-button.error {
+  background-color: #f44336;
+  color: white;
+}
+
+.error-message {
+  color: #f44336;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
 } 

@@ -10,7 +10,7 @@ import {
   calculatePreviewThenBackToBackDuration,
   calculateFirstFiveSecondsDuration 
 } from './templates';
-import CloudRenderButton from './CloudRenderButton';
+import { CloudRenderButton } from './CloudRenderButton';
 
 export const calculateTotalDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
