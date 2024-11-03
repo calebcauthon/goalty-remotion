@@ -4,3 +4,5 @@ videos.db
 **/*.pyc
 react_app/out
 *.mp4
+*.bak
+.env
