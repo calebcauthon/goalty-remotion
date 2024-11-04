@@ -499,6 +499,51 @@ function ViewFilm() {
           )}
         </div>
 
+        {film.data.renders && film.data.renders.length > 0 && (
+          <div className="render-history">
+            <h3>Render History</h3>
+            <table className="render-history-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Filename</th>
+                  <th>Size</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {film.data.renders
+                  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) // Sort by newest first
+                  .map((render, index) => (
+                    <tr key={index}>
+                      <td>{new Date(render.timestamp).toLocaleString()}</td>
+                      <td>{render.filename}</td>
+                      <td>{render.size ? `${(render.size / 1024 / 1024).toFixed(2)} MB` : '-'}</td>
+                      <td>
+                        <span className={`status-${render.status.toLowerCase()}`}>
+                          {render.status}
+                        </span>
+                      </td>
+                      <td>
+                        {render.b2_url && (
+                          <a 
+                            href={render.b2_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="download-link"
+                          >
+                            Download
+                          </a>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
         <div className="video-table-container">
           <h2>Videos</h2>
           <table className="film-table">
@@ -580,40 +625,6 @@ function ViewFilm() {
             </tbody>
           </table>
         </div>
-
-        {film.data.renders && film.data.renders.length > 0 && (
-          <div className="render-history">
-            <h3>Render History</h3>
-            <table className="render-history-table">
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>Filename</th>
-                  <th>Size</th>
-                  <th>Download</th>
-                </tr>
-              </thead>
-              <tbody>
-                {film.data.renders.map((render, index) => (
-                  <tr key={index}>
-                    <td>{new Date(render.timestamp).toLocaleString()}</td>
-                    <td>{render.filename}</td>
-                    <td>{(render.size / 1024 / 1024).toFixed(2)} MB</td>
-                    <td>
-                      <a 
-                        href={render.b2_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                      >
-                        Download
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
     </Layout>
   );
