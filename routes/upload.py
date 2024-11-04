@@ -159,4 +159,64 @@ def upload_file():
         'download_url': b2_info['download_url']
     }), 200
     
+@upload_bp.route('/videos/manual', methods=['POST'])
+def manual_video_entry():
+    data = request.json
+    
+    if not all(k in data for k in ['title', 'size', 'filepath']):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    # Add to database without B2 upload
+    video_id = add_video(
+        title=data['title'],
+        size=data['size'],
+        filepath=data['filepath'],
+        metadata=data.get('metadata', {'source': 'manual_entry'})
+    )
+
+    return jsonify({
+        'message': 'Video added manually',
+        'video_id': video_id
+    }), 200
+    
+@upload_bp.route('/extract-youtube', methods=['GET'])
+def extract_youtube_info():
+    url = request.args.get('url')
+    if not url:
+        return jsonify({'error': 'No URL provided'}), 400
+
+    try:
+        ydl_opts = {
+            'format': 'best',  # We don't actually download, just get info
+            'quiet': True,
+            'no_warnings': True,
+            'extract_flat': True,
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            # Get format with max width
+            formats = info.get('formats', [])
+            max_width_format = max(formats, key=lambda f: f.get('width', 0) if f.get('width') is not None else 0)
+            info['formats'] = [max_width_format] if max_width_format else []
+            info['thumbnails'] = []
+            info['width'] = max_width_format.get('width')
+            info['height'] = max_width_format.get('height')
+
+            # Extract relevant fields for our metadata
+            return jsonify({
+                'title': info.get('title'),
+                'size': info.get('filesize') or 0,  # Some videos may not have size info
+                'metadata': {
+                    'youtube_url': url,
+                    'extracted_yt_info': info,
+                    'height': info.get('height'),
+                    'width': info.get('width'),
+                    'tags': []  # Initialize empty tags array
+                }
+            }), 200
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+    
   
