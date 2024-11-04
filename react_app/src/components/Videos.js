@@ -46,20 +46,6 @@ function Videos() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage('Processing...');
-    try {
-      const response = await axios.get(`${globalData.APIbaseUrl}/api/download?url=${encodeURIComponent(url)}`);
-      setMessage(`Video added successfully! ID: ${response.data.video_id}`);
-      setUrl('');
-      fetchVideos();
-    } catch (error) {
-      setMessage('Error adding video. Please try again.');
-      console.error('Error:', error);
-    }
-  };
-
   const handleVideoClick = (id) => {
     navigate(`/videos/${id}`);
   };
@@ -76,36 +62,6 @@ function Videos() {
         setMessage('Error deleting video');
         console.error('Error:', error);
       }
-    }
-  };
-
-  const handleFileUpload = async (e) => {
-    e.preventDefault();
-    if (!selectedFile) {
-      setMessage('Please select a file first');
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    
-    setMessage('Uploading...');
-    try {
-      const response = await axios.post(
-        `${globalData.APIbaseUrl}/api/upload-file`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-      setMessage(`Video uploaded successfully! ID: ${response.data.video_id}`);
-      setSelectedFile(null);
-      fetchVideos();
-    } catch (error) {
-      setMessage('Error uploading video. Please try again.');
-      console.error('Error:', error);
     }
   };
 
@@ -185,31 +141,6 @@ function Videos() {
   return (
     <Layout>
       <div className="videos-container">
-        <h1>Add Video</h1>
-        
-        <form onSubmit={handleSubmit} className="video-form">
-          <h3>From YouTube URL</h3>
-          <input
-            type="text"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="Enter YouTube URL"
-            className="video-input"
-          />
-          <button type="submit" className="video-submit">Submit</button>
-        </form>
-
-        <form onSubmit={handleFileUpload} className="video-form">
-          <h3>Upload Local Video</h3>
-          <input
-            type="file"
-            onChange={(e) => setSelectedFile(e.target.files[0])}
-            accept=".mp4,.mov,.avi,.mkv"
-            className="video-input"
-          />
-          <button type="submit" className="video-submit">Upload</button>
-        </form>
-
         <button 
           onClick={() => setIsModalOpen(true)}
           className="video-submit"
