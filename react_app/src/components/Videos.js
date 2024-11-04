@@ -5,6 +5,7 @@ import axios from 'axios';
 import { GlobalContext } from '../index';
 import './Videos.css';
 import Modal from 'react-modal';
+import { FaTrash } from 'react-icons/fa';
 
 function Videos() {
   const globalData = useContext(GlobalContext);
@@ -279,33 +280,26 @@ function Videos() {
 
         <h2>Video List</h2>
         <table className="video-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Title</th>
-              <th>Size</th>
-              <th>Filepath</th>
-              <th>Tags</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
           <tbody>
             {videos.map((video) => (
-              <tr key={video.id} onClick={() => handleVideoClick(video.id)} className="clickable-row">
-                <td>{video.id}</td>
-                <td className="video-title">{video.title}</td>
-                <td>{(video.size / 1024 / 1024).toFixed(2)} MB</td>
-                <td>{video.filepath}</td>
-                <td>{video.metadata?.tags?.length || 0}</td>
-                <td>
-                  <button 
-                    onClick={(e) => handleDelete(video.id, e)}
-                    className="delete-button"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
+              <React.Fragment key={video.id}>
+                <tr className="main-row" onClick={() => handleVideoClick(video.id)}>
+                  <td className="video-title">{video.title}</td>
+                  <td className="actions-cell">
+                    <button 
+                      onClick={(e) => handleDelete(video.id, e)}
+                      className="delete-button"
+                    >
+                      <FaTrash />
+                    </button>
+                  </td>
+                </tr>
+                <tr className="metadata-row" onClick={() => handleVideoClick(video.id)}>
+                  <td colSpan="2">
+                    {video.filepath} • {(video.size / 1024 / 1024).toFixed(2)} MB • {video.metadata?.tags?.length || 0} tags
+                  </td>
+                </tr>
+              </React.Fragment>
             ))}
           </tbody>
         </table>
