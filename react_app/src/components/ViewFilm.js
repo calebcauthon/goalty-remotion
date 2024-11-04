@@ -258,7 +258,21 @@ function ViewFilm() {
       
       if (data.status === 'completed') {
         setRenderStatus('completed');
-        // Update film metadata with render info
+        
+        // Get existing renders or initialize empty array
+        const existingRenders = film.data.renders || [];
+        
+        // Add new render to the list
+        const newRender = {
+          filename: data.filename,
+          b2_url: data.b2_url,
+          timestamp: data.timestamp,
+          file_id: data.file_id,
+          size: data.size,
+          status: 'completed'
+        };
+
+        // Update film metadata with new render info
         await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
           method: 'PUT',
           headers: {
@@ -267,14 +281,20 @@ function ViewFilm() {
           body: JSON.stringify({
             data: {
               ...film.data,
-              lastRender: {
-                filename: filename,
-                timestamp: new Date().toISOString(),
-                status: 'completed'
-              }
+              renders: [...existingRenders, newRender]
             }
           }),
         });
+
+        // Update local film state
+        setFilm(prevFilm => ({
+          ...prevFilm,
+          data: {
+            ...prevFilm.data,
+            renders: [...existingRenders, newRender]
+          }
+        }));
+
         return true;
       }
       return false;
@@ -560,6 +580,40 @@ function ViewFilm() {
             </tbody>
           </table>
         </div>
+
+        {film.data.renders && film.data.renders.length > 0 && (
+          <div className="render-history">
+            <h3>Render History</h3>
+            <table className="render-history-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Filename</th>
+                  <th>Size</th>
+                  <th>Download</th>
+                </tr>
+              </thead>
+              <tbody>
+                {film.data.renders.map((render, index) => (
+                  <tr key={index}>
+                    <td>{new Date(render.timestamp).toLocaleString()}</td>
+                    <td>{render.filename}</td>
+                    <td>{(render.size / 1024 / 1024).toFixed(2)} MB</td>
+                    <td>
+                      <a 
+                        href={render.b2_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                      >
+                        Download
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </Layout>
   );

@@ -15,14 +15,21 @@ bucket = b2_api.get_bucket_by_name(B2_BUCKET_NAME)
 
 
 def check_file_exists_in_b2(filename):
-    files = []
-    for file_version, folder_name in bucket.ls(latest_only=True):
-        files.append({
-            'name': file_version.file_name,
-            'timestamp': file_version.upload_timestamp,
-            'folder': folder_name
-        })
-    if filename in [file['name'] for file in files]:
-        return True
-    else:
-        return False
+    try:
+        # Get file info directly using file name
+        file_version = bucket.get_file_info_by_name(filename)
+        
+        # If we get here, file exists - construct response
+        file_info = {
+            'download_url': f"https://f004.backblazeb2.com/file/{B2_BUCKET_NAME}/{filename}",
+            'upload_timestamp': file_version.upload_timestamp,
+            'file_id': file_version.id_,
+            'size': file_version.size
+        }
+        return True, file_info
+        
+    except FileNotFoundError:
+        return False, None
+    except Exception as e:
+        print(f"Error checking B2 file: {str(e)}")
+        return False, None

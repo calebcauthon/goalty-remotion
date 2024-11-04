@@ -125,10 +125,21 @@ def extract_youtube_info():
 @upload_bp.route('/check-render/<filename>', methods=['GET'])
 def check_render_status(filename):
     try:
-        # Check if file exists in B2
-        exists = check_file_exists_in_b2(filename)
+        # Check if file exists in B2 and get its URL
+        exists, file_info = check_file_exists_in_b2(filename)
+        
+        if exists:
+            return jsonify({
+                'status': 'completed',
+                'filename': filename,
+                'b2_url': file_info['download_url'],
+                'timestamp': file_info['upload_timestamp'],
+                'file_id': file_info['file_id'],
+                'size': file_info['size']
+            })
+        
         return jsonify({
-            'status': 'completed' if exists else 'rendering',
+            'status': 'rendering',
             'filename': filename
         })
     except Exception as e:
