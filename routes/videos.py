@@ -3,6 +3,7 @@ import json
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 import database
+from b2 import b2_api, bucket
 from database import add_video, get_video, get_tables, get_table_data, execute_query, update_video_metadata, commit_query
 
 videos_bp = Blueprint('videos', __name__)
@@ -70,23 +71,22 @@ def save_video_metadata(video_id):
 
 @videos_bp.route('/<int:video_id>', methods=['DELETE'])
 def delete_video(video_id):
-    try:
-        # Get the video information first
-        video = get_video(video_id)
-        if not video:
-            return jsonify({'error': 'Video not found'}), 404
+    video = get_video(video_id)
+    if not video:
+        return jsonify({'error': 'Video not found'}), 404
 
-        # Delete the file from the filesystem
-        if os.path.exists(video['filepath']):
-            os.remove(video['filepath'])
+    filename = video['filepath'].split('/')[-1]
 
-        # Delete from database
-        query = "DELETE FROM videos WHERE id = ?"
-        commit_query(query, (video_id,))
+    if 'b2_file_id' in video.get('metadata', {}).keys():
+        bucket.delete_file_version(video['metadata']['b2_file_id'], filename)
+    else:
+        print(f"b2 file_id not found for Video: {video}")
 
-        return jsonify({'message': 'Video deleted successfully'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    # Delete from database
+    query = "DELETE FROM videos WHERE id = ?"
+    commit_query(query, (video_id,))
+
+    return jsonify({'message': 'Video deleted successfully'}), 200
 
 @videos_bp.route('/<int:video_id>/title', methods=['PUT'])
 def update_video_title(video_id):
