@@ -126,3 +126,32 @@
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
+.range-slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.frame-range-slider {
+  width: 100%;
+  height: 20px;
+}
+
+.frame-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #4CAF50;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.frame-range-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #4CAF50;
+  border-radius: 50%;
+  cursor: pointer;
+}

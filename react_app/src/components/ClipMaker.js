@@ -6,6 +6,7 @@ import { GlobalContext } from '../index';
 import { Player } from '@remotion/player';
 import { getVideoMetadata } from '@remotion/media-utils';
 import VideoPlayer from './VideoPlayer';
+import FrameRangeSlider from './FrameRangeSlider';
 
 function ClipMaker() {
   const globalData = useContext(GlobalContext);
@@ -183,8 +184,19 @@ function ClipMaker() {
                         {tag.startFrame}-{tag.endFrame}
                       </td>
                       <td>
-                        {tag.startFrame ? `${(tag.startFrame / 30).toFixed(2)}s` : ''}-
-                        {tag.endFrame ? `${(tag.endFrame / 30).toFixed(2)}s` : ''}
+                        {tag.startFrame && tag.endFrame ? (
+                          <FrameRangeSlider
+                            startFrame={tag.startFrame}
+                            endFrame={tag.endFrame}
+                            onFrameSelect={handleTagClick}
+                            fps={videoMetadata?.fps || 30}
+                          />
+                        ) : (
+                          <>
+                            {tag.startFrame ? `${(tag.startFrame / 30).toFixed(2)}s` : ''}-
+                            {tag.endFrame ? `${(tag.endFrame / 30).toFixed(2)}s` : ''}
+                          </>
+                        )}
                       </td>
                       <td 
                         style={tag.frame ? {cursor: 'pointer', textDecoration: 'underline'} : {}}
