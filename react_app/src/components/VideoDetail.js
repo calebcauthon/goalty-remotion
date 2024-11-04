@@ -318,23 +318,30 @@ function VideoDetail() {
             </h1>
           )}
         </div>
-        <div className="video-player">
-          <Player
-            ref={playerRef}
-            component={VideoPlayer}
-            inputProps={{
-              src: video.filepath,
-              onFrameUpdate: handleFrameUpdate
-            }}
-            durationInFrames={durationInFrames}
-            compositionWidth={desiredWidth}
-            compositionHeight={Math.round(desiredWidth * (videoMetadata?.height / videoMetadata?.width))}
-            playbackRate={playbackRate}
-            fps={videoMetadata?.fps || 30}
-            controls
-            renderLoading={() => <div>Loading...</div>}
-          />
-        </div>
+
+        {video.filepath.includes('backblaze') ? (
+          <div className="video-player">
+            <Player
+              ref={playerRef}
+              component={VideoPlayer}
+              inputProps={{
+                src: video.filepath,
+                onFrameUpdate: handleFrameUpdate
+              }}
+              durationInFrames={durationInFrames}
+              compositionWidth={desiredWidth}
+              compositionHeight={Math.round(desiredWidth * (videoMetadata?.height / videoMetadata?.width))}
+              playbackRate={playbackRate}
+              fps={videoMetadata?.fps || 30}
+              controls
+              renderLoading={() => <div>Loading...</div>}
+            />
+          </div>
+        ) : (
+          <div className="video-unavailable-message">
+            <p>This video is not hosted on Backblaze and cannot be played.</p>
+          </div>
+        )}
 
         <div className="hotkey-controls">
           <button onClick={toggleHotkeyMode}>
