@@ -18,10 +18,11 @@ def check_file_exists_in_b2(filename):
     try:
         # Get file info directly using file name
         file_version = bucket.get_file_info_by_name(filename)
+        url = bucket.get_download_url(filename)
         
         # If we get here, file exists - construct response
         file_info = {
-            'download_url': f"https://f004.backblazeb2.com/file/{B2_BUCKET_NAME}/{filename}",
+            'download_url': url,
             'upload_timestamp': file_version.upload_timestamp,
             'file_id': file_version.id_,
             'size': file_version.size
