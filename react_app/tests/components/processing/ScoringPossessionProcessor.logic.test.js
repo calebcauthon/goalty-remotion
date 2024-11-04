@@ -1,4 +1,4 @@
-import { findValidSequences } from '../../../src/components/processing/ScoringPossessionProcessor';
+import { findValidSequences } from '../../../src/components/processing/findValidSequences';
 
 describe('ScoringPossessionProcessor Logic', () => {
   describe('findValidSequences - home team only', () => {
