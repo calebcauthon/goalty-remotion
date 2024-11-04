@@ -4,6 +4,7 @@ import Layout from './Layout';
 import axios from 'axios';
 import { GlobalContext } from '../index';
 import './Videos.css';
+import Modal from 'react-modal';
 
 function Videos() {
   const globalData = useContext(GlobalContext);
@@ -11,6 +12,17 @@ function Videos() {
   const [message, setMessage] = useState('');
   const [videos, setVideos] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [manualEntry, setManualEntry] = useState({
+    title: '',
+    size: 0,
+    filepath: '',
+    metadata: {
+      tags: []
+    }
+  });
+  const [metadataError, setMetadataError] = useState('');
+  const [metadataText, setMetadataText] = useState(JSON.stringify(manualEntry.metadata, null, 2));
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -95,6 +107,47 @@ function Videos() {
     }
   };
 
+  const validateAndParseJSON = (str) => {
+    try {
+      return JSON.parse(str);
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const handleManualSubmit = async (e) => {
+    e.preventDefault();
+    
+    const parsedMetadata = validateAndParseJSON(metadataText);
+    if (!parsedMetadata) {
+      setMetadataError('Invalid JSON format');
+      return;
+    }
+    
+    try {
+      const response = await axios.post(`${globalData.APIbaseUrl}/api/videos/manual`, {
+        ...manualEntry,
+        metadata: parsedMetadata
+      });
+      setMessage('Video added manually successfully!');
+      setIsModalOpen(false);
+      setMetadataError('');
+      setManualEntry({
+        title: '',
+        size: 0,
+        filepath: '',
+        metadata: {
+          tags: []
+        }
+      });
+      setMetadataText(JSON.stringify({tags: []}, null, 2));
+      fetchVideos();
+    } catch (error) {
+      setMessage('Error adding video manually');
+      console.error('Error:', error);
+    }
+  };
+
   return (
     <Layout>
       <div className="videos-container">
@@ -122,6 +175,87 @@ function Videos() {
           />
           <button type="submit" className="video-submit">Upload</button>
         </form>
+
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="video-submit"
+          style={{marginTop: '20px'}}
+        >
+          Manually Add Video
+        </button>
+
+        <Modal
+          isOpen={isModalOpen}
+          onRequestClose={() => setIsModalOpen(false)}
+          className="modal"
+          overlayClassName="overlay"
+        >
+          <h2>Manually Add Video</h2>
+          <form onSubmit={handleManualSubmit}>
+            <div className="form-group">
+              <label>Title:</label>
+              <input
+                type="text"
+                value={manualEntry.title}
+                onChange={(e) => setManualEntry({...manualEntry, title: e.target.value})}
+                className="video-input"
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>Size (bytes):</label>
+              <input
+                type="number"
+                value={manualEntry.size}
+                onChange={(e) => setManualEntry({...manualEntry, size: parseInt(e.target.value)})}
+                className="video-input"
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>Filepath/URL:</label>
+              <input
+                type="text"
+                value={manualEntry.filepath}
+                onChange={(e) => setManualEntry({...manualEntry, filepath: e.target.value})}
+                className="video-input"
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>
+                Metadata (JSON):
+                <span className={`validation-status ${metadataError ? 'invalid' : 'valid'}`}>
+                  {metadataError ? '❌ Invalid JSON' : '✓ Valid JSON'}
+                </span>
+              </label>
+              <textarea
+                value={metadataText}
+                onChange={(e) => {
+                  setMetadataText(e.target.value);
+                  const parsed = validateAndParseJSON(e.target.value);
+                  if (parsed) {
+                    setManualEntry({...manualEntry, metadata: parsed});
+                    setMetadataError('');
+                  } else {
+                    setMetadataError('Invalid JSON format');
+                  }
+                }}
+                className="video-input metadata-textarea"
+                rows={10}
+                spellCheck="false"
+              />
+            </div>
+            
+            <div className="button-group">
+              <button type="submit" className="video-submit" disabled={!!metadataError}>Add Video</button>
+              <button type="button" onClick={() => setIsModalOpen(false)} className="video-submit">Cancel</button>
+            </div>
+          </form>
+        </Modal>
 
         {message && <p className="message">{message}</p>}
 

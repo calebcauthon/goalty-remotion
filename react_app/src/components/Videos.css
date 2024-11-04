@@ -95,3 +95,78 @@
 input[type="file"].video-input {
   padding: 10px 0;
 }
+
+.modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.metadata-textarea {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  tab-size: 2;
+}
+
+.error-message {
+  color: #ff0000;
+  font-size: 0.9em;
+  margin-top: 5px;
+}
+
+.modal {
+  width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.video-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 5px;
+}
+
+.validation-status {
+  margin-left: 10px;
+  font-size: 0.9em;
+  font-weight: normal;
+}
+
+.validation-status.valid {
+  color: #4CAF50;
+}
+
+.validation-status.invalid {
+  color: #ff4444;
+}
