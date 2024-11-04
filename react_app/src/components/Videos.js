@@ -23,6 +23,8 @@ function Videos() {
   });
   const [metadataError, setMetadataError] = useState('');
   const [metadataText, setMetadataText] = useState(JSON.stringify(manualEntry.metadata, null, 2));
+  const [isYoutubeModalOpen, setIsYoutubeModalOpen] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -148,6 +150,38 @@ function Videos() {
     }
   };
 
+  const handleYoutubeExtract = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.get(
+        `${globalData.APIbaseUrl}/api/extract-youtube?url=${encodeURIComponent(youtubeUrl)}`
+      );
+      
+      setManualEntry({
+        title: response.data.title,
+        size: response.data.size,
+        filepath: youtubeUrl,
+        metadata: response.data.metadata
+      });
+      setMetadataText(JSON.stringify(response.data.metadata, null, 2));
+      
+      setIsYoutubeModalOpen(false);
+      setYoutubeUrl('');
+      
+    } catch (error) {
+      setMessage('Error extracting YouTube info. Please try again.');
+      console.error('Error:', error);
+    }
+  };
+
+  const backblazify = (title) => {
+    const sanitized = title
+      .replace(/[^a-zA-Z0-9-_]/g, '_') // Replace non-alphanumeric with underscore
+      .replace(/__+/g, '_'); // Replace multiple underscores with single
+
+    return `f005.backblazeb2.com/file/remotion-videos/${sanitized}.mp4`;
+  };
+
   return (
     <Layout>
       <div className="videos-container">
@@ -192,6 +226,14 @@ function Videos() {
         >
           <h2>Manually Add Video</h2>
           <form onSubmit={handleManualSubmit}>
+            <button 
+              type="button"
+              onClick={() => setIsYoutubeModalOpen(true)}
+              className="video-submit"
+              style={{marginBottom: '20px', width: '100%'}}
+            >
+              Extract from YouTube URL
+            </button>
             <div className="form-group">
               <label>Title:</label>
               <input
@@ -216,13 +258,26 @@ function Videos() {
             
             <div className="form-group">
               <label>Filepath/URL:</label>
-              <input
-                type="text"
-                value={manualEntry.filepath}
-                onChange={(e) => setManualEntry({...manualEntry, filepath: e.target.value})}
-                className="video-input"
-                required
-              />
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <input
+                  type="text"
+                  value={manualEntry.filepath}
+                  onChange={(e) => setManualEntry({...manualEntry, filepath: e.target.value})}
+                  className="video-input"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setManualEntry({
+                    ...manualEntry,
+                    filepath: backblazify(manualEntry.title)
+                  })}
+                  className="video-submit"
+                  style={{ flexShrink: 0 }}
+                >
+                  Backblazify
+                </button>
+              </div>
             </div>
             
             <div className="form-group">
@@ -253,6 +308,38 @@ function Videos() {
             <div className="button-group">
               <button type="submit" className="video-submit" disabled={!!metadataError}>Add Video</button>
               <button type="button" onClick={() => setIsModalOpen(false)} className="video-submit">Cancel</button>
+            </div>
+          </form>
+        </Modal>
+
+        <Modal
+          isOpen={isYoutubeModalOpen}
+          onRequestClose={() => setIsYoutubeModalOpen(false)}
+          className="modal"
+          overlayClassName="overlay"
+        >
+          <h2>Extract YouTube Info</h2>
+          <form onSubmit={handleYoutubeExtract}>
+            <div className="form-group">
+              <label>YouTube URL:</label>
+              <input
+                type="text"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                placeholder="Enter YouTube URL"
+                className="video-input"
+                required
+              />
+            </div>
+            <div className="button-group">
+              <button type="submit" className="video-submit">Extract Info</button>
+              <button 
+                type="button" 
+                onClick={() => setIsYoutubeModalOpen(false)} 
+                className="video-submit"
+              >
+                Cancel
+              </button>
             </div>
           </form>
         </Modal>
