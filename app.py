@@ -72,21 +72,21 @@ def cloud_render():
     filename = data.get('output_file_name')
     url = "https://calebcauthon-dev--remotion-goalty-render-video-render-video.modal.run"
 
-    response = requests.post(url, json=data)
-    print(response.json())
-    if response.status_code == 200:
-        download_url = bucket.get_download_url(filename)
-
-        return jsonify({
-            'message': 'Cloud render completed successfully',
-            'download_url': download_url
-        }), 200
-    else:
-        return jsonify({
-            'error': 'Failed to initiate cloud render', 
-            'status_code': response.status_code, 
-            'response': response.json()
-        }), response.status_code
+    try:
+        # Fire and forget - don't wait for response
+        requests.post(url, json=data, timeout=1)
+    except requests.exceptions.Timeout:
+        # Ignore timeout - request will continue in background
+        pass
+    except requests.exceptions.RequestException:
+        # Ignore any other request errors
+        pass
+    
+    download_url = bucket.get_download_url(filename)
+    return jsonify({
+        'message': 'Cloud render initiated',
+        'download_url': download_url
+    }), 202
 
 if __name__ == '__main__':
     # Set up argument parser

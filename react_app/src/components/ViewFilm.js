@@ -42,6 +42,8 @@ function ViewFilm() {
   const [selectedTemplate, setSelectedTemplate] = useState('VideoPreviewThenBackToBack');
   const [includedClips, setIncludedClips] = useState([]);
   const playerRef = useRef(null);
+  const [renderStatus, setRenderStatus] = useState(null);
+  const [renderFilename, setRenderFilename] = useState(null);
 
   const fetchFilm = async () => {
     try {
@@ -249,6 +251,39 @@ function ViewFilm() {
     }
   };
 
+  const checkRenderStatus = async (filename) => {
+    try {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/check-render/${filename}`);
+      const data = await response.json();
+      
+      if (data.status === 'completed') {
+        setRenderStatus('completed');
+        // Update film metadata with render info
+        await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            data: {
+              ...film.data,
+              lastRender: {
+                filename: filename,
+                timestamp: new Date().toISOString(),
+                status: 'completed'
+              }
+            }
+          }),
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking render status:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchFilm();
     fetchVideos();
@@ -317,8 +352,7 @@ function ViewFilm() {
             value={selectedTemplate}
             onChange={handleTemplateChange}
           >
-            <option value="VideoPreviewThenBackToBack">Preview Then Back-to-Back</option>
-            <option value="VideoFirstFiveSeconds">First 5 Seconds of Each Clip</option>
+            <option value="VideoFirstFiveSeconds">All clips back to back</option>
           </select>
         </div>
 
@@ -414,6 +448,19 @@ function ViewFilm() {
                 videos={videos}
                 selectedTags={selectedTags}
                 outputFileName={`${film.name.replace(/\s+/g, '_')}.mp4`}
+                onRenderStart={(filename) => {
+                  setRenderStatus('rendering');
+                  setRenderFilename(filename);
+                  
+                  // Start polling
+                  const pollInterval = setInterval(async () => {
+                    const isComplete = await checkRenderStatus(filename);
+                    if (isComplete) {
+                      clearInterval(pollInterval);
+                    }
+                  }, 1000); // Poll every 5 seconds
+                }}
+                renderStatus={renderStatus}
               />
             </>
           ) : (

@@ -1,7 +1,14 @@
 import React, { useState, useContext } from 'react';
 import { GlobalContext } from '../index';
 
-export const CloudRenderButton = ({ selectedVideos, videos, selectedTags, outputFileName }) => {
+export const CloudRenderButton = ({ 
+  selectedVideos, 
+  videos, 
+  selectedTags, 
+  outputFileName,
+  onRenderStart,
+  renderStatus 
+}) => {
   const globalData = useContext(GlobalContext);
   const [isRendering, setIsRendering] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState(null);
@@ -51,6 +58,7 @@ export const CloudRenderButton = ({ selectedVideos, videos, selectedTags, output
         console.log('Cloud render initiated successfully');
         setDownloadUrl(data.download_url);
         setIsRendering(false);
+        onRenderStart(outputFileName);
       } else {
         console.error('Failed to initiate cloud render');
         setIsRendering(false);
@@ -58,6 +66,17 @@ export const CloudRenderButton = ({ selectedVideos, videos, selectedTags, output
     } catch (error) {
       console.error('Error initiating cloud render:', error);
       setIsRendering(false);
+    }
+  };
+
+  const getButtonText = () => {
+    switch (renderStatus) {
+      case 'rendering':
+        return 'Rendering...';
+      case 'completed':
+        return 'Render Complete!';
+      default:
+        return 'Render in Cloud';
     }
   };
 
@@ -70,8 +89,12 @@ export const CloudRenderButton = ({ selectedVideos, videos, selectedTags, output
         }} 
         className="cloud-render-button"
         disabled={isRendering}
+        style={{
+          opacity: renderStatus === 'rendering' ? 0.7 : 1,
+          cursor: renderStatus === 'rendering' ? 'not-allowed' : 'pointer'
+        }}
       >
-        {isRendering ? 'Rendering...' : 'Cloud Render'}
+        {getButtonText()}
       </button>
       {downloadUrl && (
         <div style={{marginTop: '10px'}}>

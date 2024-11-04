@@ -3,6 +3,7 @@ import yt_dlp
 import os
 from database import add_video
 from werkzeug.utils import secure_filename
+from b2 import check_file_exists_in_b2
 
 upload_bp = Blueprint('upload', __name__)
 
@@ -118,6 +119,18 @@ def extract_youtube_info():
                 }
             }), 200
             
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+    
+@upload_bp.route('/check-render/<filename>', methods=['GET'])
+def check_render_status(filename):
+    try:
+        # Check if file exists in B2
+        exists = check_file_exists_in_b2(filename)
+        return jsonify({
+            'status': 'completed' if exists else 'rendering',
+            'filename': filename
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 400
     
