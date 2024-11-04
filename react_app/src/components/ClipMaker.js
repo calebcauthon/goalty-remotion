@@ -186,7 +186,12 @@ function ClipMaker() {
                         {tag.startFrame ? `${(tag.startFrame / 30).toFixed(2)}s` : ''}-
                         {tag.endFrame ? `${(tag.endFrame / 30).toFixed(2)}s` : ''}
                       </td>
-                      <td>{tag.frame}</td>
+                      <td 
+                        style={tag.frame ? {cursor: 'pointer', textDecoration: 'underline'} : {}}
+                        onClick={() => tag.frame && handleTagClick(tag.frame)}
+                      >
+                        {tag.frame}
+                      </td>
                       <td>{tag.frame ? `${(tag.frame / 30).toFixed(2)}s` : ''}</td>
                       <td>
                         <button 
