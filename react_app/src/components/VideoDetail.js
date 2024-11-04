@@ -348,6 +348,16 @@ function VideoDetail() {
           Group: {hotkeyGroups.find(g => g.id === activeGroupId)?.name || 'None'}
         </div>
 
+        <div className="metadata-container" style={{ border: 'none' }}>
+          <button 
+            onClick={handleSaveMetadata} 
+            disabled={!!jsonError}
+            className="action-button"
+          >
+            {saveButtonText}
+          </button>
+        </div>
+
         <div className="hotkey-instructions">
           <div className="hotkey-header" onClick={() => setHotkeysExpanded(!hotkeysExpanded)}>
             <h3>Hotkeys {hotkeysExpanded ? '▼' : '▶'}</h3>
