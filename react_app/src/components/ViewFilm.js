@@ -434,7 +434,7 @@ function ViewFilm() {
 
         <div className="video-table-container">
           <h2>Videos</h2>
-          <table className="video-table">
+          <table className="film-table">
             <thead>
               <tr>
                 <th>Show</th>

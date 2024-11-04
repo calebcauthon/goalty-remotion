@@ -56,6 +56,8 @@
 
 .main-row td:first-child {
   width: 100%;
+  text-align: left;
+  padding-left: 16px;
 }
 
 .actions-cell {
