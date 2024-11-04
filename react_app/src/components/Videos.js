@@ -10,6 +10,7 @@ function Videos() {
   const [url, setUrl] = useState('');
   const [message, setMessage] = useState('');
   const [videos, setVideos] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -64,11 +65,43 @@ function Videos() {
     }
   };
 
+  const handleFileUpload = async (e) => {
+    e.preventDefault();
+    if (!selectedFile) {
+      setMessage('Please select a file first');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    
+    setMessage('Uploading...');
+    try {
+      const response = await axios.post(
+        `${globalData.APIbaseUrl}/api/upload-file`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      setMessage(`Video uploaded successfully! ID: ${response.data.video_id}`);
+      setSelectedFile(null);
+      fetchVideos();
+    } catch (error) {
+      setMessage('Error uploading video. Please try again.');
+      console.error('Error:', error);
+    }
+  };
+
   return (
     <Layout>
       <div className="videos-container">
-        <h1>Add YouTube Video</h1>
+        <h1>Add Video</h1>
+        
         <form onSubmit={handleSubmit} className="video-form">
+          <h3>From YouTube URL</h3>
           <input
             type="text"
             value={url}
@@ -78,6 +111,18 @@ function Videos() {
           />
           <button type="submit" className="video-submit">Submit</button>
         </form>
+
+        <form onSubmit={handleFileUpload} className="video-form">
+          <h3>Upload Local Video</h3>
+          <input
+            type="file"
+            onChange={(e) => setSelectedFile(e.target.files[0])}
+            accept=".mp4,.mov,.avi,.mkv"
+            className="video-input"
+          />
+          <button type="submit" className="video-submit">Upload</button>
+        </form>
+
         {message && <p className="message">{message}</p>}
 
         <h2>Video List</h2>

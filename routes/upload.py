@@ -3,6 +3,8 @@ import yt_dlp
 import os
 from database import add_video
 from b2 import bucket, b2_api
+from werkzeug.utils import secure_filename
+import mimetypes
 
 upload_bp = Blueprint('upload', __name__)
 
@@ -10,6 +12,12 @@ DOWNLOAD_DIRECTORY = 'downloads'
 
 if not os.path.exists(DOWNLOAD_DIRECTORY):
     os.makedirs(DOWNLOAD_DIRECTORY)
+
+ALLOWED_EXTENSIONS = {'mp4', 'mov', 'avi', 'mkv'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def upload_to_b2(local_file_path, b2_file_name):
     uploaded_file = bucket.upload_local_file(
@@ -103,6 +111,50 @@ def download_video():
     return jsonify({
         'message': 'Video downloaded and uploaded successfully',
         'filename': b2_file_name,
+        'video_id': video_id,
+        'download_url': b2_info['download_url']
+    }), 200
+
+@upload_bp.route('/upload-file', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+        
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+        
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'File type not allowed'}), 400
+
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(DOWNLOAD_DIRECTORY, filename)
+    file.save(filepath)
+    
+    # Get file info
+    file_size = os.path.getsize(filepath)
+    
+    # Upload to B2
+    b2_info = upload_to_b2(filepath, filename)
+    
+    # Add to database with B2 info
+    video_id = add_video(
+        title=filename,
+        size=file_size,
+        filepath=b2_info['download_url'],
+        metadata={
+            'source': 'local_upload',
+            'b2_file_id': b2_info['file_id'],
+            'b2_upload_timestamp': b2_info['upload_timestamp']
+        }
+    )
+    
+    # Clean up local file after upload
+    os.remove(filepath)
+
+    return jsonify({
+        'message': 'Video uploaded successfully',
+        'filename': filename,
         'video_id': video_id,
         'download_url': b2_info['download_url']
     }), 200

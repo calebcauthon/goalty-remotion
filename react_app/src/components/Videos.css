@@ -7,6 +7,15 @@
 .video-form {
   display: flex;
   margin-bottom: 20px;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.video-form h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #333;
 }
 
 .video-input {
@@ -81,4 +90,8 @@
 
 .video-title:hover {
   color: #003d7a;
+}
+
+input[type="file"].video-input {
+  padding: 10px 0;
 }
