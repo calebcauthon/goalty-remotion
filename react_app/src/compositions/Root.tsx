@@ -1,6 +1,5 @@
 import React from "react";
 import { Composition } from "remotion";
-import { MyComponent } from "./testComp";
 import { VideoFirstFiveSeconds, calculateFirstFiveSecondsDuration } from "../components/templates";
 import { getVideoMetadata } from "../components/templates/videoUtils";
 

@@ -13,6 +13,12 @@ export const CloudRenderButton = ({
   const [isRendering, setIsRendering] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState(null);
 
+  const getTimestampedFilename = (filename) => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const nameWithoutExt = filename.replace(/\.mp4$/, '');
+    return `${nameWithoutExt}_${timestamp}.mp4`;
+  };
+
   const videosWithoutMetadata = videos.map(video => {
     const { videoWithoutMetadata, metadata } = (() => {
       const { metadata, tags: videoTags, ...rest } = video;
@@ -33,6 +39,8 @@ export const CloudRenderButton = ({
   );
 
   const handleCloudRender = async () => {
+    const timestampedFilename = getTimestampedFilename(outputFileName);
+    
     const payload = {
       videos: videos.filter(video => selectedVideos.has(video.id)).map(video => video.filepath.split('/').pop()),
       props: {
@@ -41,7 +49,7 @@ export const CloudRenderButton = ({
         selectedTags: Array.from(selectedTags),
         useStaticFile: true
       },
-      output_file_name: outputFileName,
+      output_file_name: timestampedFilename,
     };
 
     try {
@@ -58,7 +66,7 @@ export const CloudRenderButton = ({
         console.log('Cloud render initiated successfully');
         setDownloadUrl(data.download_url);
         setIsRendering(false);
-        onRenderStart(outputFileName);
+        onRenderStart(timestampedFilename);
       } else {
         console.error('Failed to initiate cloud render');
         setIsRendering(false);
@@ -96,15 +104,8 @@ export const CloudRenderButton = ({
       >
         {getButtonText()}
       </button>
-      {downloadUrl && (
-        <div style={{marginTop: '10px'}}>
-          <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
-            Download Video
-          </a>
-        </div>
-      )}
     </div>
   );
 };
 
-export default CloudRenderButton; 
+export default CloudRenderButton;

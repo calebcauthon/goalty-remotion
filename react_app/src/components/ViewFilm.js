@@ -5,9 +5,7 @@ import { Player } from '@remotion/player';
 import './ViewFilm.css';
 import { RenderCommand } from './RenderCommand';
 import { 
-  VideoPreviewThenBackToBack, 
   VideoFirstFiveSeconds,
-  calculatePreviewThenBackToBackDuration,
   calculateFirstFiveSecondsDuration 
 } from './templates';
 import { CloudRenderButton } from './CloudRenderButton';
@@ -39,7 +37,7 @@ function ViewFilm() {
   const [editedName, setEditedName] = useState('');
   const [selectedVideos, setSelectedVideos] = useState(new Set());
   const [selectedTags, setSelectedTags] = useState(new Set());
-  const [selectedTemplate, setSelectedTemplate] = useState('VideoPreviewThenBackToBack');
+  const [selectedTemplate, setSelectedTemplate] = useState('VideoFirstFiveSeconds');
   const [includedClips, setIncludedClips] = useState([]);
   const playerRef = useRef(null);
   const [renderStatus, setRenderStatus] = useState(null);
@@ -231,23 +229,19 @@ function ViewFilm() {
 
   const renderPlayerComponent = () => {
     switch (selectedTemplate) {
-      case 'VideoPreviewThenBackToBack':
-        return VideoPreviewThenBackToBack;
       case 'VideoFirstFiveSeconds':
         return VideoFirstFiveSeconds;
       default:
-        return VideoPreviewThenBackToBack;
+        return VideoFirstFiveSeconds;
     }
   };
 
   const calculateDuration = () => {
     switch (selectedTemplate) {
-      case 'VideoPreviewThenBackToBack':
-        return calculatePreviewThenBackToBackDuration(selectedTags) || 1;
       case 'VideoFirstFiveSeconds':
         return calculateFirstFiveSecondsDuration(selectedTags) || 1;
       default:
-        return calculatePreviewThenBackToBackDuration(selectedTags) || 1;
+        return calculateFirstFiveSecondsDuration(selectedTags) || 1;
     }
   };
 
