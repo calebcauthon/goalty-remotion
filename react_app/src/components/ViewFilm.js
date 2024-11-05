@@ -42,7 +42,7 @@ function ViewFilm() {
   const playerRef = useRef(null);
   const [renderStatus, setRenderStatus] = useState(null);
   const [renderFilename, setRenderFilename] = useState(null);
-  const [isRenderHistoryCollapsed, setIsRenderHistoryCollapsed] = useState(false);
+  const [isRenderHistoryCollapsed, setIsRenderHistoryCollapsed] = useState(true);
 
   const fetchFilm = async () => {
     try {
