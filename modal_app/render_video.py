@@ -19,8 +19,7 @@ class RenderVideoRequest(BaseModel):
 
 @app.function(
     image=remotion_image, 
-    timeout=60 * 20, 
-    gpu='any', 
+    timeout=60 * 60, 
     secrets=[modal.Secret.from_name("backblaze-keys")]
 )
 @modal.web_endpoint(method="POST")
