@@ -25,9 +25,18 @@ const require = createRequire(import.meta.url);
   });
 
   console.log("Starting to render composition");
-
+  let lastProgress = 0;
+  let startTime = Date.now();
   const onProgress = ({progress}) => {
-    console.log(`Rendering is ${progress * 100}% complete`);
+    const currentProgress = Math.floor(progress * 100);
+    if (currentProgress > lastProgress) {
+      const elapsedMs = Date.now() - startTime;
+      const estimatedTotalMs = elapsedMs / progress;
+      const remainingMs = estimatedTotalMs - elapsedMs;
+      const remainingMins = Math.ceil(remainingMs / 60000);
+      console.log(`Rendering is ${currentProgress}% complete (${remainingMins} mins remaining)`);
+      lastProgress = currentProgress;
+    }
   };
 
   await renderMedia({
