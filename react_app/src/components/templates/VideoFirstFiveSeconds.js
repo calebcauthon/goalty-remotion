@@ -1,6 +1,5 @@
 import React, { useContext } from 'react';
 import { AbsoluteFill, Video, Sequence, useCurrentFrame, staticFile } from 'remotion';
-import { GlobalContext } from '../../index';
 
 export const calculateFirstFiveSecondsDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
@@ -12,7 +11,6 @@ export const calculateFirstFiveSecondsDuration = (selectedTags) => {
 };
 
 export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, useStaticFile }) => {
-  const globalData = useContext(GlobalContext);
   const tagArray = Array.from(selectedTags);
   const currentFrame = useCurrentFrame();
 
