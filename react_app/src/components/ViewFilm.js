@@ -42,6 +42,7 @@ function ViewFilm() {
   const playerRef = useRef(null);
   const [renderStatus, setRenderStatus] = useState(null);
   const [renderFilename, setRenderFilename] = useState(null);
+  const [isRenderHistoryCollapsed, setIsRenderHistoryCollapsed] = useState(false);
 
   const fetchFilm = async () => {
     try {
@@ -494,8 +495,10 @@ function ViewFilm() {
         </div>
 
         {film.data.renders && film.data.renders.length > 0 && (
-          <div className="render-history">
-            <h3>Render History</h3>
+          <div className={`render-history ${isRenderHistoryCollapsed ? 'collapsed' : ''}`}>
+            <h3 onClick={() => setIsRenderHistoryCollapsed(!isRenderHistoryCollapsed)}>
+              Render History
+            </h3>
             <table className="render-history-table">
               <thead>
                 <tr>
