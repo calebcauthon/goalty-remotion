@@ -8,9 +8,11 @@ const require = createRequire(import.meta.url);
   // Extract command line arguments
   const inputProps = JSON.parse(require('fs').readFileSync('/tmp/props.json', 'utf8'));
   const outputFileName = require('fs').readFileSync('/tmp/filename.txt', 'utf8');
+  const range = JSON.parse(require('fs').readFileSync('/tmp/range.txt', 'utf8'));
 
   console.log(`Input props: ${JSON.stringify(inputProps)}`);
   console.log(`Output filename: ${outputFileName}`);
+  console.log(`Range: ${range}`);
 
   const bundled = await bundle({
     entryPoint: require.resolve("./src/index_studio.js"),
@@ -44,6 +46,7 @@ const require = createRequire(import.meta.url);
 
   await renderMedia({
     onProgress,
+    frameRange: range,
     codec: "h264",
     composition,
     serveUrl: bundled,
