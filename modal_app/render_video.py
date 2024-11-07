@@ -2,6 +2,7 @@ import modal
 
 remotion_image = (
   modal.Image.from_registry("ghcr.io/calebcauthon/goalty-remotion:master", add_python="3.11")
+  .apt_install("ffmpeg")
   .pip_install("requests", "fastapi[standard]", "b2sdk")
 )
 
@@ -17,6 +18,7 @@ class RenderVideoRequest(BaseModel):
     videos: list[str]
     props: dict
     output_file_name: str
+    chunk_size: int = 500
 
 @app.function(
     image=remotion_image, 
@@ -26,21 +28,6 @@ class RenderVideoRequest(BaseModel):
 def render_video(render_params: RenderVideoRequest):
     import subprocess
     import json
-
-    def authenticate_backblaze():
-      auth_url = "https://api.backblazeb2.com/b2api/v2/b2_authorize_account"
-      account_id = os.environ["BACKBLAZE_KEY_ID"]
-      application_key = os.environ["BACKBLAZE_APPLICATION_KEY"]
-      if not account_id or not application_key:
-          raise Exception("BACKBLAZE_KEY_ID and BACKBLAZE_APPLICATION_KEY environment variables must be set")
-      else:
-          print(f"First 5 characters of BACKBLAZE_KEY_ID: {account_id[:5]} and BACKBLAZE_APPLICATION_KEY: {application_key[:5]}")
-
-      response = requests.get(auth_url, auth=(account_id, application_key))
-      response.raise_for_status()
-      auth_data = response.json()
-
-      return auth_data
 
     def download_videos(auth_data): 
       download_url = auth_data['downloadUrl']
@@ -144,127 +131,111 @@ def render_video(render_params: RenderVideoRequest):
 )
 @modal.web_endpoint(method="POST")
 def split_render_request(render_params: RenderVideoRequest):
-    # Extract frame range from selected tags
-    start_frame = render_params.props['selectedTags'][0]['startFrame'] 
-    end_frame = render_params.props['selectedTags'][0]['endFrame']
-    total_frames = end_frame - start_frame
+    def calculate_chunk_ranges(render_params, chunk_size):
+        start_frame = render_params.props['selectedTags'][0]['startFrame'] 
+        end_frame = render_params.props['selectedTags'][0]['endFrame']
+        total_frames = end_frame - start_frame
 
-    # Split into chunks of 500 frames
-    chunk_size = 250
-    chunks = []
+        chunk_ranges = []
+        prev_chunk_end = 0
+        for i in range(0, total_frames, chunk_size):
+            chunk_start = prev_chunk_end + 1
+            chunk_end = min(i + chunk_size, total_frames)
+            chunk_ranges.append((chunk_start - 1, chunk_end - 1))
+            prev_chunk_end = chunk_end
 
-    # Calculate chunk ranges
-    chunk_ranges = []
-    prev_chunk_end = 0
-    for i in range(0, total_frames, chunk_size):
-        chunk_start = prev_chunk_end + 1
-        chunk_end = min(i + chunk_size, total_frames)
-        chunk_ranges.append((chunk_start - 1, chunk_end - 1))
-        prev_chunk_end = chunk_end
+        return chunk_ranges
 
-
-    print(f"Chunk ranges: {chunk_ranges}")
-
-    pollables = []
-    for chunk_start, chunk_end in chunk_ranges:
-        chunk_request = copy.deepcopy(render_params)
+    def create_chunk_request(original_params, chunk_start, chunk_end):
+        chunk_request = copy.deepcopy(original_params)
         chunk_request.props['range'] = [chunk_start, chunk_end]
         
         # Generate unique output filename for this chunk
-        base_name = render_params.output_file_name.replace('.mp4', '')
+        base_name = original_params.output_file_name.replace('.mp4', '')
         chunk_name = f"{base_name}_chunk_{chunk_start}_{chunk_end}.mp4"
-        chunks.append((chunk_request, chunk_name))
-
         chunk_request.output_file_name = chunk_name
-        print(f"Processing chunk: {chunk_name}")
-        pollable = render_video.spawn(chunk_request)
-        pollables.append(pollable)
+        return chunk_request
 
-    for pollable in pollables:
-        pollable_result = pollable.get()
-        print(f"Pollable result {pollable_result}")
+    def distribute_renders(render_params, chunk_ranges):
+        distributed_renders = []
+        for chunk_start, chunk_end in chunk_ranges:
+            chunk_request = create_chunk_request(render_params, chunk_start, chunk_end)
+            pollable = render_video.spawn(chunk_request)
+            distributed_renders.append(pollable)
+        return distributed_renders
+
+    print(f"Calculating chunk ranges with chunk size: {render_params.chunk_size}")
+    chunk_ranges = calculate_chunk_ranges(render_params, render_params.chunk_size)
+    distributed_renders = distribute_renders(render_params, chunk_ranges)
+
+    # Wait for all chunks to render
+    for this_render in distributed_renders:
+        this_render.get()
 
     combine_video_chunks(render_params.output_file_name)
+    delete_chunks_from_bucket("remotion-videos", f"{render_params.output_file_name.replace('.mp4', '')}_chunk_")
 
-    return {"status": "success", "message": f"Processed {len(chunks)} chunks"}
-
+    return {"status": "success", "message": f"Processed {len(distributed_renders)} chunks"}
 
 def combine_video_chunks(base_filename: str):
     import subprocess
-    from pathlib import Path
+
+    def combine_with_ffmpeg(output_path):
+        # Create file list for ffmpeg
+        with open("./files.txt", "w") as f:
+            for chunk in downloads:
+                f.write(f"file '{chunk}'\n")
+
+        # Combine using ffmpeg
+        
+        subprocess.run([
+            "ffmpeg", "-f", "concat", "-safe", "0",
+            "-i", "./files.txt",
+            "-c", "copy", output_path
+        ], check=True)
+
+        # Delete files.txt after combining
+        os.remove("./files.txt")
 
     # Download all chunks matching pattern
     base_name = base_filename.replace('.mp4', '')
     downloads = download_videos({"chunk_pattern": base_name})
 
-    # Create file list for ffmpeg
-    with open("./files.txt", "w") as f:
-        for chunk in sorted(downloads):
-            f.write(f"file '{chunk}'\n")
+    output_path = f"./{base_filename}"
+    combine_with_ffmpeg(output_path)
 
-    # Combine using ffmpeg
-    output_path = f"./{base_filename}.mp4"
-    subprocess.run([
-        "ffmpeg", "-f", "concat", "-safe", "0",
-        "-i", "./files.txt",
-        "-c", "copy", output_path
-    ], check=True)
+    upload_video(output_path, base_filename)
 
-    auth_data = authenticate_backblaze()
-    b2_filename = base_filename
-    upload_video(auth_data, output_path, b2_filename)
+    return {"status": "success", "message": f"Combined chunks into {base_filename} and uploaded to B2"}
 
-    return {"status": "success", "message": f"Combined chunks into {b2_filename}"}
+def download_videos(params):  
+    def download(file_name, directory):
+        print(f"Downloading chunk: {file_name}...")
 
-def download_videos(params):
-    auth_data = authenticate_backblaze()
-    download_url = auth_data['downloadUrl']
-    auth_token = auth_data['authorizationToken']
-    
-    # Download the file
-    bucket_name = "remotion-videos"
-    chunk_pattern = params["chunk_pattern"]
-    print(f"Chunk pattern: {chunk_pattern}")
-    
-    # Get bucket object
-    from b2sdk.v2 import B2Api, InMemoryAccountInfo
-    info = InMemoryAccountInfo()
-    b2_api = B2Api(info)
-    b2_api.authorize_account("production", os.environ["BACKBLAZE_KEY_ID"], os.environ["BACKBLAZE_APPLICATION_KEY"])
-    bucket = b2_api.get_bucket_by_name("remotion-videos")
-
-    # List files matching pattern
-    response = {"files": []}
-    for file_version, _ in bucket.ls():
-        response["files"].append({
-            "fileName": file_version.file_name,
-            "fileId": file_version.id_
-        })
-    
-    print(f"Files: {response['files']}")
-    matching_files = [f for f in response['files'] if chunk_pattern in f['fileName']]
-    print(f"Matching files: {matching_files}")
-
-    downloads = []
-    for file in matching_files:
-        print(f"Downloading chunk: {file['fileName']}...")
-        file_name = file['fileName']
-
-        download_path = os.path.join("./", file_name)
+        download_path = os.path.join(directory, file_name)
         downloadable = bucket.download_file_by_name(file_name)
         if not os.path.exists(download_path):
             downloadable.save_to(download_path)
+            print(f"Downloaded chunk: {file_name}")
+            print(f"File size: {os.path.getsize(download_path) / (1024*1024):.2f} MB")
         else:
             print(f"File already exists: {download_path}")
 
+        return download_path
+
+    chunk_pattern = params["chunk_pattern"]
+    print(f"Chunk pattern: {chunk_pattern}")
+ 
+    bucket = authenticate_bucket("remotion-videos")
+    files = list_files_matching_pattern(bucket, chunk_pattern)
+    downloads = []
+    for file in files:
+        download_path = download(file['fileName'], "./")
         downloads.append(download_path)
-
-        print(f"Downloaded chunk: {file_name}")
-        print(f"File size: {os.path.getsize(download_path) / (1024*1024):.2f} MB")
-
+        
     return downloads
 
-def upload_video(auth_data, local_file_path, output_file_name):
+def upload_video(local_file_path, output_file_name):
     from b2sdk.v2 import B2Api, InMemoryAccountInfo
     info = InMemoryAccountInfo()
     b2_api = B2Api(info)
@@ -288,3 +259,30 @@ def authenticate_backblaze():
     auth_data = response.json()
 
     return auth_data
+
+def authenticate_bucket(bucket_name):
+    from b2sdk.v2 import B2Api, InMemoryAccountInfo
+    info = InMemoryAccountInfo()
+    b2_api = B2Api(info)
+    b2_api.authorize_account("production", os.environ["BACKBLAZE_KEY_ID"], os.environ["BACKBLAZE_APPLICATION_KEY"])
+    return b2_api.get_bucket_by_name(bucket_name)
+
+def delete_chunks_from_bucket(bucket_name, chunk_pattern):
+    bucket = authenticate_bucket(bucket_name)
+    files = list_files_matching_pattern(bucket, chunk_pattern)
+    for file in files:
+        bucket.delete_file_version(file['fileId'], file['fileName'])
+
+def list_files_matching_pattern(bucket, pattern):
+    response = {"files": []}
+    for file_version, _ in bucket.ls():
+        response["files"].append({
+            "fileName": file_version.file_name,
+            "fileId": file_version.id_
+        })
+    
+    print(f"Files: {response['files']}")
+    matching_files = [f for f in response['files'] if pattern in f['fileName']]
+    print(f"Matching files: {matching_files}")
+
+    return matching_files
