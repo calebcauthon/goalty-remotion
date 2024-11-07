@@ -132,9 +132,7 @@ def render_video(render_params: RenderVideoRequest):
 @modal.web_endpoint(method="POST")
 def split_render_request(render_params: RenderVideoRequest):
     def calculate_chunk_ranges(render_params, chunk_size):
-        start_frame = render_params.props['selectedTags'][0]['startFrame'] 
-        end_frame = render_params.props['selectedTags'][0]['endFrame']
-        total_frames = end_frame - start_frame
+        total_frames = sum(int(tag['endFrame']) - int(tag['startFrame']) for tag in render_params.props['selectedTags'])
 
         chunk_ranges = []
         prev_chunk_end = 0

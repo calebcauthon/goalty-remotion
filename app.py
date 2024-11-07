@@ -69,7 +69,7 @@ def serve_video(filename):
 @app.route('/api/cloud-render', methods=['POST'])
 def cloud_render():
     data = request.json
-    data['chunk_size'] = 5
+    data['chunk_size'] = 250
     filename = data.get('output_file_name')
     url = "https://calebcauthon-dev--remotion-goalty-render-video-split-ren-7c32e7.modal.run"
 
