@@ -70,7 +70,7 @@ def serve_video(filename):
 def cloud_render():
     data = request.json
     filename = data.get('output_file_name')
-    url = "https://calebcauthon-dev--remotion-goalty-render-video-render-video.modal.run"
+    url = "https://calebcauthon-dev--remotion-goalty-render-video-split-ren-7c32e7.modal.run"
 
     try:
         # Fire and forget - don't wait for response
