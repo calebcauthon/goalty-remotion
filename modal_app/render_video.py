@@ -181,7 +181,7 @@ def combine_video_chunks(base_filename: str):
     def combine_with_ffmpeg(output_path):
         # Create file list for ffmpeg
         with open("./files.txt", "w") as f:
-            for chunk in downloads:
+            for chunk in sorted(downloads):
                 f.write(f"file '{chunk}'\n")
 
         # Combine using ffmpeg
