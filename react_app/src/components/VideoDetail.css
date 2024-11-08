@@ -387,7 +387,7 @@
 .hotkey-buttons-container {
   position: relative;
   min-height: 300px;
-  padding: 10px;
+  padding: 20px;
   background: #f5f5f5;
   border-radius: 4px;
   margin: 10px;
@@ -401,13 +401,16 @@
   color: white;
   border: none;
   border-radius: 4px;
-  cursor: move;
-  transition: background 0.2s;
+  cursor: pointer;
+  transition: all 0.2s ease;
   text-align: left;
-  min-width: 150px;
+  width: 180px;
   z-index: 1;
   user-select: none;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hotkey-action-button:hover {
@@ -456,10 +459,13 @@
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
-  min-width: 150px;
+  width: 180px;
   z-index: 1;
   user-select: none;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hotkey-action-button.draggable {
