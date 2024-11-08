@@ -119,7 +119,7 @@ def render_video(render_params: RenderVideoRequest):
           print(f"Uploaded file: {output_file_name} to B2 bucket")
 
     auth_data = authenticate_backblaze()
-    download_videos(auth_data)
+    # download_videos(auth_data)
     render_mp4(render_params.props, render_params.output_file_name)
     upload_video(auth_data, render_params.output_file_name)
 

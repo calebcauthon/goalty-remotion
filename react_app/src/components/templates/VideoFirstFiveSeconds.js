@@ -35,9 +35,7 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
         const framesRemaining = Math.max(0, clipDuration - framesSinceSequenceStart);
         const secondsRemaining = (framesRemaining / 30).toFixed(1);
 
-        const VIDEO_BASE_URL = useStaticFile 
-          ? staticFile(`${video.filepath.split('/').pop()}`) 
-          : video.filepath;
+        const VIDEO_BASE_URL = video.filepath;
 
         return (
           <Sequence
