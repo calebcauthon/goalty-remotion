@@ -199,8 +199,6 @@ def combine_video_chunks(base_filename: str, chunked_filenames: list[str]):
         # Delete files.txt after combining
         os.remove("./files.txt")
 
-    # Download all chunks matching pattern
-    base_name = base_filename.replace('.mp4', '')
     downloads = download_videos(chunked_filenames)
 
     output_path = f"./{base_filename}"

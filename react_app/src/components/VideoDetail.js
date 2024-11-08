@@ -393,40 +393,6 @@ function VideoDetail() {
           </div>
         )}
 
-        <div className="hotkey-controls">
-          <button onClick={toggleHotkeyMode}>
-            {hotkeyMode ? 'Disable Hotkey Mode' : 'Enable Hotkey Mode'}
-          </button>
-          {renderHotkeyGroupSelector()}
-        </div>
-
-        <div className={`hotkey-indicator ${hotkeyMode ? 'active' : ''}`}>
-          Hotkeys: {hotkeyMode ? 'ENABLED' : 'DISABLED'} | 
-          Group: {hotkeyGroups.find(g => g.id === activeGroupId)?.name || 'None'}
-        </div>
-
-        <div className="metadata-container" style={{ border: 'none' }}>
-          <button 
-            onClick={handleSaveMetadata} 
-            disabled={!!jsonError}
-            className="action-button"
-          >
-            {saveButtonText}
-          </button>
-        </div>
-
-        <div className="hotkey-instructions">
-          <div className="hotkey-header" onClick={() => setHotkeysExpanded(!hotkeysExpanded)}>
-            <h3>Hotkeys {hotkeysExpanded ? '▼' : '▶'}</h3>
-          </div>
-          {hotkeysExpanded && (
-            <>
-              <h4>Current Group: {hotkeyGroups.find(g => g.id === activeGroupId)?.name}</h4>
-              {renderHotkeyInstructions()}
-            </>
-          )}
-        </div>
-
         <div className="hotkey-buttons">
           <div className="hotkey-buttons-header">
             <h3 onClick={() => setHotkeyButtonsExpanded(!hotkeyButtonsExpanded)}>
@@ -474,6 +440,40 @@ function VideoDetail() {
                 );
               })}
             </div>
+          )}
+        </div>
+
+        <div className="hotkey-controls">
+          <button onClick={toggleHotkeyMode}>
+            {hotkeyMode ? 'Disable Hotkey Mode' : 'Enable Hotkey Mode'}
+          </button>
+          {renderHotkeyGroupSelector()}
+        </div>
+
+        <div className={`hotkey-indicator ${hotkeyMode ? 'active' : ''}`}>
+          Hotkeys: {hotkeyMode ? 'ENABLED' : 'DISABLED'} | 
+          Group: {hotkeyGroups.find(g => g.id === activeGroupId)?.name || 'None'}
+        </div>
+
+        <div className="metadata-container" style={{ border: 'none' }}>
+          <button 
+            onClick={handleSaveMetadata} 
+            disabled={!!jsonError}
+            className="action-button"
+          >
+            {saveButtonText}
+          </button>
+        </div>
+
+        <div className="hotkey-instructions">
+          <div className="hotkey-header" onClick={() => setHotkeysExpanded(!hotkeysExpanded)}>
+            <h3>Hotkeys {hotkeysExpanded ? '▼' : '▶'}</h3>
+          </div>
+          {hotkeysExpanded && (
+            <>
+              <h4>Current Group: {hotkeyGroups.find(g => g.id === activeGroupId)?.name}</h4>
+              {renderHotkeyInstructions()}
+            </>
           )}
         </div>
 
