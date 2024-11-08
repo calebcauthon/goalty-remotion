@@ -351,18 +351,127 @@
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 10px;
   padding: 10px;
+  min-height: 50px;
+}
+
+.hotkey-button-wrapper {
+  width: 100%;
+  transition: transform 0.2s;
+}
+
+.hotkey-button-wrapper.dragging {
+  transform: scale(1.05);
+  z-index: 1;
 }
 
 .hotkey-action-button {
+  width: 100%;
+  padding: 8px 12px;
+  background: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: grab;
+  transition: background 0.2s;
+  text-align: left;
+}
+
+.hotkey-action-button:hover {
+  background: #34495e;
+}
+
+.hotkey-action-button:active {
+  cursor: grabbing;
+}
+
+.hotkey-buttons-container {
+  position: relative;
+  min-height: 300px;
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  margin: 10px;
+  overflow: hidden;
+}
+
+.hotkey-action-button {
+  position: absolute;
+  padding: 8px 12px;
+  background: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: move;
+  transition: background 0.2s;
+  text-align: left;
+  min-width: 150px;
+  z-index: 1;
+  user-select: none;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.hotkey-action-button:hover {
+  background: #34495e;
+  z-index: 2;
+}
+
+.hotkey-action-button:active {
+  cursor: grabbing;
+  box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+}
+
+.hotkey-buttons-header {
+  padding: 10px;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drag-toggle {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.drag-toggle.active {
+  background: #2c3e50;
+  color: white;
+  border-color: #2c3e50;
+}
+
+.hotkey-action-button {
+  position: absolute;
   padding: 8px 12px;
   background: #2c3e50;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
+  text-align: left;
+  min-width: 150px;
+  z-index: 1;
+  user-select: none;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-.hotkey-action-button:hover {
+.hotkey-action-button.draggable {
+  cursor: move;
   background: #34495e;
+}
+
+.hotkey-action-button.draggable:hover {
+  background: #2c3e50;
+}
+
+.hotkey-action-button:not(.draggable):hover {
+  background: #34495e;
+  transform: translateY(-1px);
 }

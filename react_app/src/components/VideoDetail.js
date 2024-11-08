@@ -16,6 +16,7 @@ import { usePlayPauseController } from './hotkeys/PlayPauseController';
 import { debounce } from 'lodash';
 import { FaPencilAlt, FaSave } from 'react-icons/fa';
 import { GlobalContext } from '../index'; 
+import Draggable from 'react-draggable';
 
 function VideoDetail() {
   const globalData = useContext(GlobalContext);
@@ -45,6 +46,8 @@ function VideoDetail() {
   const [hotkeyGroups, setHotkeyGroups] = useState([]);
   const [activeGroupId, setActiveGroupId] = useState(null);
   const [hotkeyButtonsExpanded, setHotkeyButtonsExpanded] = useState(false);
+  const [buttonOrder, setButtonOrder] = useState([]);
+  const [dragMode, setDragMode] = useState(false);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -95,6 +98,15 @@ function VideoDetail() {
 
     fetchHotkeys();
   }, []);
+
+  useEffect(() => {
+    if (hotkeyGroups.length > 0 && activeGroupId) {
+      const currentGroup = hotkeyGroups.find(g => g.id === activeGroupId);
+      if (currentGroup?.shortcuts) {
+        setButtonOrder(Object.keys(currentGroup.shortcuts));
+      }
+    }
+  }, [hotkeyGroups, activeGroupId]);
 
   const handleFrameUpdate = useCallback((frame) => {
     setCurrentFrame(frame);
@@ -287,6 +299,16 @@ function VideoDetail() {
     handleSaveMetadata();
   };
 
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(buttonOrder);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setButtonOrder(items);
+  };
+
   if (loading) {
     return <Layout><div>Loading...</div></Layout>;
   }
@@ -387,28 +409,49 @@ function VideoDetail() {
         </div>
 
         <div className="hotkey-buttons">
-          <div className="hotkey-buttons-header" onClick={() => setHotkeyButtonsExpanded(!hotkeyButtonsExpanded)}>
-            <h3>Hotkey Buttons {hotkeyButtonsExpanded ? '▼' : '▶'}</h3>
+          <div className="hotkey-buttons-header">
+            <h3 onClick={() => setHotkeyButtonsExpanded(!hotkeyButtonsExpanded)}>
+              Hotkey Buttons {hotkeyButtonsExpanded ? '▼' : '▶'}
+            </h3>
+            {hotkeyButtonsExpanded && (
+              <button 
+                onClick={() => setDragMode(!dragMode)}
+                className={`drag-toggle ${dragMode ? 'active' : ''}`}
+              >
+                {dragMode ? '🔒 Lock' : '✋ Drag'}
+              </button>
+            )}
           </div>
           {hotkeyButtonsExpanded && (
-            <div className="hotkey-buttons-grid">
-              {hotkeyGroups.length > 0 && activeGroupId && 
-                Object.entries(hotkeyGroups.find(g => g.id === activeGroupId)?.shortcuts || {}).map(([key, shortcut]) => (
-                  <button
+            <div className="hotkey-buttons-container">
+              {buttonOrder.map((key) => {
+                const shortcut = hotkeyGroups.find(g => g.id === activeGroupId)?.shortcuts[key];
+                if (!shortcut) return null;
+                
+                return (
+                  <Draggable 
                     key={key}
-                    onClick={() => {
-                      try {
-                        eval(shortcut.action);
-                      } catch (error) {
-                        console.error('Error executing hotkey action:', error);
-                      }
-                    }}
-                    className="hotkey-action-button"
+                    defaultPosition={{x: 0, y: 0}}
+                    bounds="parent"
+                    disabled={!dragMode}
                   >
-                    {shortcut.description} ({key})
-                  </button>
-                ))
-              }
+                    <button
+                      onClick={() => {
+                        if (!dragMode) {
+                          try {
+                            eval(shortcut.action);
+                          } catch (error) {
+                            console.error('Error executing hotkey action:', error);
+                          }
+                        }
+                      }}
+                      className={`hotkey-action-button ${dragMode ? 'draggable' : ''}`}
+                    >
+                      {shortcut.description} ({key})
+                    </button>
+                  </Draggable>
+                );
+              })}
             </div>
           )}
         </div>
