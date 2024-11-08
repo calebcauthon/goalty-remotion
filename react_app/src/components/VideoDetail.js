@@ -48,6 +48,7 @@ function VideoDetail() {
   const [hotkeyButtonsExpanded, setHotkeyButtonsExpanded] = useState(false);
   const [buttonOrder, setButtonOrder] = useState([]);
   const [dragMode, setDragMode] = useState(false);
+  const [buttonPositions, setButtonPositions] = useState({});
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -107,6 +108,15 @@ function VideoDetail() {
       }
     }
   }, [hotkeyGroups, activeGroupId]);
+
+  useEffect(() => {
+    if (activeGroupId) {
+      const savedPositions = localStorage.getItem(`hotkey-positions-${activeGroupId}`);
+      if (savedPositions) {
+        setButtonPositions(JSON.parse(savedPositions));
+      }
+    }
+  }, [activeGroupId]);
 
   const handleFrameUpdate = useCallback((frame) => {
     setCurrentFrame(frame);
@@ -309,6 +319,15 @@ function VideoDetail() {
     setButtonOrder(items);
   };
 
+  const handleDragStop = (key, e, data) => {
+    const newPositions = {
+      ...buttonPositions,
+      [key]: { x: data.x, y: data.y }
+    };
+    setButtonPositions(newPositions);
+    localStorage.setItem(`hotkey-positions-${activeGroupId}`, JSON.stringify(newPositions));
+  };
+
   if (loading) {
     return <Layout><div>Loading...</div></Layout>;
   }
@@ -431,9 +450,11 @@ function VideoDetail() {
                 return (
                   <Draggable 
                     key={key}
-                    defaultPosition={{x: 0, y: 0}}
+                    defaultPosition={buttonPositions[key] || {x: 0, y: 0}}
+                    position={buttonPositions[key] || null}
                     bounds="parent"
                     disabled={!dragMode}
+                    onStop={(e, data) => handleDragStop(key, e, data)}
                   >
                     <button
                       onClick={() => {
