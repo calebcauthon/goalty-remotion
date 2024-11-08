@@ -123,6 +123,8 @@ def render_video(render_params: RenderVideoRequest):
     render_mp4(render_params.props, render_params.output_file_name)
     upload_video(auth_data, render_params.output_file_name)
 
+    return render_params.output_file_name
+
 
 @app.function(
     image=remotion_image, 
@@ -167,21 +169,22 @@ def split_render_request(render_params: RenderVideoRequest):
     distributed_renders = distribute_renders(render_params, chunk_ranges)
 
     # Wait for all chunks to render
+    filenames = []
     for this_render in distributed_renders:
-        this_render.get()
+        filenames.append(this_render.get())
 
-    combine_video_chunks(render_params.output_file_name)
+    combine_video_chunks(render_params.output_file_name, filenames)
     delete_chunks_from_bucket("remotion-videos", f"{render_params.output_file_name.replace('.mp4', '')}_chunk_")
 
     return {"status": "success", "message": f"Processed {len(distributed_renders)} chunks"}
 
-def combine_video_chunks(base_filename: str):
+def combine_video_chunks(base_filename: str, chunked_filenames: list[str]):
     import subprocess
 
     def combine_with_ffmpeg(output_path):
         # Create file list for ffmpeg
         with open("./files.txt", "w") as f:
-            for chunk in sorted(downloads):
+            for chunk in downloads:
                 f.write(f"file '{chunk}'\n")
 
         # Combine using ffmpeg
@@ -197,7 +200,7 @@ def combine_video_chunks(base_filename: str):
 
     # Download all chunks matching pattern
     base_name = base_filename.replace('.mp4', '')
-    downloads = download_videos({"chunk_pattern": base_name})
+    downloads = download_videos(chunked_filenames)
 
     output_path = f"./{base_filename}"
     combine_with_ffmpeg(output_path)
@@ -206,7 +209,7 @@ def combine_video_chunks(base_filename: str):
 
     return {"status": "success", "message": f"Combined chunks into {base_filename} and uploaded to B2"}
 
-def download_videos(params):  
+def download_videos(chunked_filenames):  
     def download(file_name, directory):
         print(f"Downloading chunk: {file_name}...")
 
@@ -221,14 +224,10 @@ def download_videos(params):
 
         return download_path
 
-    chunk_pattern = params["chunk_pattern"]
-    print(f"Chunk pattern: {chunk_pattern}")
- 
     bucket = authenticate_bucket("remotion-videos")
-    files = list_files_matching_pattern(bucket, chunk_pattern)
     downloads = []
-    for file in files:
-        download_path = download(file['fileName'], "./")
+    for filename in chunked_filenames:
+        download_path = download(filename, "./")
         downloads.append(download_path)
         
     return downloads
