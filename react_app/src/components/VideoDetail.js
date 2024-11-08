@@ -44,6 +44,7 @@ function VideoDetail() {
   const [activeHotkeySet, setActiveHotkeySet] = useState('set1');
   const [hotkeyGroups, setHotkeyGroups] = useState([]);
   const [activeGroupId, setActiveGroupId] = useState(null);
+  const [hotkeyButtonsExpanded, setHotkeyButtonsExpanded] = useState(false);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -382,6 +383,33 @@ function VideoDetail() {
               <h4>Current Group: {hotkeyGroups.find(g => g.id === activeGroupId)?.name}</h4>
               {renderHotkeyInstructions()}
             </>
+          )}
+        </div>
+
+        <div className="hotkey-buttons">
+          <div className="hotkey-buttons-header" onClick={() => setHotkeyButtonsExpanded(!hotkeyButtonsExpanded)}>
+            <h3>Hotkey Buttons {hotkeyButtonsExpanded ? '▼' : '▶'}</h3>
+          </div>
+          {hotkeyButtonsExpanded && (
+            <div className="hotkey-buttons-grid">
+              {hotkeyGroups.length > 0 && activeGroupId && 
+                Object.entries(hotkeyGroups.find(g => g.id === activeGroupId)?.shortcuts || {}).map(([key, shortcut]) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      try {
+                        eval(shortcut.action);
+                      } catch (error) {
+                        console.error('Error executing hotkey action:', error);
+                      }
+                    }}
+                    className="hotkey-action-button"
+                  >
+                    {shortcut.description} ({key})
+                  </button>
+                ))
+              }
+            </div>
           )}
         </div>
 
