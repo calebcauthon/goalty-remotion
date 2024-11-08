@@ -392,7 +392,14 @@ function ViewFilm() {
                 
                 return (
                   <tr key={clip.key}>
-                    <td>{clip.videoName}</td>
+                    <td>
+                      <a 
+                        href={`/videos/${clip.videoId}?startFrame=${clip.startFrame}&endFrame=${clip.endFrame}`} 
+                        className="video-link"
+                      >
+                        {clip.videoName} ({clip.startFrame}-{clip.endFrame})
+                      </a>
+                    </td>
                     <td>{clip.tagName}</td>
                     <td>{clip.frame}</td>
                     <td>{`${clip.startFrame}-${clip.endFrame}`}</td>

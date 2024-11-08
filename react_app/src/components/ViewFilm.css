@@ -297,3 +297,12 @@
 .render-history-table tr:hover {
   background-color: #f8f9fa;
 }
+
+.video-link {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.video-link:hover {
+  text-decoration: underline;
+}

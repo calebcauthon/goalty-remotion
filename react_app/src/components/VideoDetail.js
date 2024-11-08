@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useContext } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import Layout from './Layout';
 import axios from 'axios';
 import { Player } from '@remotion/player';
@@ -20,6 +20,9 @@ import { GlobalContext } from '../index';
 function VideoDetail() {
   const globalData = useContext(GlobalContext);
   const { id } = useParams();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const initialFrame = parseInt(searchParams.get('startFrame')) || 0;
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentFrame, setCurrentFrame] = useState(0);
@@ -61,6 +64,11 @@ function VideoDetail() {
         const frames = Math.ceil(metadata.durationInSeconds * metadata.fps);
         setDurationInFrames(frames);
         
+        // Seek to initial frame after video loads
+        if (initialFrame && playerRef.current) {
+          playerRef.current.seekTo(initialFrame);
+        }
+        
         setLoading(false);
       } catch (error) {
         console.error('Error fetching video details:', error);
@@ -69,7 +77,7 @@ function VideoDetail() {
     };
 
     fetchVideoDetails();
-  }, [id]);
+  }, [id, initialFrame]);
 
   useEffect(() => {
     const fetchHotkeys = async () => {
