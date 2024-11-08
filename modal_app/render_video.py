@@ -191,6 +191,7 @@ def combine_video_chunks(base_filename: str, chunked_filenames: list[str]):
         
         subprocess.run([
             "ffmpeg", "-f", "concat", "-safe", "0",
+            "-b:v", "4499k",
             "-i", "./files.txt",
             "-c", "copy", output_path
         ], check=True)
