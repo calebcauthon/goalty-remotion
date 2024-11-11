@@ -111,7 +111,7 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
         left: 0,
         width: '100%',
         height: 8,
-        background: 'rgba(255, 255, 255, 0.2)',
+        background: '#1a1a1a',
         zIndex: 10,
         display: 'flex'
       }}>
@@ -122,26 +122,31 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
             .slice(0, index)
             .reduce((total, t) => total + (parseInt(t.endFrame, 10) - parseInt(t.startFrame, 10)), 0);
           
-          const baseColor = index % 2 === 0 ? '#0d6efd' : '#ffc107';
-          const isCurrentOrPastClip = currentFrame >= previousClipsDuration;
+          const baseColor = index % 2 === 0 ? '#ffffff' : '#808080';
+          const isCurrentClip = currentFrame >= previousClipsDuration && 
+                              currentFrame < (previousClipsDuration + clipDuration);
           
           return (
             <div key={tag.key} style={{
               height: '100%',
               width: `${clipWidth}%`,
               background: baseColor,
-              opacity: isCurrentOrPastClip ? 0.8 : 0.15,
+              opacity: 0.5,
               position: 'relative'
             }}>
-              {isCurrentOrPastClip && currentFrame < (previousClipsDuration + clipDuration) && (
+              {isCurrentClip && (
                 <div style={{
                   position: 'absolute',
-                  left: 0,
-                  height: '100%',
-                  width: `${((currentFrame - previousClipsDuration) / clipDuration) * 100}%`,
-                  background: 'white',
-                  opacity: 0.3,
-                  transition: 'width 0.1s linear'
+                  left: `${((currentFrame - previousClipsDuration) / clipDuration) * 100}%`,
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  background: '#ffc107',
+                  opacity: 0.95,
+                  boxShadow: '0 0 4px rgba(0,0,0,0.5)',
+                  zIndex: 11
                 }} />
               )}
             </div>
