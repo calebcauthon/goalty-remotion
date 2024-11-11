@@ -39,7 +39,9 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
         const seconds = totalSeconds % 60;
         const timeRemaining = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
-        const VIDEO_BASE_URL = video.filepath;
+        const VIDEO_BASE_URL = useStaticFile 
+        ? staticFile(`${video.filepath.split('/').pop()}`) 
+        : video.filepath
 
         return (
           <Sequence
