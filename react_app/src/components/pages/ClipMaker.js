@@ -161,6 +161,15 @@ function ClipMaker() {
                 outputTagName="home_scoring_possession"
                 buttonText="Find Clips: Successful Attacks by Home Team"
               />
+              <ScoringPossessionProcessor 
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                startTagName="game_start"
+                endTagName="game_end"
+                excludeTagName={["game_end"]}
+                outputTagName="full_game"
+                buttonText="Find Clips: Games"
+              />
               <PlayingTimeProcessor
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
