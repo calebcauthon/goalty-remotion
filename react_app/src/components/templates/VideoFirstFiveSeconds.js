@@ -13,6 +13,7 @@ export const calculateFirstFiveSecondsDuration = (selectedTags) => {
 export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, useStaticFile }) => {
   const tagArray = Array.from(selectedTags);
   const currentFrame = useCurrentFrame();
+  const totalDuration = calculateFirstFiveSecondsDuration(selectedTags);
 
   return (
     <AbsoluteFill>
@@ -48,7 +49,8 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
                 style={{
                   position: 'absolute',
                   width: '100%',
-                  height: '100%'
+                  height: '100%',
+                  backgroundColor: index % 2 === 0 ? 'rgba(0, 123, 255, 0.1)' : 'rgba(255, 193, 7, 0.1)'
                 }}
               >
                 <Video
@@ -88,10 +90,9 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
                     overflow: 'hidden'
                   }}>
                     <div style={{
-                      position: 'relative',
                       height: '100%',
                       width: `${(framesSinceSequenceStart / clipDuration) * 100}%`,
-                      background: 'white',
+                      background: index % 2 === 0 ? '#0d6efd' : '#ffc107',
                       borderRadius: 2,
                       transition: 'width 0.1s linear'
                     }} />
@@ -102,6 +103,51 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
           </Sequence>
         );
       })}
+      
+      {/* Total progress bar with segments */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: 8,
+        background: 'rgba(255, 255, 255, 0.2)',
+        zIndex: 10,
+        display: 'flex'
+      }}>
+        {tagArray.map((tag, index) => {
+          const clipDuration = parseInt(tag.endFrame, 10) - parseInt(tag.startFrame, 10);
+          const clipWidth = (clipDuration / totalDuration) * 100;
+          const previousClipsDuration = tagArray
+            .slice(0, index)
+            .reduce((total, t) => total + (parseInt(t.endFrame, 10) - parseInt(t.startFrame, 10)), 0);
+          
+          const baseColor = index % 2 === 0 ? '#0d6efd' : '#ffc107';
+          const isCurrentOrPastClip = currentFrame >= previousClipsDuration;
+          
+          return (
+            <div key={tag.key} style={{
+              height: '100%',
+              width: `${clipWidth}%`,
+              background: baseColor,
+              opacity: isCurrentOrPastClip ? 0.8 : 0.15,
+              position: 'relative'
+            }}>
+              {isCurrentOrPastClip && currentFrame < (previousClipsDuration + clipDuration) && (
+                <div style={{
+                  position: 'absolute',
+                  left: 0,
+                  height: '100%',
+                  width: `${((currentFrame - previousClipsDuration) / clipDuration) * 100}%`,
+                  background: 'white',
+                  opacity: 0.3,
+                  transition: 'width 0.1s linear'
+                }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
     </AbsoluteFill>
   );
 }; 
