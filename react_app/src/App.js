@@ -5,7 +5,7 @@ import Videos from './components/Videos';
 import VideoDetail from './components/VideoDetail';
 import StudioHome from './components/StudioHome';
 import ViewFilm from './components/ViewFilm';
-import ClipMaker from './components/ClipMaker';
+import ClipMaker from './components/pages/ClipMaker';
 import HotkeyConfig from './components/HotkeyConfig';
 import ViewHotkeyGroup from './components/ViewHotkeyGroup';
 import './App.css';

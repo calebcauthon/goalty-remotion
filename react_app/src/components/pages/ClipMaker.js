@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import Layout from './Layout';
+import Layout from 'components/Layout';
 import './ClipMaker.css';
-import ScoringPossessionProcessor from './processing/ScoringPossessionProcessor';
-import { GlobalContext } from '../index';
+import ScoringPossessionProcessor from '../processing/ScoringPossessionProcessor';
+import { GlobalContext } from '../../index';
 import { Player } from '@remotion/player';
 import { getVideoMetadata } from '@remotion/media-utils';
-import VideoPlayer from './VideoPlayer';
-import FrameRangeSlider from './FrameRangeSlider';
+import VideoPlayer from '../VideoPlayer';
+import FrameRangeSlider from '../FrameRangeSlider';
 
 function ClipMaker() {
   const globalData = useContext(GlobalContext);

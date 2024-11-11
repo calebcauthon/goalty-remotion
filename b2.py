@@ -5,8 +5,8 @@ info = InMemoryAccountInfo()
 b2_api = B2Api(info)
 
 # Add your B2 credentials - you'll want to move these to environment variables
-B2_KEY_ID = os.getenv('B2_KEY_ID')
-B2_APPLICATION_KEY = os.getenv('B2_APP_KEY')
+B2_KEY_ID = os.getenv('BACKBLAZE_KEY_ID')
+B2_APPLICATION_KEY = os.getenv('BACKBLAZE_APPLICATION_KEY')
 B2_BUCKET_NAME = 'remotion-videos'
 
 # Initialize B2 connection
