@@ -64,12 +64,12 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
                 />
                 <div style={{
                   position: 'absolute',
-                  bottom: 20,
-                  right: 300,
+                  top: 20,
+                  left: 20,
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '8px',
-                  alignItems: 'flex-end'
+                  alignItems: 'flex-start'
                 }}>
                   <div style={{
                     background: 'rgba(0, 0, 0, 0.7)',
