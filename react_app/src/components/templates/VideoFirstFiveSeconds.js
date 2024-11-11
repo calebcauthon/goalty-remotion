@@ -39,6 +39,12 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
         const seconds = totalSeconds % 60;
         const timeRemaining = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
+        if (useStaticFile) {
+          console.log(`Using static file for ${video.filepath.split('/').pop()}`);
+        } else {
+          console.log(`Using remote file for ${video.filepath}`);
+        }
+
         const VIDEO_BASE_URL = useStaticFile 
         ? staticFile(`${video.filepath.split('/').pop()}`) 
         : video.filepath
