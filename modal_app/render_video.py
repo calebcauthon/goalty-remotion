@@ -113,6 +113,12 @@ def split_render_request(render_params: RenderVideoRequest):
         downloaded_paths = []
         for i, url in enumerate(video_urls):
             video_path = Path(VOLUME_PATH) / url.split('/')[-1]
+            
+            if video_path.exists():
+                print(f"Video {i} already exists at {video_path}")
+                downloaded_paths.append(str(video_path))
+                continue
+                
             print(f"Downloading video {i} to {video_path}")
             
             # Stream download to avoid memory issues
