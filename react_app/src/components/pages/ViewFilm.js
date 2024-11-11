@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useParams } from 'react-router-dom';
-import Layout from './Layout';
+import Layout from 'components/pages/Layout';
 import { Player } from '@remotion/player';
 import './ViewFilm.css';
-import { RenderCommand } from './RenderCommand';
+import { RenderCommand } from 'components/RenderCommand';
 import { 
   VideoFirstFiveSeconds,
   calculateFirstFiveSecondsDuration 
-} from './templates';
-import { CloudRenderButton } from './CloudRenderButton';
-import { GlobalContext } from '../index';
+} from 'components/templates';
+import { CloudRenderButton } from 'components/CloudRenderButton';
+import { GlobalContext } from '../../index';
 
 export const calculateTotalDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './ViewHotkeyGroup.css';
-import { GlobalContext } from '../index';
+import { GlobalContext } from '../../index';
 
 function ViewHotkeyGroup() {
   const globalData = useContext(GlobalContext);

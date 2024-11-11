@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
+import App from 'components/pages/App';
 
 // Create a new context
 export const GlobalContext = React.createContext();

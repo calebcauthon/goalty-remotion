@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './HotkeyConfig.css';
-import { GlobalContext } from '../index';
+import { GlobalContext } from '../../index';
 
 function HotkeyConfig() {
   const globalData = useContext(GlobalContext);

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './StudioHome.css';
-import { GlobalContext } from '../index';
+import { GlobalContext } from '../../index';
 
 function StudioHome() {
   const globalData = useContext(GlobalContext);

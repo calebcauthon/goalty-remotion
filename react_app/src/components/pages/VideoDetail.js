@@ -4,18 +4,18 @@ import Layout from './Layout';
 import axios from 'axios';
 import { Player } from '@remotion/player';
 import { getVideoMetadata } from '@remotion/media-utils';
-import VideoPlayer from './VideoPlayer';
+import VideoPlayer from '../VideoPlayer';
 import { JSONTree } from 'react-json-tree';
 import './VideoDetail.css';
-import { useHotkeys } from './Hotkeys';
-import { useTagAdder } from './hotkeys/TagAdder';
-import { useVideoSeeker } from './hotkeys/VideoSeeker';
-import { useHighlightAdder } from './hotkeys/HighlightAdder';
-import { useSpeedController } from './hotkeys/SpeedController';
-import { usePlayPauseController } from './hotkeys/PlayPauseController';
+import { useHotkeys } from '../Hotkeys';
+import { useTagAdder } from '../hotkeys/TagAdder';
+import { useVideoSeeker } from '../hotkeys/VideoSeeker';
+import { useHighlightAdder } from '../hotkeys/HighlightAdder';
+import { useSpeedController } from '../hotkeys/SpeedController';
+import { usePlayPauseController } from '../hotkeys/PlayPauseController';
 import { debounce } from 'lodash';
 import { FaPencilAlt, FaSave } from 'react-icons/fa';
-import { GlobalContext } from '../index'; 
+import { GlobalContext } from '../../index'; 
 import Draggable from 'react-draggable';
 
 function VideoDetail() {

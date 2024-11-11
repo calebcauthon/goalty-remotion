@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Layout from './Layout';
+import Layout from 'components/pages/Layout';
 import axios from 'axios';
-import { GlobalContext } from '../index';
+import { GlobalContext } from '../../index';
 import './Videos.css';
 import Modal from 'react-modal';
 import { FaTrash } from 'react-icons/fa';

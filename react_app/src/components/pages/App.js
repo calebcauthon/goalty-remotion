@@ -1,14 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Home from './components/Home';
-import Videos from './components/Videos';
-import VideoDetail from './components/VideoDetail';
-import StudioHome from './components/StudioHome';
-import ViewFilm from './components/ViewFilm';
-import ClipMaker from './components/pages/ClipMaker';
-import HotkeyConfig from './components/HotkeyConfig';
-import ViewHotkeyGroup from './components/ViewHotkeyGroup';
-import './App.css';
+import Home from 'components/pages/Home';
+import Videos from 'components/pages/Videos';
+import VideoDetail from 'components/pages/VideoDetail';
+import StudioHome from 'components/pages/StudioHome';
+import ViewFilm from 'components/pages/ViewFilm';
+import ClipMaker from 'components/pages/ClipMaker';
+import HotkeyConfig from 'components/pages/HotkeyConfig';
+import ViewHotkeyGroup from 'components/pages/ViewHotkeyGroup';
+import 'components/pages/App.css';
 
 function App() {
   return (
