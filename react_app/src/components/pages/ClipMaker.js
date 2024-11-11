@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import Layout from 'components/pages/Layout';
 import 'components/pages/ClipMaker.css';
 import ScoringPossessionProcessor from 'components/processing/ScoringPossessionProcessor';
+import PlayingTimeProcessor from 'components/processing/PlayingTimeProcessor';
 import { GlobalContext } from '../../index';
 import { Player } from '@remotion/player';
 import { getVideoMetadata } from '@remotion/media-utils';
@@ -160,6 +161,10 @@ function ClipMaker() {
                 outputTagName="home_scoring_possession"
                 buttonText="Find Clips: Successful Attacks by Home Team"
               />
+              <PlayingTimeProcessor
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                />
               <table className="tags-table">
                 <thead>
                   <tr>
