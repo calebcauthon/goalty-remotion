@@ -29,42 +29,6 @@ def render_video(render_params: RenderVideoRequest):
     import subprocess
     import json
 
-    def download_videos(auth_data): 
-      download_url = auth_data['downloadUrl']
-      auth_token = auth_data['authorizationToken']
-      
-      # Download the file
-      bucket_name = "remotion-videos"
-      for video in render_params.videos:
-        file_name = video
-        file_url = f"{download_url}/file/{bucket_name}/{file_name}"
-        
-        headers = {
-          "Authorization": auth_token
-        }
-      
-        print(f"Downloading file: {file_url}...")
-        file_response = requests.get(file_url, headers=headers)
-        file_response.raise_for_status()
-        
-        # Save the file locally
-        # Create downloads directory if it doesn't exist
-        download_dir = "/public"
-        os.makedirs(download_dir, exist_ok=True)
-        
-        # Save file to downloads directory
-        download_path = os.path.join(download_dir, file_name)
-        with open(download_path, 'wb') as file:
-            file.write(file_response.content)
-
-
-        file_size = os.path.getsize(download_path)
-        print(f"Downloaded file: {file_name}")
-        print(f"File size: {file_size / (1024*1024):.2f} MB")
-        print(f"File path: {os.path.abspath(download_path)}")
-
-      return
-    
     def render_mp4(props, output_file_name):
       # Write output filename to a temporary file
       with open('/tmp/filename.txt', 'w') as f:
