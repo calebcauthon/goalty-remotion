@@ -34,7 +34,10 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
         // Calculate how many frames are left in this clip
         const framesSinceSequenceStart = Math.max(0, currentFrame - previousClipsDuration);
         const framesRemaining = Math.max(0, clipDuration - framesSinceSequenceStart);
-        const secondsRemaining = (framesRemaining / 30).toFixed(1);
+        const totalSeconds = Math.floor(framesRemaining / 30);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        const timeRemaining = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
         const VIDEO_BASE_URL = video.filepath;
 
@@ -80,7 +83,7 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
                     fontWeight: 'bold',
                     zIndex: 1
                   }}>
-                    {`Clip ${index + 1}/${tagArray.length} • Next in ${secondsRemaining}s...`}
+                    {`Clip ${index + 1}/${tagArray.length} • Next in ${timeRemaining}`}
                   </div>
                   <div style={{
                     width: '100%',
