@@ -92,7 +92,7 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
                     <div style={{
                       height: '100%',
                       width: `${(framesSinceSequenceStart / clipDuration) * 100}%`,
-                      background: index % 2 === 0 ? '#0d6efd' : '#ffc107',
+                      background: '#0d6efd',
                       borderRadius: 2,
                       transition: 'width 0.1s linear'
                     }} />
@@ -131,7 +131,7 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
               height: '100%',
               width: `${clipWidth}%`,
               background: baseColor,
-              opacity: 0.5,
+              opacity: 0.7,
               position: 'relative'
             }}>
               {isCurrentClip && (
@@ -143,8 +143,9 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
                   width: 12,
                   height: 12,
                   borderRadius: '50%',
-                  background: '#ffc107',
-                  opacity: 0.95,
+                  background: '#0d6efd',
+                  opacity: 1,
+                  border: '2px solid white',
                   boxShadow: '0 0 4px rgba(0,0,0,0.5)',
                   zIndex: 11
                 }} />
