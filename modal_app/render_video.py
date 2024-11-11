@@ -11,6 +11,8 @@ import hashlib
 import os
 from pydantic import BaseModel
 import copy
+from pathlib import Path
+import shutil
 
 app = modal.App("remotion-goalty-render-video")
 
@@ -20,10 +22,15 @@ class RenderVideoRequest(BaseModel):
     output_file_name: str
     chunk_size: int = 500
 
+# Create a volume for video storage
+volume = modal.Volume.from_name("remotion-videos-vol", create_if_missing=True)
+VOLUME_PATH = "/public"
+
 @app.function(
     image=remotion_image, 
     timeout=60 * 60, 
-    secrets=[modal.Secret.from_name("backblaze-keys")]
+    secrets=[modal.Secret.from_name("backblaze-keys")],
+    volumes={VOLUME_PATH: volume}
 )
 def render_video(render_params: RenderVideoRequest):
     import subprocess
@@ -45,6 +52,8 @@ def render_video(render_params: RenderVideoRequest):
           print(f"Writing range to /tmp/range.txt: {props.get('range', '')}")
           f.write(str(props.get('range', '')))
 
+      print("Running render.mjs..")
+      print(f"Here are all the files in the volume (mounted at {VOLUME_PATH}): {os.listdir(VOLUME_PATH)}")
       subprocess.run([
           "node", "/render.mjs"
       ],
@@ -83,7 +92,6 @@ def render_video(render_params: RenderVideoRequest):
           print(f"Uploaded file: {output_file_name} to B2 bucket")
 
     auth_data = authenticate_backblaze()
-    # download_videos(auth_data)
     render_mp4(render_params.props, render_params.output_file_name)
     upload_video(auth_data, render_params.output_file_name)
 
@@ -93,10 +101,38 @@ def render_video(render_params: RenderVideoRequest):
 @app.function(
     image=remotion_image, 
     timeout=60 * 60, 
+    volumes={VOLUME_PATH: volume},
     secrets=[modal.Secret.from_name("backblaze-keys")]
 )
 @modal.web_endpoint(method="POST")
 def split_render_request(render_params: RenderVideoRequest):
+    # Add this function to download raw videos to the volume
+    def download_raw_videos(video_urls: list[str]):
+        import requests
+        
+        downloaded_paths = []
+        for i, url in enumerate(video_urls):
+            video_path = Path(VOLUME_PATH) / url.split('/')[-1]
+            print(f"Downloading video {i} to {video_path}")
+            
+            # Stream download to avoid memory issues
+            response = requests.get(url, stream=True)
+            response.raise_for_status()
+            
+            with open(video_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            
+            downloaded_paths.append(str(video_path))
+            print(f"Successfully downloaded video {i}")
+        
+        return downloaded_paths
+
+    # Add this call near the start of split_render_request
+    downloaded_videos = download_raw_videos([video['filepath'] for video in render_params.props['videos']])
+    print(f"Downloaded videos to volume: {downloaded_videos}")
+
     def calculate_chunk_ranges(render_params, chunk_size):
         total_frames = sum(int(tag['endFrame']) - int(tag['startFrame']) for tag in render_params.props['selectedTags'])
 
@@ -155,7 +191,6 @@ def combine_video_chunks(base_filename: str, chunked_filenames: list[str]):
         
         subprocess.run([
             "ffmpeg", "-f", "concat", "-safe", "0",
-            "-b:v", "4499k",
             "-i", "./files.txt",
             "-c", "copy", output_path
         ], check=True)
