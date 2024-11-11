@@ -8,6 +8,7 @@ import { Player } from '@remotion/player';
 import { getVideoMetadata } from '@remotion/media-utils';
 import VideoPlayer from 'components/VideoPlayer';
 import FrameRangeSlider from 'components/FrameRangeSlider';
+import { useLocation } from 'react-router-dom';
 
 function ClipMaker() {
   const globalData = useContext(GlobalContext);
@@ -16,10 +17,19 @@ function ClipMaker() {
   const [durationInFrames, setDurationInFrames] = useState(30 * 60);
   const [videoMetadata, setVideoMetadata] = useState(null);
   const playerRef = useRef(null);
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const initialVideoId = parseInt(searchParams.get('videoId'));
 
   useEffect(() => {
     fetchVideos();
   }, []);
+
+  useEffect(() => {
+    if (initialVideoId && videos.length > 0) {
+      handleVideoSelect(initialVideoId);
+    }
+  }, [initialVideoId, videos]);
 
   const fetchVideos = async () => {
     try {

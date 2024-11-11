@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useContext } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, Link } from 'react-router-dom';
 import Layout from './Layout';
 import axios from 'axios';
 import { Player } from '@remotion/player';
@@ -367,6 +367,22 @@ function VideoDetail() {
               />
             </h1>
           )}
+          <Link 
+            to={`/clipmaker?videoId=${video.id}`}
+            className="clipmaker-link"
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              padding: '8px 16px',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: '4px'
+            }}
+          >
+            Open in ClipMaker
+          </Link>
         </div>
 
         {video.filepath.includes('backblaze') ? (
