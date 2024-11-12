@@ -52,8 +52,16 @@ def render_video(render_params: RenderVideoRequest):
           print(f"Writing range to /tmp/range.txt: {props.get('range', '')}")
           f.write(str(props.get('range', '')))
 
+      
+      # Check if file exists in B2
+      bucket = authenticate_bucket("remotion-videos")
+      files = list_files_matching_pattern(bucket, output_file_name)
+
+      if files and files[0]['fileName'] == output_file_name:
+          print(f"File {output_file_name} already exists in B2, skipping render")
+          return
+
       print("Running render.mjs..")
-      print(f"Here are all the files in the volume (mounted at {VOLUME_PATH}): {os.listdir(VOLUME_PATH)}")
       subprocess.run([
           "node", "/render.mjs"
       ],
