@@ -155,3 +155,25 @@
   border-radius: 50%;
   cursor: pointer;
 }
+
+.tag-filters button {
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.tag-filters button.active {
+  background: #007bff;
+  color: white;
+  border-color: #0056b3;
+}
+
+.tag-filters button:hover {
+  background: #e9ecef;
+}
+
+.tag-filters button.active:hover {
+  background: #0056b3;
+}

@@ -164,12 +164,19 @@ function ClipMaker() {
           <>
             <div className="tags-table-container">
               <h2>Tags for {selectedVideo.name}</h2>
-              <input
-                type="text"
-                placeholder="Filter tags..."
-                value={tagFilter}
-                onChange={(e) => setTagFilter(e.target.value)}
-                style={{ marginBottom: '10px', padding: '5px', width: '200px' }}
+              
+              {/* Processor components */}
+              <TurnoverProcessor
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                buttonText="Find Clips: Score Hits"
+                startTag="home_touch_attacking"
+                endTag="score"
+                teamTouchPrefix="home_touch_"
+                opposingTouchPrefix="away_touch_"
+                turnoverTag="home_quick_score"
+                validEndTags={['score', 'home_touch_attacking', 'away_touch_clearing']}
+                maxPrecedingTouches={1}
               />
               <TurnoverProcessor
                 selectedVideo={selectedVideo}
@@ -226,6 +233,50 @@ function ClipMaker() {
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
                 />
+
+              {/* Move filter section here, just above the table */}
+              <div className="tag-filters" style={{ marginBottom: '20px', marginTop: '30px' }}>
+                <input
+                  type="text"
+                  placeholder="Filter tags..."
+                  value={tagFilter}
+                  onChange={(e) => setTagFilter(e.target.value)}
+                  style={{ padding: '5px', width: '200px', marginRight: '10px' }}
+                />
+                <div className="filter-buttons" style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+                  <button 
+                    onClick={() => setTagFilter('')}
+                    className={tagFilter === '' ? 'active' : ''}
+                  >
+                    All
+                  </button>
+                  <button 
+                    onClick={() => setTagFilter('home_touch')}
+                    className={tagFilter === 'home_touch' ? 'active' : ''}
+                  >
+                    Home Touches
+                  </button>
+                  <button 
+                    onClick={() => setTagFilter('away_touch')}
+                    className={tagFilter === 'away_touch' ? 'active' : ''}
+                  >
+                    Away Touches
+                  </button>
+                  <button 
+                    onClick={() => setTagFilter('turnover')}
+                    className={tagFilter === 'turnover' ? 'active' : ''}
+                  >
+                    Turnovers
+                  </button>
+                  <button 
+                    onClick={() => setTagFilter('score')}
+                    className={tagFilter === 'score' ? 'active' : ''}
+                  >
+                    Scores
+                  </button>
+                </div>
+              </div>
+
               <table className="tags-table">
                 <thead>
                   <tr>
