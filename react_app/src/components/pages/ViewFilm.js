@@ -43,6 +43,7 @@ function ViewFilm() {
   const [renderStatus, setRenderStatus] = useState(null);
   const [renderFilename, setRenderFilename] = useState(null);
   const [isRenderHistoryCollapsed, setIsRenderHistoryCollapsed] = useState(true);
+  const [tagFilter, setTagFilter] = useState('');
 
   const fetchFilm = async () => {
     try {
@@ -566,6 +567,13 @@ function ViewFilm() {
 
         <div className="tags-table-container">
           <h2>All Tags</h2>
+          <input
+            type="text"
+            placeholder="Filter tags..."
+            value={tagFilter}
+            onChange={(e) => setTagFilter(e.target.value)}
+            style={{ marginBottom: '1rem', padding: '0.5rem' }}
+          />
           <table className="tags-table">
             <thead>
               <tr>
@@ -582,6 +590,10 @@ function ViewFilm() {
                 .flatMap((video) =>
                   video.tags
                     .filter(tag => tag.startFrame && tag.endFrame)
+                    .filter(tag => 
+                      tag.name.toLowerCase().includes(tagFilter.toLowerCase()) ||
+                      video.name.toLowerCase().includes(tagFilter.toLowerCase())
+                    )
                     .map((tag, index) => {
                       const tagKey = `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}`;
                       const isIncluded = includedClips.some(clip => clip.key === tagKey);
