@@ -186,9 +186,10 @@
 
 .included-clips-table th,
 .included-clips-table td {
-  padding: 4px 8px;
+  padding: 8px;
   text-align: left;
   border: 1px solid #ddd;
+  background-color: inherit;
 }
 
 .included-clips-table th {
@@ -341,4 +342,21 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+}
+
+.drag-handle {
+  cursor: grab;
+  color: #999;
+  font-size: 20px;
+  text-align: center;
+  user-select: none;
+}
+
+.dragging {
+  background: #f0f0f0;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.included-clips-table tr {
+  transition: background-color 0.2s ease;
 }

@@ -10,6 +10,7 @@ import {
 } from 'components/templates';
 import { CloudRenderButton } from 'components/CloudRenderButton';
 import { GlobalContext } from '../../index';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 export const calculateTotalDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
@@ -385,6 +386,17 @@ function ViewFilm() {
     handleAddManyClips(clipsToAdd);
   };
 
+  const onDragEnd = (result) => {
+    if (!result.destination) return;
+
+    const newClips = Array.from(includedClips);
+    const [reorderedItem] = newClips.splice(result.source.index, 1);
+    newClips.splice(result.destination.index, 0, reorderedItem);
+
+    setIncludedClips(newClips);
+    saveClipsToFilm(newClips);
+  };
+
   if (!film) {
     return <Layout>Loading...</Layout>;
   }
@@ -447,62 +459,83 @@ function ViewFilm() {
               {isClipsExpanded ? '🗗 Minimize' : '⤢ Expand'}
             </button>
           </div>
-          <table className="included-clips-table">
-            <thead>
-              <tr>
-                <th>Video Name</th>
-                <th>Tag Name</th>
-                <th>Frame</th>
-                <th>Frame Range</th>
-                <th>Frame Range of Output</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {includedClips.map((clip, index) => {
-                const startFrame = calculateStartFrameForClip(includedClips, index);
-                const clipDuration = clip.endFrame - clip.startFrame;
-                const endFrame = startFrame + clipDuration;
-                
-                return (
-                  <tr key={clip.key}>
-                    <td>
-                      <a 
-                        href={`/videos/${clip.videoId}?startFrame=${clip.startFrame}&endFrame=${clip.endFrame}`} 
-                        className="video-link"
-                      >
-                        {clip.videoName} ({clip.startFrame}-{clip.endFrame})
-                      </a>
-                    </td>
-                    <td>{clip.tagName}</td>
-                    <td>{clip.frame}</td>
-                    <td>{`${clip.startFrame}-${clip.endFrame}`}</td>
-                    <td>
-                      <span 
-                        className="clickable-frame-range"
-                        onClick={() => handleSeekToFrame(startFrame)}
-                        style={{ 
-                          cursor: 'pointer',
-                          color: '#0066cc',
-                          textDecoration: 'underline'
-                        }}
-                      >
-                        {`${startFrame}-${endFrame}`}
-                      </span>
-                    </td>
-                    <td>
-                      <button 
-                        onClick={() => handleRemoveClip(clip.key)}
-                        className="remove-clip-button"
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <DragDropContext onDragEnd={onDragEnd}>
+            <table className="included-clips-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '40px' }}></th>
+                  <th>Video Name</th>
+                  <th>Tag Name</th>
+                  <th>Frame</th>
+                  <th>Frame Range</th>
+                  <th>Frame Range of Output</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <Droppable droppableId="clips">
+                {(provided) => (
+                  <tbody
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                  >
+                    {includedClips.map((clip, index) => {
+                      const startFrame = calculateStartFrameForClip(includedClips, index);
+                      const clipDuration = clip.endFrame - clip.startFrame;
+                      const endFrame = startFrame + clipDuration;
+                      
+                      return (
+                        <Draggable 
+                          key={clip.key} 
+                          draggableId={clip.key} 
+                          index={index}
+                        >
+                          {(provided, snapshot) => (
+                            <tr
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={snapshot.isDragging ? 'dragging' : ''}
+                            >
+                              <td {...provided.dragHandleProps} className="drag-handle">
+                                ⋮⋮
+                              </td>
+                              <td>
+                                <a 
+                                  href={`/videos/${clip.videoId}?startFrame=${clip.startFrame}&endFrame=${clip.endFrame}`} 
+                                  className="video-link"
+                                >
+                                  {clip.videoName} ({clip.startFrame}-{clip.endFrame})
+                                </a>
+                              </td>
+                              <td>{clip.tagName}</td>
+                              <td>{clip.frame}</td>
+                              <td>{`${clip.startFrame}-${clip.endFrame}`}</td>
+                              <td>
+                                <span 
+                                  className="clickable-frame-range"
+                                  onClick={() => handleSeekToFrame(startFrame)}
+                                >
+                                  {`${startFrame}-${endFrame}`}
+                                </span>
+                              </td>
+                              <td>
+                                <button 
+                                  onClick={() => handleRemoveClip(clip.key)}
+                                  className="remove-clip-button"
+                                >
+                                  Remove
+                                </button>
+                              </td>
+                            </tr>
+                          )}
+                        </Draggable>
+                      );
+                    })}
+                    {provided.placeholder}
+                  </tbody>
+                )}
+              </Droppable>
+            </table>
+          </DragDropContext>
         </div>
 
         <div className="video-player">
