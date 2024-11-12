@@ -174,6 +174,15 @@ function ClipMaker() {
               <ScoringPossessionProcessor 
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
+                startTagName="away_touch_attacking"
+                endTagName="score"
+                excludeTagName={["away_touch_clearing"]}
+                outputTagName="away_scoring_possession"
+                buttonText="Find Clips: Successful Attacks by Away Team"
+              />
+              <ScoringPossessionProcessor 
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
                 startTagName="game_start"
                 endTagName="game_end"
                 excludeTagName={["game_end"]}
