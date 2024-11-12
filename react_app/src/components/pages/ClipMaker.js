@@ -174,6 +174,7 @@ function ClipMaker() {
               <TurnoverProcessor
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
+                buttonText="Find Clips: Turnovers"
               />
               <ScoringPossessionProcessor 
                 selectedVideo={selectedVideo}

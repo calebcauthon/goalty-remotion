@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { GlobalContext } from '../../index';
 import { findValidSequences } from './findValidSequences';
 
-function TurnoverProcessor({ selectedVideo, onTagsApproved }) {
+function TurnoverProcessor({ selectedVideo, onTagsApproved, buttonText = "Process Attacking Sequences" }) {
   const globalData = useContext(GlobalContext);
   const [proposedTags, setProposedTags] = useState([]);
 
@@ -97,7 +97,7 @@ function TurnoverProcessor({ selectedVideo, onTagsApproved }) {
           className="process-button"
           onClick={processClips}
         >
-          Process Attacking Sequences
+          {buttonText}
         </button>
         <div className="tooltip-container">
           <span className="info-icon" role="img" aria-label="info">ℹ️</span>
