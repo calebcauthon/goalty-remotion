@@ -175,13 +175,25 @@ function ClipMaker() {
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
                 buttonText="Find Clips: Home Team Turnovers"
-                team="home"
+                startTag="home_touch_attacking"
+                endTag="away_touch_clearing"
+                teamTouchPrefix="home_touch_"
+                opposingTouchPrefix="away_touch_"
+                turnoverTag="home_turnover"
+                validEndTags={['score', 'home_touch_attacking']}
+                maxPrecedingTouches={3}
               />
               <TurnoverProcessor
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
                 buttonText="Find Clips: Away Team Turnovers"
-                team="away"
+                startTag="away_touch_attacking"
+                endTag="home_touch_clearing"
+                teamTouchPrefix="away_touch_"
+                opposingTouchPrefix="home_touch_"
+                turnoverTag="away_turnover"
+                validEndTags={['score', 'away_touch_attacking']}
+                maxPrecedingTouches={3}
               />
               <ScoringPossessionProcessor 
                 selectedVideo={selectedVideo}
