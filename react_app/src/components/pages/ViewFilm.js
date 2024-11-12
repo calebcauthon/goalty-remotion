@@ -453,18 +453,6 @@ function ViewFilm() {
                   aspectRatio: '16/9'
                 }}
               />
-              <RenderCommand 
-                selectedVideos={Array.from(selectedVideos)}
-                videos={videos}
-                selectedTags={Array.from(selectedTags)}
-                outputFileName={`${film.name.replace(/\s+/g, '_')}.mp4`}
-                durationInFrames={calculateDuration()}
-                fps={30}
-                width={1280}
-                height={720}
-                showFirstPartOnly={true}
-                compositionId={selectedTemplate}
-              />
               <CloudRenderButton 
                 selectedVideos={selectedVideos}
                 videos={videos}
