@@ -163,11 +163,18 @@
   padding: 15px;
   background-color: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: max-height 0.3s ease;
+}
+
+.included-clips-container.expanded {
+  max-height: 80vh;
 }
 
 .included-clips-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 0.9rem;
+  line-height: 1.2;
 }
 
 .included-clips-table thead {
@@ -179,7 +186,7 @@
 
 .included-clips-table th,
 .included-clips-table td {
-  padding: 8px;
+  padding: 4px 8px;
   text-align: left;
   border: 1px solid #ddd;
 }
@@ -318,4 +325,20 @@
 
 .video-link:hover {
   text-decoration: underline;
+}
+
+.expand-toggle {
+  float: right;
+  padding: 4px 8px;
+  cursor: pointer;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.included-clips-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
 }

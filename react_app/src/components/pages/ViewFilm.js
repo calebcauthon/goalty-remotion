@@ -44,6 +44,7 @@ function ViewFilm() {
   const [renderFilename, setRenderFilename] = useState(null);
   const [isRenderHistoryCollapsed, setIsRenderHistoryCollapsed] = useState(true);
   const [tagFilter, setTagFilter] = useState('');
+  const [isClipsExpanded, setIsClipsExpanded] = useState(false);
 
   const fetchFilm = async () => {
     try {
@@ -436,8 +437,16 @@ function ViewFilm() {
           </select>
         </div>
 
-        <div className="included-clips-container">
-          <h2>Included Clips</h2>
+        <div className={`included-clips-container ${isClipsExpanded ? 'expanded' : ''}`}>
+          <div className="included-clips-header">
+            <h2>Included Clips</h2>
+            <button 
+              className="expand-toggle"
+              onClick={() => setIsClipsExpanded(!isClipsExpanded)}
+            >
+              {isClipsExpanded ? '🗗 Minimize' : '⤢ Expand'}
+            </button>
+          </div>
           <table className="included-clips-table">
             <thead>
               <tr>
