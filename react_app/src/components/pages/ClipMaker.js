@@ -3,6 +3,7 @@ import Layout from 'components/pages/Layout';
 import 'components/pages/ClipMaker.css';
 import ScoringPossessionProcessor from 'components/processing/ScoringPossessionProcessor';
 import PlayingTimeProcessor from 'components/processing/PlayingTimeProcessor';
+import TurnoverProcessor from 'components/processing/TurnoverProcessor';
 import { GlobalContext } from '../../index';
 import { Player } from '@remotion/player';
 import { getVideoMetadata } from '@remotion/media-utils';
@@ -20,6 +21,7 @@ function ClipMaker() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const initialVideoId = parseInt(searchParams.get('videoId'));
+  const [tagFilter, setTagFilter] = useState('');
 
   useEffect(() => {
     fetchVideos();
@@ -162,6 +164,17 @@ function ClipMaker() {
           <>
             <div className="tags-table-container">
               <h2>Tags for {selectedVideo.name}</h2>
+              <input
+                type="text"
+                placeholder="Filter tags..."
+                value={tagFilter}
+                onChange={(e) => setTagFilter(e.target.value)}
+                style={{ marginBottom: '10px', padding: '5px', width: '200px' }}
+              />
+              <TurnoverProcessor
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+              />
               <ScoringPossessionProcessor 
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
@@ -207,6 +220,7 @@ function ClipMaker() {
                 <tbody>
                   {[...selectedVideo.tags]
                     .sort((a, b) => (a.frame || 0) - (b.frame || 0))
+                    .filter(tag => tag.name.toLowerCase().includes(tagFilter.toLowerCase()))
                     .map((tag, index) => (
                     <tr key={index}>
                       <td>{tag.name}</td>
