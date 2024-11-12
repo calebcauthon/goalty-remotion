@@ -173,10 +173,7 @@ function ViewFilm() {
       endFrame
     };
     
-    const newClips = [...includedClips, newClip];
-    setIncludedClips(newClips);
-    setSelectedTags(new Set(newClips));
-    saveClipsToFilm(newClips);
+    handleAddManyClips([newClip]);
   };
 
   const handleRemoveClip = (clipKey) => {
@@ -319,6 +316,73 @@ function ViewFilm() {
       }
     }
   }, [film]);
+
+  const handleAddManyClips = async (newClipsArray) => {
+    // Filter out any clips that are already included
+    const uniqueNewClips = newClipsArray.filter(newClip => 
+      !includedClips.some(clip => clip.key === newClip.key)
+    );
+
+    if (uniqueNewClips.length === 0) return;
+
+    const updatedClips = [...includedClips, ...uniqueNewClips];
+
+    try {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          data: {
+            ...film.data,
+            clips: updatedClips
+          }
+        }),
+      });
+      
+      if (response.ok) {
+        setIncludedClips(updatedClips);
+        setSelectedTags(new Set(updatedClips));
+        setFilm({ 
+          ...film, 
+          data: {
+            ...film.data,
+            clips: updatedClips
+          }
+        });
+      } else {
+        console.error('Failed to update film clips');
+      }
+    } catch (error) {
+      console.error('Error updating film clips:', error);
+    }
+  };
+
+  const handleAddAllVisibleTags = () => {
+    const clipsToAdd = videos
+      .filter(video => selectedVideos.has(video.id))
+      .flatMap((video) => 
+        video.tags
+          .filter(tag => tag.startFrame && tag.endFrame)
+          .filter(tag => 
+            tag.name.toLowerCase().includes(tagFilter.toLowerCase()) ||
+            video.name.toLowerCase().includes(tagFilter.toLowerCase())
+          )
+          .map(tag => ({
+            key: `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}`,
+            videoId: video.id,
+            videoName: video.name,
+            videoFilepath: video.filepath,
+            tagName: tag.name,
+            frame: tag.frame,
+            startFrame: tag.startFrame,
+            endFrame: tag.endFrame
+          }))
+      );
+
+    handleAddManyClips(clipsToAdd);
+  };
 
   if (!film) {
     return <Layout>Loading...</Layout>;
@@ -567,13 +631,22 @@ function ViewFilm() {
 
         <div className="tags-table-container">
           <h2>All Tags</h2>
-          <input
-            type="text"
-            placeholder="Filter tags..."
-            value={tagFilter}
-            onChange={(e) => setTagFilter(e.target.value)}
-            style={{ marginBottom: '1rem', padding: '0.5rem' }}
-          />
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+            <input
+              type="text"
+              placeholder="Filter tags..."
+              value={tagFilter}
+              onChange={(e) => setTagFilter(e.target.value)}
+              style={{ padding: '0.5rem', flexGrow: 1 }}
+            />
+            <button 
+              onClick={handleAddAllVisibleTags}
+              className="add-clip-button"
+              style={{ padding: '0.5rem 1rem' }}
+            >
+              Add All Visible Tags
+            </button>
+          </div>
           <table className="tags-table">
             <thead>
               <tr>
