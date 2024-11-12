@@ -8,12 +8,6 @@ import VideoPlayer from '../VideoPlayer';
 import { JSONTree } from 'react-json-tree';
 import './VideoDetail.css';
 import { useHotkeys } from '../Hotkeys';
-import { useTagAdder } from '../hotkeys/TagAdder';
-import { useVideoSeeker } from '../hotkeys/VideoSeeker';
-import { useHighlightAdder } from '../hotkeys/HighlightAdder';
-import { useSpeedController } from '../hotkeys/SpeedController';
-import { usePlayPauseController } from '../hotkeys/PlayPauseController';
-import { debounce } from 'lodash';
 import { FaPencilAlt, FaSave } from 'react-icons/fa';
 import { GlobalContext } from '../../index'; 
 import Draggable from 'react-draggable';
@@ -42,7 +36,6 @@ function VideoDetail() {
   const [tagsExpanded, setTagsExpanded] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
-  const [activeHotkeySet, setActiveHotkeySet] = useState('set1');
   const [hotkeyGroups, setHotkeyGroups] = useState([]);
   const [activeGroupId, setActiveGroupId] = useState(null);
   const [hotkeyButtonsExpanded, setHotkeyButtonsExpanded] = useState(false);
@@ -176,12 +169,6 @@ function VideoDetail() {
   }, [playbackRate]);
   const getPlaybackRate = useCallback(() => playbackRateRef.current, []);
 
-  const addTag = useTagAdder({ updateMetadata, playerRef }, currentFrame);
-  const { seekBackward, seekForward } = useVideoSeeker({ playerRef }, currentFrame);
-  const addHighlight = useHighlightAdder({ updateMetadata, playerRef }, currentFrame);
-  const { slowDown, speedUp, resetSpeed } = useSpeedController({ getPlaybackRate, setPlaybackRate });
-  const { togglePlayPause } = usePlayPauseController({ playerRef });
-
   const getCurrentHotkeys = useCallback(() => {
     if (!hotkeyGroups.length || activeGroupId === null) return {};
     
@@ -203,7 +190,7 @@ function VideoDetail() {
     return hotkeys;
   }, [hotkeyGroups, activeGroupId]);
 
-  const { registerHotkey, setHotkeys } = useHotkeys(
+  const { setHotkeys } = useHotkeys(
     hotkeyMode,
     { 
       updateMetadata, 
@@ -307,16 +294,6 @@ function VideoDetail() {
     });
     // Trigger save
     handleSaveMetadata();
-  };
-
-  const handleDragEnd = (result) => {
-    if (!result.destination) return;
-
-    const items = Array.from(buttonOrder);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-
-    setButtonOrder(items);
   };
 
   const handleDragStop = (key, e, data) => {
