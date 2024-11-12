@@ -59,13 +59,15 @@ def render_video(render_params: RenderVideoRequest):
 
       if files and files[0]['fileName'] == output_file_name:
           print(f"File {output_file_name} already exists in B2, skipping render")
-          return
+          return True
 
       print("Running render.mjs..")
       subprocess.run([
           "node", "/render.mjs"
       ],
       check=True)
+
+      return False
 
     def upload_video(auth_data, output_file_name):
       # Get upload URL
@@ -100,8 +102,8 @@ def render_video(render_params: RenderVideoRequest):
           print(f"Uploaded file: {output_file_name} to B2 bucket")
 
     auth_data = authenticate_backblaze()
-    render_mp4(render_params.props, render_params.output_file_name)
-    upload_video(auth_data, render_params.output_file_name)
+    already_exists = render_mp4(render_params.props, render_params.output_file_name)
+    upload_video(auth_data, render_params.output_file_name) if not already_exists else None
 
     return render_params.output_file_name
 
