@@ -12,6 +12,8 @@ export const CloudRenderButton = ({
   const globalData = useContext(GlobalContext);
   const [isRendering, setIsRendering] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState(null);
+  const [showFilenameOverlay, setShowFilenameOverlay] = useState(false);
+  const [editedFileName, setEditedFileName] = useState(outputFileName);
 
   const getTimestampedFilename = (filename) => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -39,8 +41,6 @@ export const CloudRenderButton = ({
   );
 
   const handleCloudRender = async () => {
-    const timestampedFilename = getTimestampedFilename(outputFileName);
-    
     const payload = {
       videos: videos.filter(video => selectedVideos.has(video.id)).map(video => video.filepath.split('/').pop()),
       props: {
@@ -49,7 +49,7 @@ export const CloudRenderButton = ({
         selectedTags: Array.from(selectedTags),
         useStaticFile: true
       },
-      output_file_name: timestampedFilename,
+      output_file_name: editedFileName,
     };
 
     try {
@@ -66,7 +66,7 @@ export const CloudRenderButton = ({
         console.log('Cloud render initiated successfully');
         setDownloadUrl(data.download_url);
         setIsRendering(false);
-        onRenderStart(timestampedFilename);
+        onRenderStart(editedFileName);
       } else {
         console.error('Failed to initiate cloud render');
         setIsRendering(false);
@@ -89,11 +89,10 @@ export const CloudRenderButton = ({
   };
 
   return (
-    <div>
+    <div style={{ position: 'relative' }}>
       <button 
         onClick={() => {
-          setIsRendering(true);
-          handleCloudRender();
+          setShowFilenameOverlay(true);
         }} 
         className="cloud-render-button"
         disabled={isRendering}
@@ -104,6 +103,43 @@ export const CloudRenderButton = ({
       >
         {getButtonText()}
       </button>
+
+      {showFilenameOverlay && (
+        <div style={{
+          top: '100%',
+          left: 0,
+          backgroundColor: 'white',
+          padding: '10px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          borderRadius: '4px',
+          marginTop: '5px',
+          zIndex: 1000
+        }}>
+          <input
+            type="text"
+            value={editedFileName}
+            onChange={(e) => setEditedFileName(e.target.value)}
+            style={{ marginRight: '10px' }}
+          />
+          <button 
+            onClick={() => {
+              setIsRendering(true);
+              handleCloudRender();
+              setShowFilenameOverlay(false);
+            }}
+          >
+            Confirm
+          </button>
+          <button 
+            onClick={() => {
+              setShowFilenameOverlay(false);
+              setEditedFileName(outputFileName);
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   );
 };
