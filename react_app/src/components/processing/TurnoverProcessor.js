@@ -2,9 +2,17 @@ import React, { useState, useContext } from 'react';
 import { GlobalContext } from '../../index';
 import { findValidSequences } from './findValidSequences';
 
-function TurnoverProcessor({ selectedVideo, onTagsApproved, buttonText = "Process Attacking Sequences" }) {
+function TurnoverProcessor({ selectedVideo, onTagsApproved, buttonText = "Process Attacking Sequences", team = "home" }) {
   const globalData = useContext(GlobalContext);
   const [proposedTags, setProposedTags] = useState([]);
+
+  const teamConfig = {
+    touchPrefix: `${team}_touch_`,
+    opposingTouchPrefix: `${team === 'home' ? 'away' : 'home'}_touch_`,
+    attackingTag: `${team}_touch_attacking`,
+    clearingTag: `${team === 'home' ? 'away' : 'home'}_touch_clearing`,
+    turnoverTag: `${team}_turnover`
+  };
 
   const findPrecedingTouches = (tags, attackingTag) => {
     const precedingTouches = [];
@@ -12,16 +20,15 @@ function TurnoverProcessor({ selectedVideo, onTagsApproved, buttonText = "Proces
       .sort((a, b) => a.frame - b.frame)
       .filter(tag => tag.frame < attackingTag.frame);
       
-
     // Work backwards from the attacking tag
     for (let i = sortedTags.length - 1; i >= 0 && precedingTouches.length < 3; i--) {
       const tag = sortedTags[i];
       
-      // Break if we hit an away touch
-      if (tag.name.startsWith('away_touch_')) break;
+      // Break if we hit an opposite team touch
+      if (tag.name.startsWith(teamConfig.opposingTouchPrefix)) break;
       
-      // Add home touches to our sequence
-      if (tag.name.startsWith('home_touch_')) {
+      // Add team touches to our sequence
+      if (tag.name.startsWith(teamConfig.touchPrefix)) {
         precedingTouches.unshift({
           name: 'preceding_touch',
           frame: tag.frame,
@@ -39,10 +46,10 @@ function TurnoverProcessor({ selectedVideo, onTagsApproved, buttonText = "Proces
     // First find all attacking sequences
     const attackingSequences = findValidSequences(
       selectedVideo.tags,
-      'home_touch_attacking',
-      'away_touch_clearing',
-      ['score', 'home_touch_attacking'],
-      'home_turnover'
+      teamConfig.attackingTag,
+      teamConfig.clearingTag,
+      ['score', teamConfig.attackingTag],
+      teamConfig.turnoverTag
     );
 
     // For each sequence, find the preceding touches
@@ -50,7 +57,7 @@ function TurnoverProcessor({ selectedVideo, onTagsApproved, buttonText = "Proces
     attackingSequences.forEach(sequence => {
       // Find the original attacking tag
       const attackingTag = selectedVideo.tags.find(
-        tag => tag.name === 'home_touch_attacking' && tag.frame === sequence.startFrame
+        tag => tag.name === teamConfig.attackingTag && tag.frame === sequence.startFrame
       );
 
       if (attackingTag) {
@@ -104,9 +111,9 @@ function TurnoverProcessor({ selectedVideo, onTagsApproved, buttonText = "Proces
           <div className="tooltip-content">
             This processor:
             <ul>
-              <li>Finds sequences between "home_touch_attacking" and "away_touch_clearing"</li>
-              <li>For each sequence, finds up to 3 preceding home touches</li>
-              <li>Stops at any away touch when looking for preceding touches</li>
+              <li>Finds sequences between "{teamConfig.attackingTag}" and "{teamConfig.clearingTag}"</li>
+              <li>For each sequence, finds up to 3 preceding {team} touches</li>
+              <li>Stops at any {team === 'home' ? 'away' : 'home'} touch when looking for preceding touches</li>
             </ul>
           </div>
         </div>

@@ -174,7 +174,14 @@ function ClipMaker() {
               <TurnoverProcessor
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
-                buttonText="Find Clips: Turnovers"
+                buttonText="Find Clips: Home Team Turnovers"
+                team="home"
+              />
+              <TurnoverProcessor
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                buttonText="Find Clips: Away Team Turnovers"
+                team="away"
               />
               <ScoringPossessionProcessor 
                 selectedVideo={selectedVideo}
