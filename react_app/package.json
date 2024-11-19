@@ -27,7 +27,7 @@
   "scripts": {
     "start": "export WATCHPACK_POLLING=true && react-scripts start",
     "build": "react-scripts build",
-    "test": "jest",
+    "test": "jest --maxWorkers=20",
     "test:watch": "jest --watch",
     "eject": "react-scripts eject"
   },

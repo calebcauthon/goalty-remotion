@@ -213,36 +213,19 @@ export const findTurnoverSequences = (tags, teamTouchPrefix, maxPrecedingTouches
     ["score"]
   );
   
-  // For each turnover sequence, find preceding touches
   return turnoverSequences.map(sequence => {
-    const attackingTag = tags.find(
-      tag => tag.name === homeAttack && tag.frame === sequence.startFrame
-    );
+    const touches = sequence.touches;
+    touches.pop();
 
-    if (!attackingTag) return sequence;
-
-    // Find preceding touches
-    const precedingTouches = tags
-      .filter(tag => tag.frame < attackingTag.frame)
-      .sort((a, b) => b.frame - a.frame)
-      .reduce((acc, tag) => {
-        if (acc.length >= maxPrecedingTouches) return acc;
-        if (tag.name.startsWith(opposingTouchPrefix)) return acc;
-        if (tag.name.startsWith(teamTouchPrefix)) {
-          acc.push({
-            name: 'preceding_touch',
-            frame: tag.frame,
-            originalTag: tag.name
-          });
-        }
-        return acc;
-      }, [])
-      .reverse();
+    // Respect maxPrecedingTouches by taking only the last N touches
+    if (touches.length > maxPrecedingTouches) {
+      touches.splice(0, touches.length - maxPrecedingTouches);
+    }
 
     return {
-      ...sequence,
-      startFrame: precedingTouches[0]?.frame || sequence.startFrame,
-      touches: [...precedingTouches, ...sequence.touches]
+      startFrame: touches[0].frame,
+      endFrame: touches[touches.length - 1].frame,
+      metadata: { touches }
     };
   });
 };

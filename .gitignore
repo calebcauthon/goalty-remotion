@@ -6,3 +6,4 @@ react_app/out
 *.mp4
 *.bak
 .env*
+.jest-cache
