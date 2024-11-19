@@ -5,6 +5,7 @@ import PlayingTimeProcessor from 'components/processing/PlayingTimeProcessor';
 import TurnoverProcessor from 'components/processing/TurnoverProcessor';
 import AttackSequenceProcessor from 'components/processing/AttackSequenceProcessor';
 import GameProcessor from 'components/processing/GameProcessor';
+import ScreenProcessor from 'components/processing/ScreenProcessor';
 import { GlobalContext } from '../../index';
 import { Player } from '@remotion/player';
 import { getVideoMetadata } from '@remotion/media-utils';
@@ -306,6 +307,12 @@ function ClipMaker() {
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
                 />
+
+              <ScreenProcessor
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                onPreview={handlePreview}
+              />
 
               {/* Move filter section here, just above the table */}
               <div className="tag-filters" style={{ marginBottom: '20px', marginTop: '30px' }}>

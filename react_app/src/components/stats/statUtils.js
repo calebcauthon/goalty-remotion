@@ -286,6 +286,41 @@ export const findGameSequences = (tags) => {
   return sequences;
 };
 
+export const calculateScreenSequenceTags = (tags, screenTagName) => {
+  if (!tags || !screenTagName) return [];
+  
+  const relevantTags = tags.filter(tag => 
+    tag.name.includes('_touch_') || tag.name === screenTagName
+  );
+  const sortedTags = [...relevantTags].sort((a, b) => a.frame - b.frame);
+
+  const sequences = [];
+  sortedTags.forEach((tag, index) => {
+    if (tag.name === screenTagName) {
+      const startIndex = Math.max(0, index - 2);
+      const endIndex = Math.min(sortedTags.length - 1, index + 1);
+      const touchSequence = sortedTags.slice(startIndex, endIndex + 1);
+      
+      if (touchSequence.length > 0) {
+        sequences.push({
+          name: `${screenTagName}_sequence`,
+          startFrame: touchSequence[0].frame,
+          endFrame: touchSequence[touchSequence.length - 1].frame,
+          metadata: {
+            touchCount: touchSequence.length,
+            touches: touchSequence.map(t => ({
+              name: t.name,
+              frame: t.frame
+            }))
+          }
+        });
+      }
+    }
+  });
+
+  return sequences;
+};
+
 export default {
   calculateTeamAttacks,
   calculateTeamScores,
@@ -299,4 +334,5 @@ export default {
   calculateScoringPossessionTags,
   calculatePlayingTimeTags,
   findGameSequences,
+  calculateScreenSequenceTags,
 };
