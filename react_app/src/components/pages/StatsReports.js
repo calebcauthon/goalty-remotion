@@ -5,6 +5,9 @@ import TagCount from 'components/stats/TagCount';
 import TeamTouchCount from 'components/stats/TeamTouchCount';
 import TeamScoreCount from 'components/stats/TeamScoreCount';
 import TeamAttackCount from 'components/stats/TeamAttackCount';
+import TeamPossessionCount from 'components/stats/TeamPossessionCount';
+import TeamAggregateStats from 'components/stats/TeamAggregateStats';
+import TeamAttackTouches from 'components/stats/TeamAttackTouches';
 import './StatsReports.css';
 
 function StatsReports() {
@@ -54,9 +57,15 @@ function StatsReports() {
         {selectedVideo && (
           <div className="stats-panel">
             <h2>Statistics for {selectedVideo.name}</h2>
+            <TeamAggregateStats video={selectedVideo} team="home" />
+            <TeamAggregateStats video={selectedVideo} team="away" />
+            <TeamAttackTouches video={selectedVideo} team="home" />
+            <TeamAttackTouches video={selectedVideo} team="away" />
             <TagCount video={selectedVideo} />
             <TeamTouchCount video={selectedVideo} team="home" />
             <TeamTouchCount video={selectedVideo} team="away" />
+            <TeamPossessionCount video={selectedVideo} team="home" />
+            <TeamPossessionCount video={selectedVideo} team="away" />
             <TeamScoreCount video={selectedVideo} team="home" />
             <TeamScoreCount video={selectedVideo} team="away" />
             <TeamAttackCount video={selectedVideo} team="home" />
