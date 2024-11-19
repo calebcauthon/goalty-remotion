@@ -206,8 +206,28 @@
   padding: 5px 10px;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 0.9em;
 }
 
 .preview-button:hover {
   background: #357abd;
+}
+
+.preview-button[data-type="full"] {
+  background: #45a049;
+}
+
+.preview-button[data-type="full"]:hover {
+  background: #3d8b41;
+}
+
+.preview-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.preview-button {
+  padding: 4px 8px;
+  font-size: 0.9em;
 }

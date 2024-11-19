@@ -102,12 +102,6 @@ function AttackSequenceProcessor({
                 <div className="preview-buttons">
                   <button 
                     className="preview-button"
-                    onClick={() => handlePreviewSequence(tag, 'full')}
-                  >
-                    Full Preview
-                  </button>
-                  <button 
-                    className="preview-button"
                     onClick={() => handlePreviewSequence(tag, 'start')}
                   >
                     First 2s
@@ -123,6 +117,13 @@ function AttackSequenceProcessor({
                     onClick={() => handlePreviewSequence(tag, 'end')}
                   >
                     Last 4s
+                  </button>
+                  <button 
+                    className="preview-button"
+                    data-type="full"
+                    onClick={() => handlePreviewSequence(tag, 'full')}
+                  >
+                    Full Preview
                   </button>
                 </div>
               </div>
