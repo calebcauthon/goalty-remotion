@@ -145,4 +145,33 @@ def check_render_status(filename):
     except Exception as e:
         return jsonify({'error': str(e)}), 400
     
+@upload_bp.route('/check-b2-files', methods=['POST'])
+def check_b2_files():
+    try:
+        data = request.json
+        filenames = data.get('filenames', [])
+        
+        if not filenames:
+            return jsonify({'error': 'No filenames provided'}), 400
+            
+        results = []
+        for filename in filenames:
+            exists, file_info = check_file_exists_in_b2(filename)
+            if exists:
+                results.append({
+                    'filename': filename,
+                    'status': 'completed',
+                    'b2_url': file_info['download_url'],
+                    'timestamp': file_info['upload_timestamp'],
+                    'file_id': file_info['file_id'],
+                    'size': file_info['size']
+                })
+            
+        return jsonify({
+            'results': results
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+    
   

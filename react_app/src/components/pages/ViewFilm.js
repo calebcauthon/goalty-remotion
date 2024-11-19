@@ -46,6 +46,7 @@ function ViewFilm() {
   const [isRenderHistoryCollapsed, setIsRenderHistoryCollapsed] = useState(true);
   const [tagFilter, setTagFilter] = useState('');
   const [isClipsExpanded, setIsClipsExpanded] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchFilm = async () => {
     try {
@@ -397,6 +398,65 @@ function ViewFilm() {
     saveClipsToFilm(newClips);
   };
 
+  const refreshRenderHistory = async () => {
+    setIsRefreshing(true);
+    try {
+      // Get all filenames from renders
+      const filenames = film.data.renders.map(render => render.filename);
+      
+      const response = await fetch(`${globalData.APIbaseUrl}/api/check-b2-files`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ filenames })
+      });
+      
+      const data = await response.json();
+      
+      if (data.results) {
+        // Update film data with new render info
+        const updatedRenders = film.data.renders.map(render => {
+          const matchingResult = data.results.find(r => r.filename === render.filename);
+          if (matchingResult) {
+            return {
+              ...render,
+              ...matchingResult
+            };
+          }
+          return render;
+        });
+        
+        // Update film metadata
+        await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            data: {
+              ...film.data,
+              renders: updatedRenders
+            }
+          }),
+        });
+        
+        // Update local state
+        setFilm(prevFilm => ({
+          ...prevFilm,
+          data: {
+            ...prevFilm.data,
+            renders: updatedRenders
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error refreshing render history:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   if (!film) {
     return <Layout>Loading...</Layout>;
   }
@@ -596,11 +656,18 @@ function ViewFilm() {
           )}
         </div>
 
-        {film.data.renders && film.data.renders.length > 0 && (
-          <div className={`render-history ${isRenderHistoryCollapsed ? 'collapsed' : ''}`}>
-            <h3 onClick={() => setIsRenderHistoryCollapsed(!isRenderHistoryCollapsed)}>
-              Render History
-            </h3>
+        {film.data.renders && (
+          <div className="render-history">
+            <div className="render-history-header">
+              <h3>Render History</h3>
+              <button 
+                onClick={refreshRenderHistory}
+                disabled={isRefreshing}
+                className="refresh-button"
+              >
+                {isRefreshing ? '🔄 Refreshing...' : '🔄 Refresh'}
+              </button>
+            </div>
             <table className="render-history-table">
               <thead>
                 <tr>
@@ -613,7 +680,7 @@ function ViewFilm() {
               </thead>
               <tbody>
                 {film.data.renders
-                  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) // Sort by newest first
+                  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
                   .map((render, index) => (
                     <tr key={index}>
                       <td>{new Date(render.timestamp).toLocaleString()}</td>
