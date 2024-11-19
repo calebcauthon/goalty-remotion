@@ -27,8 +27,8 @@
   "scripts": {
     "start": "export WATCHPACK_POLLING=true && react-scripts start",
     "build": "react-scripts build",
-    "test": "jest --maxWorkers=20",
-    "test:watch": "jest --watch",
+    "test": "vitest run",
+    "test:watch": "vitest --watch.usePolling",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -54,6 +54,7 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^14.4.3",
     "identity-obj-proxy": "^3.0.0",
-    "jest-environment-jsdom": "^29.7.0"
+    "jest-environment-jsdom": "^29.7.0",
+    "vitest": "^2.1.5"
   }
 }
