@@ -10,7 +10,7 @@ export const calculateTeamTouches = (video, team) => {
   ).length;
 };
 
-const findTeamAttackSequences = (video, team) => {
+export const findTeamAttackSequences = (video, team) => {
   if (!video?.tags) return [];
   
   const relevantTags = video.tags.filter(tag => 
@@ -25,11 +25,6 @@ const findTeamAttackSequences = (video, team) => {
     if (tag.name === `${team}_touch_attacking` && index > 0) {
       const previousTag = relevantTags[index - 1];
       if (previousTag.name === `${team}_touch_clearing`) {
-        // End previous sequence if exists
-        if (currentSequence) {
-          sequences.push(currentSequence);
-        }
-        // Start new sequence
         currentSequence = {
           startFrame: previousTag.frame,
           touches: [previousTag, tag],
@@ -49,6 +44,7 @@ const findTeamAttackSequences = (video, team) => {
     // Check for score
     else if (currentSequence && tag.name === 'score') {
       currentSequence.scored = true;
+      currentSequence.touches.push(tag);
     }
     // End sequence on opponent touch
     else if (currentSequence && tag.name.includes('_touch_') && !tag.name.startsWith(`${team}_touch_`)) {
@@ -169,3 +165,13 @@ export const calculateTeamPossessions = (video, team) => {
 
   return possessionCount;
 }; 
+
+export default {
+  calculateTeamAttacks,
+  calculateTeamScores,
+  calculateTeamAttackTouches,
+  calculateTeamAttackDurations,
+  calculateTeamAggregateStats,
+  calculateTeamPossessions,
+  findTeamAttackSequences
+};

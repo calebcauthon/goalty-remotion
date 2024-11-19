@@ -4,6 +4,7 @@ import 'components/pages/ClipMaker.css';
 import ScoringPossessionProcessor from 'components/processing/ScoringPossessionProcessor';
 import PlayingTimeProcessor from 'components/processing/PlayingTimeProcessor';
 import TurnoverProcessor from 'components/processing/TurnoverProcessor';
+import AttackSequenceProcessor from 'components/processing/AttackSequenceProcessor';
 import { GlobalContext } from '../../index';
 import { Player } from '@remotion/player';
 import { getVideoMetadata } from '@remotion/media-utils';
@@ -245,6 +246,32 @@ function ClipMaker() {
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
                 />
+              <AttackSequenceProcessor
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                team="home"
+                buttonText="Find Home Team Attack Sequences"
+              />
+              <AttackSequenceProcessor
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                team="away"
+                buttonText="Find Away Team Attack Sequences"
+              />
+              <AttackSequenceProcessor
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                team="home"
+                scoringOnly={true}
+                buttonText="Find Home Team Scoring Sequences"
+              />
+              <AttackSequenceProcessor
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                team="away"
+                scoringOnly={true}
+                buttonText="Find Away Team Scoring Sequences"
+              />
 
               {/* Move filter section here, just above the table */}
               <div className="tag-filters" style={{ marginBottom: '20px', marginTop: '30px' }}>
