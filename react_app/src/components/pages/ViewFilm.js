@@ -29,6 +29,25 @@ const calculateStartFrameForClip = (clips, currentIndex) => {
     }, 0);
 };
 
+const getClipDurationClass = (duration, allDurations) => {
+  if (!allDurations || allDurations.length === 0) return '';
+  
+  // Sort durations in descending order
+  const sortedDurations = [...allDurations].sort((a, b) => b - a);
+  
+  // Calculate threshold indices
+  const topTenIndex = Math.floor(sortedDurations.length * 0.1);
+  const topQuarterIndex = Math.floor(sortedDurations.length * 0.25);
+  
+  // Get threshold values
+  const topTenThreshold = sortedDurations[topTenIndex];
+  const topQuarterThreshold = sortedDurations[topQuarterIndex];
+  
+  if (duration >= topTenThreshold) return 'very-long-clip';
+  if (duration >= topQuarterThreshold) return 'long-clip';
+  return '';
+};
+
 function ViewFilm() {
   const globalData = useContext(GlobalContext);
   const [film, setFilm] = useState(null);
@@ -549,6 +568,7 @@ function ViewFilm() {
                   <th>Tag Name</th>
                   <th>Frame</th>
                   <th>Frame Range</th>
+                  <th>Duration</th>
                   <th>Frame Range of Output</th>
                   <th>Actions</th>
                 </tr>
@@ -559,58 +579,68 @@ function ViewFilm() {
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                   >
-                    {includedClips.map((clip, index) => {
-                      const startFrame = calculateStartFrameForClip(includedClips, index);
-                      const clipDuration = clip.endFrame - clip.startFrame;
-                      const endFrame = startFrame + clipDuration;
-                      
-                      return (
-                        <Draggable 
-                          key={clip.key} 
-                          draggableId={clip.key} 
-                          index={index}
-                        >
-                          {(provided, snapshot) => (
-                            <tr
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              className={snapshot.isDragging ? 'dragging' : ''}
-                            >
-                              <td {...provided.dragHandleProps} className="drag-handle">
-                                ⋮⋮
-                              </td>
-                              <td>
-                                <a 
-                                  href={`/videos/${clip.videoId}?startFrame=${clip.startFrame}&endFrame=${clip.endFrame}`} 
-                                  className="video-link"
-                                >
-                                  {clip.videoName} ({clip.startFrame}-{clip.endFrame})
-                                </a>
-                              </td>
-                              <td>{clip.tagName}</td>
-                              <td>{clip.frame}</td>
-                              <td>{`${clip.startFrame}-${clip.endFrame}`}</td>
-                              <td>
-                                <span 
-                                  className="clickable-frame-range"
-                                  onClick={() => handleSeekToFrame(startFrame)}
-                                >
-                                  {`${startFrame}-${endFrame}`}
-                                </span>
-                              </td>
-                              <td>
-                                <button 
-                                  onClick={() => handleRemoveClip(clip.key)}
-                                  className="remove-clip-button"
-                                >
-                                  Remove
-                                </button>
-                              </td>
-                            </tr>
-                          )}
-                        </Draggable>
+                    {(() => {
+                      // Calculate all durations once
+                      const allDurations = includedClips.map(clip => 
+                        clip.endFrame - clip.startFrame
                       );
-                    })}
+                      
+                      return includedClips.map((clip, index) => {
+                        const startFrame = calculateStartFrameForClip(includedClips, index);
+                        const clipDuration = clip.endFrame - clip.startFrame;
+                        const endFrame = startFrame + clipDuration;
+                        const durationInSeconds = (clipDuration / 30).toFixed(1);
+                        const durationClass = getClipDurationClass(clipDuration, allDurations);
+                        
+                        return (
+                          <Draggable 
+                            key={clip.key} 
+                            draggableId={clip.key} 
+                            index={index}
+                          >
+                            {(provided, snapshot) => (
+                              <tr
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`${snapshot.isDragging ? 'dragging' : ''} ${durationClass}`}
+                              >
+                                <td {...provided.dragHandleProps} className="drag-handle">
+                                  ⋮⋮
+                                </td>
+                                <td>
+                                  <a 
+                                    href={`/videos/${clip.videoId}?startFrame=${clip.startFrame}&endFrame=${clip.endFrame}`} 
+                                    className="video-link"
+                                  >
+                                    {clip.videoName} ({clip.startFrame}-{clip.endFrame})
+                                  </a>
+                                </td>
+                                <td>{clip.tagName}</td>
+                                <td>{clip.frame}</td>
+                                <td>{`${clip.startFrame}-${clip.endFrame}`}</td>
+                                <td>{durationInSeconds}s</td>
+                                <td>
+                                  <span 
+                                    className="clickable-frame-range"
+                                    onClick={() => handleSeekToFrame(startFrame)}
+                                  >
+                                    {`${startFrame}-${endFrame}`}
+                                  </span>
+                                </td>
+                                <td>
+                                  <button 
+                                    onClick={() => handleRemoveClip(clip.key)}
+                                    className="remove-clip-button"
+                                  >
+                                    Remove
+                                  </button>
+                                </td>
+                              </tr>
+                            )}
+                          </Draggable>
+                        );
+                      });
+                    })()}
                     {provided.placeholder}
                   </tbody>
                 )}

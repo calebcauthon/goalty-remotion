@@ -385,3 +385,37 @@
   opacity: 0.7;
   cursor: not-allowed;
 }
+
+/* Clip duration highlighting */
+.long-clip {
+  background-color: rgba(255, 235, 156, 0.3);
+}
+
+.very-long-clip {
+  background-color: rgba(255, 199, 156, 0.3);
+}
+
+/* Override hover effect to blend with highlight colors */
+.included-clips-table tr:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.included-clips-table tr.long-clip:hover {
+  background-color: rgba(255, 235, 156, 0.4);
+}
+
+.included-clips-table tr.very-long-clip:hover {
+  background-color: rgba(255, 199, 156, 0.4);
+}
+
+/* Duration column styling */
+.included-clips-table td:nth-child(6) {
+  font-weight: 500;
+  text-align: right;
+  padding-right: 16px;
+}
+
+/* Add a subtle transition for hover effects */
+.included-clips-table tr {
+  transition: background-color 0.2s ease;
+}
