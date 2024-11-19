@@ -8,7 +8,8 @@ function AttackSequenceProcessor({
   onTagsApproved,
   team,
   scoringOnly = false,
-  buttonText = "Find Attack Sequences"
+  buttonText = "Find Attack Sequences",
+  onPreview
 }) {
   const globalData = useContext(GlobalContext);
   const [proposedTags, setProposedTags] = useState([]);
@@ -46,6 +47,12 @@ function AttackSequenceProcessor({
     }
   };
 
+  const handlePreviewSequence = (sequence) => {
+    if (onPreview) {
+      onPreview(sequence.startFrame, sequence.endFrame);
+    }
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
@@ -72,6 +79,19 @@ function AttackSequenceProcessor({
       {proposedTags.length > 0 && (
         <div className="proposed-tags-container">
           <h2>Proposed Attack Sequence Tags</h2>
+          <div className="sequences-preview">
+            {proposedTags.map((tag, index) => (
+              <div key={index} className="sequence-item">
+                <span>Sequence {index + 1}: {tag.metadata.touchCount} touches</span>
+                <button 
+                  className="preview-button"
+                  onClick={() => handlePreviewSequence(tag)}
+                >
+                  Preview
+                </button>
+              </div>
+            ))}
+          </div>
           <textarea
             readOnly
             value={JSON.stringify(proposedTags, null, 2)}

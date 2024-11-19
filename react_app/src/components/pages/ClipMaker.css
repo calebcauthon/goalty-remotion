@@ -177,3 +177,37 @@
 .tag-filters button.active:hover {
   background: #0056b3;
 }
+
+.sequences-preview {
+  margin: 10px 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.sequence-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.sequence-item:last-child {
+  border-bottom: none;
+}
+
+.preview-button {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.preview-button:hover {
+  background: #357abd;
+}

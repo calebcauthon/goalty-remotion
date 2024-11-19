@@ -23,6 +23,7 @@ function ClipMaker() {
   const searchParams = new URLSearchParams(location.search);
   const initialVideoId = parseInt(searchParams.get('videoId'));
   const [tagFilter, setTagFilter] = useState('');
+  const [previewEndFrame, setPreviewEndFrame] = useState(null);
 
   useEffect(() => {
     fetchVideos();
@@ -119,6 +120,21 @@ function ClipMaker() {
     }
   };
 
+  const handlePreview = (startFrame, endFrame) => {
+    if (playerRef.current) {
+      playerRef.current.seekTo(startFrame);
+      playerRef.current.play();
+      setPreviewEndFrame(endFrame);
+    }
+  };
+
+  const handleFrameUpdate = (frame) => {
+    if (previewEndFrame && frame >= previewEndFrame) {
+      playerRef.current?.pause();
+      setPreviewEndFrame(null);
+    }
+  };
+
   return (
     <Layout>
       <div className="clipmaker-container">
@@ -148,7 +164,7 @@ function ClipMaker() {
               component={VideoPlayer}
               inputProps={{
                 src: selectedVideo.filepath,
-                onFrameUpdate: () => {}
+                onFrameUpdate: handleFrameUpdate
               }}
               durationInFrames={durationInFrames}
               compositionWidth={800}
@@ -173,6 +189,7 @@ function ClipMaker() {
                 onTagsApproved={refreshVideoData}
                 team="home"
                 scoringOnly={true}
+                onPreview={handlePreview}
               />
               <AttackSequenceProcessor
                 buttonText="Scoring Possessions (away)"
@@ -180,6 +197,7 @@ function ClipMaker() {
                 onTagsApproved={refreshVideoData}
                 team="away"
                 scoringOnly={true}
+                onPreview={handlePreview}
               />
               <AttackSequenceProcessor
                 buttonText="Scores (home)"
@@ -188,6 +206,7 @@ function ClipMaker() {
                 team="home"
                 scoringOnly={true}
                 maxPrecedingTouches={3}
+                onPreview={handlePreview}
               />
               <AttackSequenceProcessor
                 buttonText="Scores (away)"
@@ -196,6 +215,7 @@ function ClipMaker() {
                 team="away"
                 scoringOnly={true}
                 maxPrecedingTouches={3}
+                onPreview={handlePreview}
               />
               <AttackSequenceProcessor
                 buttonText="Attacks (home)"
@@ -203,6 +223,7 @@ function ClipMaker() {
                 onTagsApproved={refreshVideoData}
                 team="home"
                 scoringOnly={false}
+                onPreview={handlePreview}
               />
               <AttackSequenceProcessor
                 buttonText="Attacks (away)"
@@ -210,6 +231,7 @@ function ClipMaker() {
                 onTagsApproved={refreshVideoData}
                 team="away"
                 scoringOnly={false}
+                onPreview={handlePreview}
               />
               
               <TurnoverProcessor
@@ -219,6 +241,7 @@ function ClipMaker() {
                 teamTouchPrefix="home_touch_"
                 turnoverTag="home_turnover"
                 maxPrecedingTouches={3}
+                onPreview={handlePreview}
               />
               <TurnoverProcessor
                 buttonText="Turnovers (away)"
@@ -227,6 +250,7 @@ function ClipMaker() {
                 teamTouchPrefix="away_touch_"
                 turnoverTag="away_turnover"
                 maxPrecedingTouches={3}
+                onPreview={handlePreview}
               />
 
               <GameProcessor
