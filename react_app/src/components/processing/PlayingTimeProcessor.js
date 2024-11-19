@@ -38,8 +38,10 @@ function PlayingTimeProcessor({ selectedVideo, onTagsApproved }) {
   const processClips = () => {
     if (!selectedVideo?.tags || !playerName) return;
 
+    const playerTags = selectedVideo.tags.filter(tag => tag.name.includes(playerName));
+
     const sequences = findTagSequences(
-      selectedVideo.tags,
+      playerTags,
       `${playerName} IN`,
       `${playerName} OUT`,
       [`${playerName} OUT`]

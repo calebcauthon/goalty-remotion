@@ -1,44 +1,50 @@
-import React, { useState, useContext } from 'react';
-import { GlobalContext } from '../../index';
+import React, { useState } from 'react';
 import { findTagSequences } from '../stats/statUtils';
 
+export const calculateTags = (tags, home) => {
+  if (!tags) return [];
+  
+  const away = home == "home" ? "away" : "home";
+
+  // Filter to only include relevant touches and scores
+  const relevantTags = tags.filter(tag => 
+    tag.name.includes("_touch_") ||
+    tag.name.includes("score")
+  );
+
+  // Find sequences that start with a touch and end with a score
+  const sequences = findTagSequences(
+    relevantTags,
+    `${home}_touch_attacking`,
+    [`${home}_score`],
+    [`${away}_touch_clearing`, `${away}_touch_attacking`]
+  );
+
+  return sequences.map(seq => ({
+    name: `${home}_scoring_possession`,
+    startFrame: seq.startFrame,
+    endFrame: seq.endFrame,
+    metadata: {
+      touchCount: seq.touches.length,
+      touches: seq.touches.map(t => ({
+        name: t.name,
+        frame: t.frame
+      }))
+    }
+  }));
+};
+
 function ScoringPossessionProcessor({ 
-  selectedVideo, 
+  selectedVideo,
   onTagsApproved,
-  startTagName,
-  endTagName,
-  excludeTagName,
-  outputTagName,
-  buttonText
+  team,
+  globalData
 }) {
-  const globalData = useContext(GlobalContext);
   const [proposedTags, setProposedTags] = useState([]);
 
   const processClips = () => {
-    if (!selectedVideo?.tags) return;
-
-    // Get sequences using statUtils
-    const sequences = findTagSequences(
-      selectedVideo.tags,
-      startTagName,
-      endTagName,
-      excludeTagName
-    );
-
-    // Convert sequences to tags format
-    const newTags = sequences.map(seq => ({
-      name: outputTagName,
-      startFrame: seq.startFrame,
-      endFrame: seq.endFrame,
-      metadata: {
-        touchCount: seq.touches.length,
-        touches: seq.touches.map(t => ({
-          name: t.name,
-          frame: t.frame
-        }))
-      }
-    }));
-
+    if (!selectedVideo?.tags || !team) return;
+    const newTags = calculateTags(selectedVideo.tags, team);
     setProposedTags(newTags);
   };
 
@@ -74,13 +80,14 @@ function ScoringPossessionProcessor({
       <button 
         className="process-button"
         onClick={processClips}
+        disabled={!team}
       >
-        {buttonText || `Process ${outputTagName}`}
+        {`Process ${team || ''} Scoring Possessions`}
       </button>
 
       {proposedTags.length > 0 && (
         <div className="proposed-tags-container">
-          <h2>Proposed {outputTagName} Tags</h2>
+          <h2>{team} Scoring Possession Tags</h2>
           <textarea
             readOnly
             value={JSON.stringify(proposedTags, null, 2)}

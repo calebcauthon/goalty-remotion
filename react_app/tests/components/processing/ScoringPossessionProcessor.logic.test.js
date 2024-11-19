@@ -1,202 +1,90 @@
-import { findValidSequences } from '../../../src/components/processing/findValidSequences';
+import { calculateTags } from '../../../src/components/processing/ScoringPossessionProcessor';
+import {
+  HOME,
+  HOME_TOUCH_ATTACKING,
+  HOME_SCORE,
+  HOME_SCORING_POSSESSION,
+  AWAY_TOUCH_ATTACKING,
+  AWAY_TOUCH_CLEARING
+} from '../../../src/constants/tagNames';
 
-describe('ScoringPossessionProcessor Logic', () => {
-  describe('findValidSequences - home team only', () => {
-    const scenarios = [
-      [
-        { name: 'home_clearing', frame: 50 },
-        { name: 'home_attacking', frame: 100 },
-        { name: 'home_score', frame: 150 }
-      ],
-      [
-        { name: 'home_clearing', frame: 50 },
-        { name: 'home_attacking', frame: 100 },
-        { name: 'home_attacking', frame: 125 },
-        { name: 'home_score', frame: 150 }
-      ],
-      [
-        { name: 'home_clearing', frame: 50 },
-        { name: 'home_clearing', frame: 55 },
-        { name: 'home_attacking', frame: 100 },
-        { name: 'home_attacking', frame: 125 },
-        { name: 'home_score', frame: 150 }
-      ]
-    ].forEach((scenario) => {
-      test('finds valid sequence when tags are in correct order', () => {
-        const tags = scenario;
+describe('calculateTags', () => {
+  it('should return empty array for null tags', () => {
+    expect(calculateTags(null, HOME)).toEqual([]);
+  });
 
-        const result = findValidSequences(
-          tags,
-          'home_clearing',
-          'home_score',
-          [],
-          'home_scoring_possession'
-        );
+  it('should calculate scoring sequence correctly', () => {
+    const mockTags = [
+      { name: HOME_TOUCH_ATTACKING, frame: 10 },
+      { name: HOME_TOUCH_ATTACKING, frame: 15 },
+      { name: HOME_SCORE, frame: 20 },
+      { name: 'some_other_tag', frame: 17 } // Should be ignored
+    ];
 
-        expect(result).toEqual([
-          {
-            name: 'home_scoring_possession',
-            startFrame: 50,
-            endFrame: 150
-          }
-        ]);
-      });
-    });
+    const result = calculateTags(mockTags, HOME);
+    
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe(HOME_SCORING_POSSESSION);
+    expect(result[0].startFrame).toBe(10);
+    expect(result[0].endFrame).toBe(20);
+    expect(result[0].metadata.touchCount).toBe(3);
+    expect(result[0].metadata.touches).toEqual([
+      { name: HOME_TOUCH_ATTACKING, frame: 10 },
+      { name: HOME_TOUCH_ATTACKING, frame: 15 },
+      { name: HOME_SCORE, frame: 20 }
+    ]);
+  });
 
-    [
-      [
-        { name: 'home_clearing', frame: 45 },
-        { name: 'away_clearing', frame: 50 },
-        { name: 'home_clearing', frame: 55 }, // start
-        { name: 'home_attacking', frame: 100 },
-        { name: 'home_score', frame: 150 }
-      ]
-    ].forEach((scenario) => {
-      test('finds valid sequence when tags are in correct order', () => {
-        const tags = scenario;
+  it('should handle multiple scoring sequences', () => {
+    const mockTags = [
+      { name: HOME_TOUCH_ATTACKING, frame: 10 },
+      { name: HOME_SCORE, frame: 20 },
+      { name: HOME_TOUCH_ATTACKING, frame: 30 },
+      { name: HOME_TOUCH_ATTACKING, frame: 35 },
+      { name: HOME_SCORE, frame: 40 }
+    ];
 
-        const result = findValidSequences(
-          tags,
-          'home_clearing',
-          'home_score',
-          ['away_clearing'],
-          'home_scoring_possession'
-        );
+    const result = calculateTags(mockTags, HOME);
+    
+    expect(result).toHaveLength(2);
+    expect(result[1].metadata.touchCount).toBe(3);
+    expect(result[1].metadata.touches[0].frame).toEqual(30);
+    expect(result[1].metadata.touches[1].frame).toEqual(35);
+    expect(result[1].metadata.touches[2].frame).toEqual(40);
+  });
 
-        expect(result).toEqual([
-          {
-            name: 'home_scoring_possession',
-            startFrame: 55,
-            endFrame: 150
-          }
-        ]);
-      });
-    });
+  it('should ignore sequences without score', () => {
+    const mockTags = [
+      { name: HOME_TOUCH_ATTACKING, frame: 10 },
+      { name: HOME_TOUCH_ATTACKING, frame: 15 }
+    ];
 
-//    test('ignores sequence when exclude tag is present', () => {
-//      const tags = [
-//        { name: 'home_attacking', frame: 100 },
-//        { name: 'away_attacking', frame: 125 },
-//        { name: 'home_score', frame: 150 }
-//      ];
-//
-//      const result = findValidSequences(
-//        tags,
-//        'home_attacking',
-//        'home_score',
-//        'away_attacking',
-//        'scoring_possession'
-//      );
-//
-//      expect(result).toHaveLength(0);
-//    });
-//
-//    test('handles multiple valid sequences', () => {
-//      const tags = [
-//        { name: 'home_attacking', frame: 100 },
-//        { name: 'home_score', frame: 150 },
-//        { name: 'home_attacking', frame: 200 },
-//        { name: 'home_score', frame: 250 }
-//      ];
-//
-//      const result = findValidSequences(
-//        tags,
-//        'home_attacking',
-//        'home_score',
-//        'away_attacking',
-//        'scoring_possession'
-//      );
-//
-//      expect(result).toHaveLength(2);
-//      expect(result).toEqual([
-//        {
-//          name: 'scoring_possession',
-//          startFrame: 100,
-//          endFrame: 150
-//        },
-//        {
-//          name: 'scoring_possession',
-//          startFrame: 200,
-//          endFrame: 250
-//        }
-//      ]);
-//    });
-//
-//    test('handles unsorted input tags', () => {
-//      const tags = [
-//        { name: 'home_clearing', frame: 99 },
-//        { name: 'home_score', frame: 150 },
-//        { name: 'home_attacking', frame: 100 }
-//      ];
-//
-//      const result = findValidSequences(
-//        tags,
-//        'home_attacking',
-//        'home_score',
-//        'away_attacking',
-//        'scoring_possession'
-//      );
-//
-//      expect(result).toEqual([
-//        {
-//          name: 'scoring_possession',
-//          startFrame: 99,
-//          endFrame: 150
-//        }
-//      ]);
-//    });
-//
-//    test('handles empty tags array', () => {
-//      const result = findValidSequences(
-//        [],
-//        'home_attacking',
-//        'home_score',
-//        'away_attacking',
-//        'scoring_possession'
-//      );
-//
-//      expect(result).toEqual([]);
-//    });
-//
-//    test('handles sequence with no end tag', () => {
-//      const tags = [
-//        { name: 'home_attacking', frame: 100 },
-//        { name: 'away_attacking', frame: 150 }
-//      ];
-//
-//      const result = findValidSequences(
-//        tags,
-//        'home_attacking',
-//        'home_score',
-//        'away_attacking',
-//        'scoring_possession'
-//      );
-//
-//      expect(result).toEqual([]);
-//    });
-//
-//    test('handles different tag name patterns', () => {
-//      const tags = [
-//        { name: 'start_event', frame: 100 },
-//        { name: 'middle_event', frame: 125 },
-//        { name: 'end_event', frame: 150 }
-//      ];
-//
-//      const result = findValidSequences(
-//        tags,
-//        'start_event',
-//        'end_event',
-//        'exclude_event',
-//        'custom_sequence'
-//      );
-//
-//      expect(result).toEqual([
-//        {
-//          name: 'custom_sequence',
-//          startFrame: 100,
-//          endFrame: 150
-//        }
-//      ]);
-//    });
+    const result = calculateTags(mockTags, HOME);
+    
+    expect(result).toHaveLength(0);
+  });
+
+  it('should break on opponent clearing touch', () => {
+    const mockTags = [
+      { name: HOME_TOUCH_ATTACKING, frame: 10 },
+      { name: AWAY_TOUCH_CLEARING, frame: 15 },
+      { name: HOME_SCORE, frame: 20 }
+    ];
+
+    const result = calculateTags(mockTags, HOME);
+    
+    expect(result).toHaveLength(0);
+  });
+
+  it('should break on opponent attacking touches', () => {
+    const mockTags = [
+      { name: HOME_TOUCH_ATTACKING, frame: 10 },
+      { name: AWAY_TOUCH_ATTACKING, frame: 15 },
+      { name: HOME_SCORE, frame: 20 }
+    ];
+
+    const result = calculateTags(mockTags, HOME);
+    
+    expect(result).toHaveLength(0);
   });
 }); 

@@ -166,15 +166,14 @@ export const calculateTeamPossessions = (video, team) => {
   return possessionCount;
 }; 
 
-export const findTagSequences = (tags, startTagName, endTagName, excludeTagNames = []) => {
+export const findTagSequences = (tags, startTagName, completeSequenceTags, breakSequenceTags = []) => {
   if (!tags) return [];
   
   const sequences = [];
   let currentSequence = null;
-  const excludeSet = new Set(Array.isArray(excludeTagNames) ? excludeTagNames : [excludeTagNames]);
 
   tags.forEach(tag => {
-    if (tag.name === startTagName) {
+    if (tag.name === startTagName && !currentSequence) {
       currentSequence = {
         startFrame: tag.frame,
         endFrame: tag.frame,
@@ -182,16 +181,14 @@ export const findTagSequences = (tags, startTagName, endTagName, excludeTagNames
       };
     }
     else if (currentSequence) {
-      if (excludeSet.has(tag.name)) {
-        currentSequence = null;
-      }
-      else if (tag.name === endTagName) {
+      if (completeSequenceTags.includes(tag.name)) {
         currentSequence.touches.push(tag);
         currentSequence.endFrame = tag.frame;
         sequences.push(currentSequence);
         currentSequence = null;
-      }
-      else {
+      } else if (breakSequenceTags.includes(tag.name)) {
+        currentSequence = null;
+      } else {
         currentSequence.touches.push(tag);
         currentSequence.endFrame = tag.frame;
       }
@@ -205,22 +202,21 @@ export const findTurnoverSequences = (tags, teamTouchPrefix, maxPrecedingTouches
   if (!tags) return [];
   
   const opposingTouchPrefix = teamTouchPrefix.startsWith('home') ? 'away_touch_' : 'home_touch_';
-  const startTag = `${teamTouchPrefix}attacking`;
-  const endTag = `${opposingTouchPrefix}clearing`;
-  const validEndTags = ['score', startTag];
+  const homeAttack = `${teamTouchPrefix}attacking`;
+  const awayClear = `${opposingTouchPrefix}clearing`;
   
   // First find sequences that start with attacking touch and end with opponent's clearing touch
   const turnoverSequences = findTagSequences(
     tags,
-    startTag,
-    endTag,
-    validEndTags
+    homeAttack,
+    [awayClear],
+    ["score"]
   );
   
   // For each turnover sequence, find preceding touches
   return turnoverSequences.map(sequence => {
     const attackingTag = tags.find(
-      tag => tag.name === startTag && tag.frame === sequence.startFrame
+      tag => tag.name === homeAttack && tag.frame === sequence.startFrame
     );
 
     if (!attackingTag) return sequence;
