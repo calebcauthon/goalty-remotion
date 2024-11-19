@@ -127,28 +127,17 @@ export const calculateTeamAggregateStats = (video, team) => {
 export const calculateTeamPossessions = (video, team) => {
   if (!video?.tags) return 0;
   
-  // Get only touch tags for this team
-  const touchTags = video.tags.filter(tag => 
-    tag.name.includes('_touch_')
+  const away = team === 'home' ? 'away' : 'home';
+  const tagsToUse = video.tags.filter(tag => tag.name.includes('_touch_') || tag.name.includes('score'));
+  const sequences = findTagSequences(
+    tagsToUse,
+    `${team}_touch_clearing`,
+    [`score`, `${away}_touch_clearing`], // End sequence on score or opponent clearing
+    [] // No break conditions needed
   );
 
-  // Count sequences of clearing touches
-  let possessionCount = 0;
-  let wasClearing = false;
-
-  touchTags.forEach(tag => {
-    const isClearing = tag.name === `${team}_touch_clearing`;
-    
-    // If this is a clearing touch and we weren't already in a clearing sequence
-    if (isClearing && !wasClearing) {
-      possessionCount++;
-    }
-    
-    wasClearing = isClearing;
-  });
-
-  return possessionCount;
-}; 
+  return sequences.length;
+};
 
 export const findTagSequences = (tags, startTagName, completeSequenceTags, breakSequenceTags = []) => {
   if (!tags) return [];
