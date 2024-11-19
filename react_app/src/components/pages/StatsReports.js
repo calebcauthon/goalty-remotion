@@ -2,6 +2,9 @@ import React, { useState, useEffect, useContext } from 'react';
 import Layout from 'components/pages/Layout';
 import { GlobalContext } from '../../index';
 import TagCount from 'components/stats/TagCount';
+import TeamTouchCount from 'components/stats/TeamTouchCount';
+import TeamScoreCount from 'components/stats/TeamScoreCount';
+import TeamAttackCount from 'components/stats/TeamAttackCount';
 import './StatsReports.css';
 
 function StatsReports() {
@@ -52,6 +55,12 @@ function StatsReports() {
           <div className="stats-panel">
             <h2>Statistics for {selectedVideo.name}</h2>
             <TagCount video={selectedVideo} />
+            <TeamTouchCount video={selectedVideo} team="home" />
+            <TeamTouchCount video={selectedVideo} team="away" />
+            <TeamScoreCount video={selectedVideo} team="home" />
+            <TeamScoreCount video={selectedVideo} team="away" />
+            <TeamAttackCount video={selectedVideo} team="home" />
+            <TeamAttackCount video={selectedVideo} team="away" />
           </div>
         )}
       </div>
