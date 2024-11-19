@@ -8,6 +8,7 @@ import ViewFilm from 'components/pages/ViewFilm';
 import ClipMaker from 'components/pages/ClipMaker';
 import HotkeyConfig from 'components/pages/HotkeyConfig';
 import ViewHotkeyGroup from 'components/pages/ViewHotkeyGroup';
+import StatsReports from 'components/pages/StatsReports';
 import 'components/pages/App.css';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
         <Route path="/clipmaker" element={<ClipMaker />} />
         <Route path="/hotkeys" element={<HotkeyConfig />} />
         <Route path="/hotkeys/:id" element={<ViewHotkeyGroup />} />
+        <Route path="/stats" element={<StatsReports />} />
       </Routes>
     </Router>
   );
