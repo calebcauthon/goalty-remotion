@@ -166,7 +166,7 @@ export const calculateTeamPossessions = (video, team) => {
   return possessionCount;
 }; 
 
-export const findScoringPossessions = (tags, startTagName, endTagName, excludeTagNames = []) => {
+export const findTagSequences = (tags, startTagName, endTagName, excludeTagNames = []) => {
   if (!tags) return [];
   
   const sequences = [];
@@ -174,7 +174,6 @@ export const findScoringPossessions = (tags, startTagName, endTagName, excludeTa
   const excludeSet = new Set(Array.isArray(excludeTagNames) ? excludeTagNames : [excludeTagNames]);
 
   tags.forEach(tag => {
-    // Start new sequence when we find startTagName
     if (tag.name === startTagName) {
       currentSequence = {
         startFrame: tag.frame,
@@ -182,20 +181,16 @@ export const findScoringPossessions = (tags, startTagName, endTagName, excludeTa
         touches: [tag]
       };
     }
-    // If we have an active sequence
     else if (currentSequence) {
-      // Check for exclude tags
       if (excludeSet.has(tag.name)) {
         currentSequence = null;
       }
-      // Check for end tag
       else if (tag.name === endTagName) {
         currentSequence.touches.push(tag);
         currentSequence.endFrame = tag.frame;
         sequences.push(currentSequence);
         currentSequence = null;
       }
-      // Add intermediate tag to sequence
       else {
         currentSequence.touches.push(tag);
         currentSequence.endFrame = tag.frame;
@@ -206,6 +201,56 @@ export const findScoringPossessions = (tags, startTagName, endTagName, excludeTa
   return sequences;
 };
 
+export const findTurnoverSequences = (tags, teamTouchPrefix, maxPrecedingTouches = 3) => {
+  if (!tags) return [];
+  
+  const opposingTouchPrefix = teamTouchPrefix.startsWith('home') ? 'away_touch_' : 'home_touch_';
+  const startTag = `${teamTouchPrefix}attacking`;
+  const endTag = `${opposingTouchPrefix}clearing`;
+  const validEndTags = ['score', startTag];
+  
+  // First find sequences that start with attacking touch and end with opponent's clearing touch
+  const turnoverSequences = findTagSequences(
+    tags,
+    startTag,
+    endTag,
+    validEndTags
+  );
+  
+  // For each turnover sequence, find preceding touches
+  return turnoverSequences.map(sequence => {
+    const attackingTag = tags.find(
+      tag => tag.name === startTag && tag.frame === sequence.startFrame
+    );
+
+    if (!attackingTag) return sequence;
+
+    // Find preceding touches
+    const precedingTouches = tags
+      .filter(tag => tag.frame < attackingTag.frame)
+      .sort((a, b) => b.frame - a.frame)
+      .reduce((acc, tag) => {
+        if (acc.length >= maxPrecedingTouches) return acc;
+        if (tag.name.startsWith(opposingTouchPrefix)) return acc;
+        if (tag.name.startsWith(teamTouchPrefix)) {
+          acc.push({
+            name: 'preceding_touch',
+            frame: tag.frame,
+            originalTag: tag.name
+          });
+        }
+        return acc;
+      }, [])
+      .reverse();
+
+    return {
+      ...sequence,
+      startFrame: precedingTouches[0]?.frame || sequence.startFrame,
+      touches: [...precedingTouches, ...sequence.touches]
+    };
+  });
+};
+
 export default {
   calculateTeamAttacks,
   calculateTeamScores,
@@ -214,5 +259,6 @@ export default {
   calculateTeamAggregateStats,
   calculateTeamPossessions,
   findTeamAttackSequences,
-  findScoringPossessions
+  findTagSequences,
+  findTurnoverSequences
 };

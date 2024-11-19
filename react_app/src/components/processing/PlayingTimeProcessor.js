@@ -1,13 +1,12 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { GlobalContext } from '../../index';
-import { findValidSequences } from './findValidSequences';
+import { findTagSequences } from '../stats/statUtils';
 
 function PlayingTimeProcessor({ selectedVideo, onTagsApproved }) {
   const globalData = useContext(GlobalContext);
   const [proposedTags, setProposedTags] = useState([]);
   const [playerName, setPlayerName] = useState('');
   const [playerNames, setPlayerNames] = useState([]);
-
 
   useEffect(() => {
     // Inject styles
@@ -39,13 +38,26 @@ function PlayingTimeProcessor({ selectedVideo, onTagsApproved }) {
   const processClips = () => {
     if (!selectedVideo?.tags || !playerName) return;
 
-    const newTags = findValidSequences(
+    const sequences = findTagSequences(
       selectedVideo.tags,
       `${playerName} IN`,
       `${playerName} OUT`,
-      [`${playerName} OUT`],
-      `${playerName} playing`
+      [`${playerName} OUT`]
     );
+
+    // Convert sequences to playing time tags
+    const newTags = sequences.map(seq => ({
+      name: `${playerName} playing`,
+      startFrame: seq.startFrame,
+      endFrame: seq.endFrame,
+      metadata: {
+        touchCount: seq.touches.length,
+        touches: seq.touches.map(t => ({
+          name: t.name,
+          frame: t.frame
+        }))
+      }
+    }));
 
     setProposedTags(newTags);
   };

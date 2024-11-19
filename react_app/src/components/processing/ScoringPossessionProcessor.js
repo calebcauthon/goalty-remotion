@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { GlobalContext } from '../../index';
-import { findScoringPossessions } from '../stats/statUtils';
+import { findTagSequences } from '../stats/statUtils';
 
 function ScoringPossessionProcessor({ 
   selectedVideo, 
@@ -18,7 +18,7 @@ function ScoringPossessionProcessor({
     if (!selectedVideo?.tags) return;
 
     // Get sequences using statUtils
-    const sequences = findScoringPossessions(
+    const sequences = findTagSequences(
       selectedVideo.tags,
       startTagName,
       endTagName,
