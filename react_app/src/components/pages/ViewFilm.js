@@ -387,6 +387,27 @@ function ViewFilm() {
     handleAddManyClips(clipsToAdd);
   };
 
+  const handleAddAllClips = () => {
+    const clipsToAdd = videos
+      .filter(video => selectedVideos.has(video.id))
+      .flatMap((video) => 
+        video.tags
+          .filter(tag => tag.startFrame && tag.endFrame)
+          .map(tag => ({
+            key: `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}`,
+            videoId: video.id,
+            videoName: video.name,
+            videoFilepath: video.filepath,
+            tagName: tag.name,
+            frame: tag.frame,
+            startFrame: tag.startFrame,
+            endFrame: tag.endFrame
+          }))
+      );
+
+    handleAddManyClips(clipsToAdd);
+  };
+
   const onDragEnd = (result) => {
     if (!result.destination) return;
 
@@ -753,7 +774,14 @@ function ViewFilm() {
               className="add-clip-button"
               style={{ padding: '0.5rem 1rem' }}
             >
-              Add All Visible Tags
+              Add Filtered Tags
+            </button>
+            <button 
+              onClick={handleAddAllClips}
+              className="add-clip-button"
+              style={{ padding: '0.5rem 1rem' }}
+            >
+              Add All Tags
             </button>
           </div>
           <table className="tags-table">
