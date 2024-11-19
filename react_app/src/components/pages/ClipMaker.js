@@ -24,6 +24,11 @@ function ClipMaker() {
   const initialVideoId = parseInt(searchParams.get('videoId'));
   const [tagFilter, setTagFilter] = useState('');
   const [previewEndFrame, setPreviewEndFrame] = useState(null);
+  const [previewPlaybackRate, setPreviewPlaybackRate] = useState(1);
+  const [slowPreviewEndFrame, setSlowPreviewEndFrame] = useState(null);
+  const [previewLoopCount, setPreviewLoopCount] = useState(0);
+  const [previewStartFrame, setPreviewStartFrame] = useState(null);
+  const [previewPending, setPreviewPending] = useState(false);
 
   useEffect(() => {
     fetchVideos();
@@ -120,18 +125,56 @@ function ClipMaker() {
     }
   };
 
-  const handlePreview = (startFrame, endFrame) => {
+  const handlePreview = async (startFrame, endFrame) => {
     if (playerRef.current) {
       playerRef.current.seekTo(startFrame);
-      playerRef.current.play();
+      playerRef.current.pause();
+      setPreviewPending(true);
+      setPreviewStartFrame(startFrame);
       setPreviewEndFrame(endFrame);
     }
   };
 
+  useEffect(() => {
+    let timeoutId;
+    if (previewPending) {
+      timeoutId = setTimeout(() => {
+        setPreviewPending(false);
+        setPreviewLoopCount(0);
+        setPreviewPlaybackRate(0.2);
+        setSlowPreviewEndFrame(previewStartFrame + 2);
+        playerRef.current?.play();
+      }, 500);
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [previewPending, previewStartFrame]);
+
   const handleFrameUpdate = (frame) => {
-    if (previewEndFrame && frame >= previewEndFrame) {
-      playerRef.current?.pause();
-      setPreviewEndFrame(null);
+    if (previewEndFrame) {
+      // Handle slow preview loops
+      if (previewLoopCount < 5 && slowPreviewEndFrame && frame >= slowPreviewEndFrame) {
+        setPreviewLoopCount(prev => prev + 1);
+        setSlowPreviewEndFrame(frame + 2);
+        setPreviewPlaybackRate(0.2);
+      }
+      
+      // After 3 loops, play at normal speed
+      if (previewLoopCount >= 3 && slowPreviewEndFrame) {
+        setPreviewPlaybackRate(1);
+        setSlowPreviewEndFrame(null);
+      }
+      
+      // Stop at end
+      if (frame >= previewEndFrame) {
+        playerRef.current?.pause();
+        setPreviewEndFrame(null);
+        setPreviewPlaybackRate(1);
+        setPreviewLoopCount(0);
+        setPreviewStartFrame(null);
+      }
     }
   };
 
@@ -170,6 +213,7 @@ function ClipMaker() {
               compositionWidth={800}
               compositionHeight={videoMetadata ? Math.round(800 * (videoMetadata.height / videoMetadata.width)) : 450}
               fps={videoMetadata?.fps || 30}
+              playbackRate={previewPlaybackRate}
               controls
               renderLoading={() => <div>Loading...</div>}
             />

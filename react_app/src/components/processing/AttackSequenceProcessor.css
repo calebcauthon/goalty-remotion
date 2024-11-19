@@ -1,0 +1,20 @@
+.preview-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.preview-button {
+  padding: 4px 8px;
+  font-size: 0.8em;
+  border-radius: 4px;
+}
+
+.sequence-item {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 8px;
+} 

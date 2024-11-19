@@ -47,9 +47,25 @@ function AttackSequenceProcessor({
     }
   };
 
-  const handlePreviewSequence = (sequence) => {
-    if (onPreview) {
-      onPreview(sequence.startFrame, sequence.endFrame);
+  const handlePreviewSequence = (sequence, type = 'full') => {
+    if (!onPreview) return;
+    
+    const duration = sequence.endFrame - sequence.startFrame;
+    const fps = 30; // Assuming 30fps, adjust if different
+    
+    switch (type) {
+      case 'start':
+        onPreview(sequence.startFrame, sequence.startFrame + (2 * fps));
+        break;
+      case 'middle':
+        const midPoint = sequence.startFrame + Math.floor(duration / 2);
+        onPreview(midPoint - fps, midPoint + fps);
+        break;
+      case 'end':
+        onPreview(sequence.endFrame - (4 * fps), sequence.endFrame);
+        break;
+      default:
+        onPreview(sequence.startFrame, sequence.endFrame);
     }
   };
 
@@ -83,12 +99,32 @@ function AttackSequenceProcessor({
             {proposedTags.map((tag, index) => (
               <div key={index} className="sequence-item">
                 <span>Sequence {index + 1}: {tag.metadata.touchCount} touches</span>
-                <button 
-                  className="preview-button"
-                  onClick={() => handlePreviewSequence(tag)}
-                >
-                  Preview
-                </button>
+                <div className="preview-buttons">
+                  <button 
+                    className="preview-button"
+                    onClick={() => handlePreviewSequence(tag, 'full')}
+                  >
+                    Full Preview
+                  </button>
+                  <button 
+                    className="preview-button"
+                    onClick={() => handlePreviewSequence(tag, 'start')}
+                  >
+                    First 2s
+                  </button>
+                  <button 
+                    className="preview-button"
+                    onClick={() => handlePreviewSequence(tag, 'middle')}
+                  >
+                    Middle 2s
+                  </button>
+                  <button 
+                    className="preview-button"
+                    onClick={() => handlePreviewSequence(tag, 'end')}
+                  >
+                    Last 4s
+                  </button>
+                </div>
               </div>
             ))}
           </div>
