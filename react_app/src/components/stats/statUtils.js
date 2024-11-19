@@ -109,16 +109,6 @@ export const calculateTeamAttackTouches = (video, team) => {
     if (tag.name === `${team}_touch_attacking` && index > 0) {
       const previousTag = touchTags[index - 1];
       if (previousTag.name === `${team}_touch_clearing`) {
-        // If we were in a previous attack, add its stats
-        if (inAttackSequence) {
-          if (currentAttackScored) {
-            totalTouches.scoring += currentAttackTouches;
-            attackCount.scoring++;
-          } else {
-            totalTouches.nonScoring += currentAttackTouches;
-            attackCount.nonScoring++;
-          }
-        }
         // Start new attack
         currentAttackTouches = 1;
         inAttackSequence = true;
@@ -169,6 +159,82 @@ export const calculateTeamAttackTouches = (video, team) => {
       attackCount: attackCount.nonScoring,
       averageTouches: attackCount.nonScoring > 0 ? 
         Math.round((totalTouches.nonScoring / attackCount.nonScoring) * 10) / 10 : 0
+    }
+  };
+};
+
+export const calculateTeamAttackDurations = (video, team) => {
+  if (!video?.tags) return null;
+  
+  const allTags = video.tags.filter(tag => 
+    tag.name.includes('_touch_') || tag.name === 'score'
+  );
+
+  let totalDuration = { scoring: 0, nonScoring: 0 };
+  let attackCount = { scoring: 0, nonScoring: 0 };
+  let attackStartFrame = null;
+  let inAttackSequence = false;
+  let currentAttackScored = false;
+
+  allTags.forEach((tag, index) => {
+    // Check for score during attack
+    if (tag.name === 'score' && inAttackSequence) {
+      currentAttackScored = true;
+    }
+    
+    // Start of new attack sequence
+    if (tag.name === `${team}_touch_attacking` && index > 0) {
+      const previousTag = allTags[index - 1];
+      if (previousTag.name === `${team}_touch_clearing`) {
+        // Start new attack
+        attackStartFrame = previousTag.frame;
+        inAttackSequence = true;
+        currentAttackScored = false;
+      }
+    }
+    // End attack on opponent touch
+    else if (inAttackSequence && tag.name.includes('_touch_') && !tag.name.startsWith(`${team}_touch_`)) {
+      if (attackStartFrame !== null) {
+        const duration = (tag.frame - attackStartFrame) / 30; // Convert to seconds
+        if (currentAttackScored) {
+          totalDuration.scoring += duration;
+          attackCount.scoring++;
+        } else {
+          totalDuration.nonScoring += duration;
+          attackCount.nonScoring++;
+        }
+      }
+      attackStartFrame = null;
+      inAttackSequence = false;
+      currentAttackScored = false;
+    }
+  });
+
+  // Handle final attack if still in one
+  if (inAttackSequence && attackStartFrame !== null && allTags.length > 0) {
+    const lastTag = allTags[allTags.length - 1];
+    const duration = (lastTag.frame - attackStartFrame) / 30;
+    if (currentAttackScored) {
+      totalDuration.scoring += duration;
+      attackCount.scoring++;
+    } else {
+      totalDuration.nonScoring += duration;
+      attackCount.nonScoring++;
+    }
+  }
+
+  return {
+    scoring: {
+      totalSeconds: Math.round(totalDuration.scoring * 10) / 10,
+      attackCount: attackCount.scoring,
+      averageSeconds: attackCount.scoring > 0 ? 
+        Math.round((totalDuration.scoring / attackCount.scoring) * 10) / 10 : 0
+    },
+    nonScoring: {
+      totalSeconds: Math.round(totalDuration.nonScoring * 10) / 10,
+      attackCount: attackCount.nonScoring,
+      averageSeconds: attackCount.nonScoring > 0 ? 
+        Math.round((totalDuration.nonScoring / attackCount.nonScoring) * 10) / 10 : 0
     }
   };
 }; 

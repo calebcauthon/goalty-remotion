@@ -8,6 +8,7 @@ import TeamAttackCount from 'components/stats/TeamAttackCount';
 import TeamPossessionCount from 'components/stats/TeamPossessionCount';
 import TeamAggregateStats from 'components/stats/TeamAggregateStats';
 import TeamAttackTouches from 'components/stats/TeamAttackTouches';
+import TeamAttackDurations from 'components/stats/TeamAttackDurations';
 import './StatsReports.css';
 
 function StatsReports() {
@@ -61,6 +62,8 @@ function StatsReports() {
             <TeamAggregateStats video={selectedVideo} team="away" />
             <TeamAttackTouches video={selectedVideo} team="home" />
             <TeamAttackTouches video={selectedVideo} team="away" />
+            <TeamAttackDurations video={selectedVideo} team="home" />
+            <TeamAttackDurations video={selectedVideo} team="away" />
             <TagCount video={selectedVideo} />
             <TeamTouchCount video={selectedVideo} team="home" />
             <TeamTouchCount video={selectedVideo} team="away" />
