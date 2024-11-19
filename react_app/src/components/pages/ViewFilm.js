@@ -66,6 +66,14 @@ function ViewFilm() {
   const [tagFilter, setTagFilter] = useState('');
   const [isClipsExpanded, setIsClipsExpanded] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [previewEndFrame, setPreviewEndFrame] = useState(null);
+  const [previewPlaybackRate, setPreviewPlaybackRate] = useState(1);
+  const [previewLoopCount, setPreviewLoopCount] = useState(0);
+  const [previewStartFrame, setPreviewStartFrame] = useState(null);
+  const [slowPreviewEndFrame, setSlowPreviewEndFrame] = useState(null);
+  const [previewPending, setPreviewPending] = useState(false);
+  const [currentPlayingClip, setCurrentPlayingClip] = useState(null);
+  const [currentFrame, setCurrentFrame] = useState(0);
 
   const fetchFilm = async () => {
     try {
@@ -497,6 +505,63 @@ function ViewFilm() {
     }
   };
 
+  const handleFrameUpdate = (frame) => {
+    setCurrentFrame(frame);
+    
+    if (previewEndFrame) {
+      // Handle slow preview loops
+      if (previewLoopCount < 5 && slowPreviewEndFrame && frame >= slowPreviewEndFrame) {
+        setPreviewLoopCount(prev => prev + 1);
+        setSlowPreviewEndFrame(frame + 2);
+        setPreviewPlaybackRate(0.2);
+      }
+      
+      // After 3 loops, play at normal speed
+      if (previewLoopCount >= 3 && slowPreviewEndFrame) {
+        setPreviewPlaybackRate(1);
+        setSlowPreviewEndFrame(null);
+      }
+      
+      // Stop at end
+      if (frame >= previewEndFrame) {
+        playerRef.current?.pause();
+        setPreviewEndFrame(null);
+        setPreviewPlaybackRate(1);
+        setPreviewLoopCount(0);
+        setPreviewStartFrame(null);
+        setCurrentPlayingClip(null);
+      }
+    }
+  };
+
+  const handlePreviewClip = (clip) => {
+    if (playerRef.current) {
+      playerRef.current.seekTo(clip.startFrame);
+      playerRef.current.pause();
+      setPreviewPending(true);
+      setPreviewStartFrame(clip.startFrame);
+      setPreviewEndFrame(clip.endFrame);
+      setCurrentPlayingClip(clip.key);
+    }
+  };
+
+  useEffect(() => {
+    let timeoutId;
+    if (previewPending) {
+      timeoutId = setTimeout(() => {
+        setPreviewPending(false);
+        setPreviewLoopCount(0);
+        setPreviewPlaybackRate(0.2);
+        setSlowPreviewEndFrame(previewStartFrame + 2);
+        playerRef.current?.play();
+      }, 500);
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [previewPending, previewStartFrame]);
+
   if (!film) {
     return <Layout>Loading...</Layout>;
   }
@@ -618,7 +683,21 @@ function ViewFilm() {
                                 <td>{clip.tagName}</td>
                                 <td>{clip.frame}</td>
                                 <td>{`${clip.startFrame}-${clip.endFrame}`}</td>
-                                <td>{durationInSeconds}s</td>
+                                <td className="duration-cell">
+                                  <div className="duration-content">
+                                    <span>{durationInSeconds}s</span>
+                                    {currentPlayingClip === clip.key && (
+                                      <div className="clip-progress">
+                                        <div 
+                                          className="progress-bar"
+                                          style={{
+                                            width: `${Math.round(((currentFrame - clip.startFrame) / (clip.endFrame - clip.startFrame)) * 100)}%`
+                                          }}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
                                 <td>
                                   <span 
                                     className="clickable-frame-range"
@@ -628,12 +707,21 @@ function ViewFilm() {
                                   </span>
                                 </td>
                                 <td>
-                                  <button 
-                                    onClick={() => handleRemoveClip(clip.key)}
-                                    className="remove-clip-button"
-                                  >
-                                    Remove
-                                  </button>
+                                  <div className="clip-actions">
+                                    <button 
+                                      onClick={() => handlePreviewClip(clip)}
+                                      className={`preview-clip-button ${currentPlayingClip === clip.key ? 'playing' : ''}`}
+                                      title="Preview this clip"
+                                    >
+                                      {currentPlayingClip === clip.key ? '⏸️' : '▶️'}
+                                    </button>
+                                    <button 
+                                      onClick={() => handleRemoveClip(clip.key)}
+                                      className="remove-clip-button"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             )}
@@ -658,14 +746,16 @@ function ViewFilm() {
                 inputProps={{
                   selectedVideos,
                   videos,
-                  selectedTags
+                  selectedTags,
+                  onFrameUpdate: handleFrameUpdate
                 }}
                 durationInFrames={calculateDuration()}
                 compositionWidth={1280}
                 compositionHeight={720}
                 fps={30}
                 controls
-                loop
+                loop={!previewEndFrame}
+                playbackRate={previewPlaybackRate} 
                 style={{
                   width: '100%',
                   aspectRatio: '16/9'

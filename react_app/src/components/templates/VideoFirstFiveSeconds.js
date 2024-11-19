@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { AbsoluteFill, Video, Sequence, useCurrentFrame, staticFile } from 'remotion';
 
 export const calculateFirstFiveSecondsDuration = (selectedTags) => {
@@ -10,10 +10,16 @@ export const calculateFirstFiveSecondsDuration = (selectedTags) => {
   }, 0);
 };
 
-export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, useStaticFile }) => {
+export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, useStaticFile, onFrameUpdate=() => {} }) => {
   const tagArray = Array.from(selectedTags);
   const currentFrame = useCurrentFrame();
   const totalDuration = calculateFirstFiveSecondsDuration(selectedTags);
+
+  const frame = useCurrentFrame();
+
+  useEffect(() => {
+    onFrameUpdate(frame);
+  }, [frame, onFrameUpdate]);
 
   return (
     <AbsoluteFill>

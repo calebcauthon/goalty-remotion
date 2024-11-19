@@ -419,3 +419,67 @@
 .included-clips-table tr {
   transition: background-color 0.2s ease;
 }
+
+.clip-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.preview-clip-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  font-size: 1.2em;
+}
+
+.preview-clip-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.preview-clip-button.playing {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.duration-cell {
+  position: relative;
+  text-align: right;
+  padding-right: 16px !important;
+  min-width: 80px;
+}
+
+.duration-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+
+.duration-content span {
+  position: relative;
+  z-index: 1;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.clip-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  border-left: 2px solid rgba(76, 175, 80, 0.5);
+  border-right: 2px solid rgba(76, 175, 80, 0.5);
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: rgba(76, 175, 80, 0.2);
+  transition: width 0.1s linear;
+}
