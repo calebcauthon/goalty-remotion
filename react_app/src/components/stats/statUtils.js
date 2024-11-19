@@ -11,54 +11,38 @@ export const calculateTeamTouches = (video, team) => {
 };
 
 export const findTeamAttackSequences = (video, team) => {
+  const home = team;
+  const away = home === 'home' ? 'away' : 'home';
   if (!video?.tags) return [];
   
   const relevantTags = video.tags.filter(tag => 
-    tag.name.includes('_touch_') || tag.name === 'score'
+    tag.name.includes('_touch_') || tag.name.includes('_clear_') || tag.name.includes('score')
   );
 
-  const sequences = [];
-  let currentSequence = null;
+  const sequences = findTagSequences(
+    relevantTags,
+    `${home}_touch_attacking`,
+    ['score', `${away}_touch_`], // End sequence on score or opponent touch
+    [] // we only want the final clearing touch
+  );
 
-  relevantTags.forEach((tag, index) => {
-    // Start new attack sequence
-    if (tag.name === `${team}_touch_attacking` && index > 0) {
-      const previousTag = relevantTags[index - 1];
-      if (previousTag.name === `${team}_touch_clearing`) {
-        currentSequence = {
-          startFrame: previousTag.frame,
-          touches: [previousTag, tag],
-          scored: false,
-          endFrame: tag.frame
-        };
-      } else if (currentSequence) {
-        currentSequence.touches.push(tag);
-        currentSequence.endFrame = tag.frame;
+  return sequences
+    .map(seq => {
+      const touches = seq.touches;
+      let finalTouch = touches[touches.length - 1];
+      if (finalTouch.name.startsWith(`${away}_touch_`)) {
+        touches.pop();
+        finalTouch = touches[touches.length - 1];
       }
-    }
-    // Add touches to current sequence
-    else if (currentSequence && tag.name.startsWith(`${team}_touch_`)) {
-      currentSequence.touches.push(tag);
-      currentSequence.endFrame = tag.frame;
-    }
-    // Check for score
-    else if (currentSequence && tag.name === 'score') {
-      currentSequence.scored = true;
-      currentSequence.touches.push(tag);
-    }
-    // End sequence on opponent touch
-    else if (currentSequence && tag.name.includes('_touch_') && !tag.name.startsWith(`${team}_touch_`)) {
-      sequences.push(currentSequence);
-      currentSequence = null;
-    }
-  });
-
-  // Add final sequence if exists
-  if (currentSequence) {
-    sequences.push(currentSequence);
-  }
-
-  return sequences;
+      const endFrame = finalTouch.frame;
+      
+      return {
+        ...seq,
+        endFrame,
+        touches,
+        scored: seq.touches.some(t => t.name === 'score')
+      };
+    });
 };
 
 export const calculateTeamAttacks = (video, team) => {
@@ -173,7 +157,7 @@ export const findTagSequences = (tags, startTagName, completeSequenceTags, break
   let currentSequence = null;
 
   tags.forEach(tag => {
-    if (tag.name === startTagName && !currentSequence) {
+    if (tag.name.includes(startTagName) && !currentSequence) {
       currentSequence = {
         startFrame: tag.frame,
         endFrame: tag.frame,
@@ -181,12 +165,12 @@ export const findTagSequences = (tags, startTagName, completeSequenceTags, break
       };
     }
     else if (currentSequence) {
-      if (completeSequenceTags.includes(tag.name)) {
+      if (completeSequenceTags.some(completionTag => tag.name.includes(completionTag))) {
         currentSequence.touches.push(tag);
         currentSequence.endFrame = tag.frame;
         sequences.push(currentSequence);
         currentSequence = null;
-      } else if (breakSequenceTags.includes(tag.name)) {
+      } else if (breakSequenceTags.some(breakTag => tag.name.includes(breakTag))) {
         currentSequence = null;
       } else {
         currentSequence.touches.push(tag);

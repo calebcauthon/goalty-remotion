@@ -6,7 +6,8 @@ import {
   HOME_SCORE,
   HOME_SCORING_POSSESSION,
   AWAY_TOUCH_ATTACKING,
-  AWAY_TOUCH_CLEARING
+  AWAY_TOUCH_CLEARING,
+  HOME_TOUCH_CLEARING
 } from '../../../src/constants/tagNames';
 
 describe('calculateTags', () => {
@@ -87,5 +88,25 @@ describe('calculateTags', () => {
     const result = calculateScoringPossessionTags(mockTags, HOME);
     
     expect(result).toHaveLength(0);
+  });
+
+  it('should end sequence on score even with subsequent touches', () => {
+    const mockTags = [
+      { name: AWAY_TOUCH_CLEARING, frame: 1 },
+      { name: HOME_TOUCH_CLEARING, frame: 5 },
+      { name: HOME_TOUCH_ATTACKING, frame: 10 },
+      { name: HOME_TOUCH_ATTACKING, frame: 15 },
+      { name: HOME_TOUCH_ATTACKING, frame: 20 },
+      { name: HOME_SCORE, frame: 25 },
+      { name: HOME_TOUCH_CLEARING, frame: 30 },
+      { name: AWAY_TOUCH_CLEARING, frame: 35 }
+    ];
+
+    const result = calculateScoringPossessionTags(mockTags, HOME);
+    
+    expect(result).toHaveLength(1);
+    expect(result[0].startFrame).toBe(10);
+    expect(result[0].endFrame).toBe(25);
+    expect(result[0].metadata.touchCount).toBe(4);
   });
 }); 
