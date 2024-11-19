@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { GlobalContext } from '../../index';
-import { findValidSequences } from './findValidSequences';
+import { findScoringPossessions } from '../stats/statUtils';
 
 function ScoringPossessionProcessor({ 
   selectedVideo, 
@@ -15,16 +15,29 @@ function ScoringPossessionProcessor({
   const [proposedTags, setProposedTags] = useState([]);
 
   const processClips = () => {
-    console.log("Processing clips for ", { selectedVideo });
     if (!selectedVideo?.tags) return;
 
-    const newTags = findValidSequences(
+    // Get sequences using statUtils
+    const sequences = findScoringPossessions(
       selectedVideo.tags,
       startTagName,
       endTagName,
-      excludeTagName,
-      outputTagName
+      excludeTagName
     );
+
+    // Convert sequences to tags format
+    const newTags = sequences.map(seq => ({
+      name: outputTagName,
+      startFrame: seq.startFrame,
+      endFrame: seq.endFrame,
+      metadata: {
+        touchCount: seq.touches.length,
+        touches: seq.touches.map(t => ({
+          name: t.name,
+          frame: t.frame
+        }))
+      }
+    }));
 
     setProposedTags(newTags);
   };

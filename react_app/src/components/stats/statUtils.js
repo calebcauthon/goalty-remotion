@@ -166,6 +166,46 @@ export const calculateTeamPossessions = (video, team) => {
   return possessionCount;
 }; 
 
+export const findScoringPossessions = (tags, startTagName, endTagName, excludeTagNames = []) => {
+  if (!tags) return [];
+  
+  const sequences = [];
+  let currentSequence = null;
+  const excludeSet = new Set(Array.isArray(excludeTagNames) ? excludeTagNames : [excludeTagNames]);
+
+  tags.forEach(tag => {
+    // Start new sequence when we find startTagName
+    if (tag.name === startTagName) {
+      currentSequence = {
+        startFrame: tag.frame,
+        endFrame: tag.frame,
+        touches: [tag]
+      };
+    }
+    // If we have an active sequence
+    else if (currentSequence) {
+      // Check for exclude tags
+      if (excludeSet.has(tag.name)) {
+        currentSequence = null;
+      }
+      // Check for end tag
+      else if (tag.name === endTagName) {
+        currentSequence.touches.push(tag);
+        currentSequence.endFrame = tag.frame;
+        sequences.push(currentSequence);
+        currentSequence = null;
+      }
+      // Add intermediate tag to sequence
+      else {
+        currentSequence.touches.push(tag);
+        currentSequence.endFrame = tag.frame;
+      }
+    }
+  });
+
+  return sequences;
+};
+
 export default {
   calculateTeamAttacks,
   calculateTeamScores,
@@ -173,5 +213,6 @@ export default {
   calculateTeamAttackDurations,
   calculateTeamAggregateStats,
   calculateTeamPossessions,
-  findTeamAttackSequences
+  findTeamAttackSequences,
+  findScoringPossessions
 };
