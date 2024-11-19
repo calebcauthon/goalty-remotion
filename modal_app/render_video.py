@@ -35,6 +35,7 @@ VOLUME_PATH = "/public"
 def render_video(render_params: RenderVideoRequest):
     import subprocess
     import json
+    from b2sdk.v2 import B2Api, InMemoryAccountInfo
 
     def render_mp4(props, output_file_name):
       # Write output filename to a temporary file
@@ -69,41 +70,9 @@ def render_video(render_params: RenderVideoRequest):
 
       return False
 
-    def upload_video(auth_data, output_file_name):
-      # Get upload URL
-      auth_token = auth_data['authorizationToken']
-      upload_url_response = requests.post(
-          f"{auth_data['apiUrl']}/b2api/v2/b2_get_upload_url",
-          headers={"Authorization": auth_token},
-          json={"bucketId": auth_data['allowed']['bucketId']}
-      )
-      upload_url_response.raise_for_status()
-      upload_data = upload_url_response.json()
-      
-      # Upload the rendered video
-      with open(f"out/{output_file_name}", 'rb') as file:
-          file_data = file.read()
-          sha1_of_file_data = hashlib.sha1(file_data).hexdigest()
-          
-          upload_headers = {
-              "Authorization": upload_data['authorizationToken'],
-              "X-Bz-File-Name": output_file_name,
-              "Content-Type": "b2/x-auto",
-              "Content-Length": str(len(file_data)),
-              "X-Bz-Content-Sha1": sha1_of_file_data
-          }
-          
-          upload_response = requests.post(
-              upload_data['uploadUrl'],
-              headers=upload_headers,
-              data=file_data
-          )
-          upload_response.raise_for_status()
-          print(f"Uploaded file: {output_file_name} to B2 bucket")
 
-    auth_data = authenticate_backblaze()
     already_exists = render_mp4(render_params.props, render_params.output_file_name)
-    upload_video(auth_data, render_params.output_file_name) if not already_exists else None
+    upload_video(f"out/{render_params.output_file_name}", render_params.output_file_name) if not already_exists else None
 
     return render_params.output_file_name
 
