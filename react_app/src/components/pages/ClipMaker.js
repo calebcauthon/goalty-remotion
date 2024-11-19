@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import Layout from 'components/pages/Layout';
 import 'components/pages/ClipMaker.css';
-import ScoringPossessionProcessor from 'components/processing/ScoringPossessionProcessor';
 import PlayingTimeProcessor from 'components/processing/PlayingTimeProcessor';
 import TurnoverProcessor from 'components/processing/TurnoverProcessor';
 import AttackSequenceProcessor from 'components/processing/AttackSequenceProcessor';
+import GameProcessor from 'components/processing/GameProcessor';
 import { GlobalContext } from '../../index';
 import { Player } from '@remotion/player';
 import { getVideoMetadata } from '@remotion/media-utils';
@@ -167,111 +167,77 @@ function ClipMaker() {
               <h2>Tags for {selectedVideo.name}</h2>
               
               {/* Processor components */}
-              <TurnoverProcessor
+              <AttackSequenceProcessor
+                buttonText="Scoring Possessions (home)"
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
-                buttonText="Find Clips: Home Score Hits"
-                startTag="home_touch_attacking"
-                endTag="score"
-                teamTouchPrefix="home_touch_"
-                opposingTouchPrefix="away_touch_"
-                turnoverTag="home_quick_score"
-                validEndTags={['score', 'home_touch_attacking', 'away_touch_clearing']}
-                maxPrecedingTouches={1}
+                team="home"
+                scoringOnly={true}
               />
-              <TurnoverProcessor
+              <AttackSequenceProcessor
+                buttonText="Scoring Possessions (away)"
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
-                buttonText="Find Clips: Away Score Hits"
-                startTag="away_touch_attacking"
-                endTag="score"
-                teamTouchPrefix="away_touch_"
-                opposingTouchPrefix="home_touch_"
-                turnoverTag="away_quick_score"
-                validEndTags={['score', 'away_touch_attacking', 'home_touch_clearing']}
-                maxPrecedingTouches={1}
+                team="away"
+                scoringOnly={true}
               />
-              <TurnoverProcessor
+              <AttackSequenceProcessor
+                buttonText="Scores (home)"
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
-                buttonText="Find Clips: Home Team Turnovers"
-                startTag="home_touch_attacking"
-                endTag="away_touch_clearing"
+                team="home"
+                scoringOnly={true}
+                maxPrecedingTouches={3}
+              />
+              <AttackSequenceProcessor
+                buttonText="Scores (away)"
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                team="away"
+                scoringOnly={true}
+                maxPrecedingTouches={3}
+              />
+              <AttackSequenceProcessor
+                buttonText="Attacks (home)"
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                team="home"
+                scoringOnly={false}
+              />
+              <AttackSequenceProcessor
+                buttonText="Attacks (away)"
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                team="away"
+                scoringOnly={false}
+              />
+              
+              <TurnoverProcessor
+                buttonText="Turnovers (home)"
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
                 teamTouchPrefix="home_touch_"
-                opposingTouchPrefix="away_touch_"
                 turnoverTag="home_turnover"
-                validEndTags={['score', 'home_touch_attacking']}
                 maxPrecedingTouches={3}
               />
               <TurnoverProcessor
+                buttonText="Turnovers (away)"
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
-                buttonText="Find Clips: Away Team Turnovers"
-                startTag="away_touch_attacking"
-                endTag="home_touch_clearing"
                 teamTouchPrefix="away_touch_"
-                opposingTouchPrefix="home_touch_"
                 turnoverTag="away_turnover"
-                validEndTags={['score', 'away_touch_attacking']}
                 maxPrecedingTouches={3}
               />
-              <ScoringPossessionProcessor 
+
+              <GameProcessor
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
-                startTagName="home_touch_attacking"
-                endTagName="score"
-                excludeTagName={["away_touch_clearing"]}
-                outputTagName="home_scoring_possession"
-                buttonText="Find Clips: Successful Attacks by Home Team"
               />
-              <ScoringPossessionProcessor 
-                selectedVideo={selectedVideo}
-                onTagsApproved={refreshVideoData}
-                startTagName="away_touch_attacking"
-                endTagName="score"
-                excludeTagName={["away_touch_clearing"]}
-                outputTagName="away_scoring_possession"
-                buttonText="Find Clips: Successful Attacks by Away Team"
-              />
-              <ScoringPossessionProcessor 
-                selectedVideo={selectedVideo}
-                onTagsApproved={refreshVideoData}
-                startTagName="game_start"
-                endTagName="game_end"
-                excludeTagName={["game_end"]}
-                outputTagName="full_game"
-                buttonText="Find Clips: Games"
-              />
+
               <PlayingTimeProcessor
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
                 />
-              <AttackSequenceProcessor
-                selectedVideo={selectedVideo}
-                onTagsApproved={refreshVideoData}
-                team="home"
-                buttonText="Find Home Team Attack Sequences"
-              />
-              <AttackSequenceProcessor
-                selectedVideo={selectedVideo}
-                onTagsApproved={refreshVideoData}
-                team="away"
-                buttonText="Find Away Team Attack Sequences"
-              />
-              <AttackSequenceProcessor
-                selectedVideo={selectedVideo}
-                onTagsApproved={refreshVideoData}
-                team="home"
-                scoringOnly={true}
-                buttonText="Find Home Team Scoring Sequences"
-              />
-              <AttackSequenceProcessor
-                selectedVideo={selectedVideo}
-                onTagsApproved={refreshVideoData}
-                team="away"
-                scoringOnly={true}
-                buttonText="Find Away Team Scoring Sequences"
-              />
 
               {/* Move filter section here, just above the table */}
               <div className="tag-filters" style={{ marginBottom: '20px', marginTop: '30px' }}>

@@ -287,6 +287,32 @@ export const calculatePlayingTimeTags = (tags, playerName) => {
   }));
 };
 
+export const findGameSequences = (tags) => {
+  const sequences = [];
+  const sortedTags = [...tags].sort((a, b) => a.startFrame - b.startFrame);
+  
+  sortedTags.forEach((startTag, startIndex) => {
+    if (startTag.name === 'game_start') {
+      for (let i = startIndex + 1; i < sortedTags.length; i++) {
+        const endTag = sortedTags[i];
+        if (endTag.name === 'game_end') {
+          sequences.push({
+            startFrame: startTag.frame,
+            endFrame: endTag.frame,
+            metadata: {
+              gameNumber: sequences.length + 1,
+              duration: endTag.frame - startTag.frame
+            }
+          });
+          break;
+        }
+      }
+    }
+  });
+  
+  return sequences;
+};
+
 export default {
   calculateTeamAttacks,
   calculateTeamScores,
@@ -299,4 +325,5 @@ export default {
   findTurnoverSequences,
   calculateScoringPossessionTags,
   calculatePlayingTimeTags,
+  findGameSequences,
 };
