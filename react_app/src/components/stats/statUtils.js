@@ -107,7 +107,7 @@ export const calculateTeamAttackDurations = (video, team) => {
   
   const stats = sequences.reduce((acc, sequence) => {
     const category = sequence.scored ? 'scoring' : 'nonScoring';
-    const duration = (sequence.endFrame - sequence.startFrame) / 30;
+    const duration = Math.round((sequence.endFrame - sequence.startFrame) / 30);
     acc[category].totalSeconds += duration;
     acc[category].attackCount++;
     return acc;
