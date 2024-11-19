@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { GlobalContext } from '../../index';
 import { findTurnoverSequences } from '../stats/statUtils';
+import { handleTagApproval } from '../stats/tagApproval';
 
 function TurnoverProcessor({ 
   selectedVideo, 
@@ -22,7 +23,6 @@ function TurnoverProcessor({
       maxPrecedingTouches
     );
 
-    // Convert sequences to tags format
     const newTags = sequences.map(seq => ({
       name: turnoverTag,
       startFrame: seq.startFrame,
@@ -41,29 +41,10 @@ function TurnoverProcessor({
   };
 
   const handleApproveProposedTags = async () => {
-    if (!selectedVideo || proposedTags.length === 0) return;
-
-    try {
-      const metadata = selectedVideo.metadata ? JSON.parse(selectedVideo.metadata) : {};
-      const existingTags = metadata.tags || [];
-      const updatedTags = [...existingTags, ...proposedTags];
-
-      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/${selectedVideo.id}/metadata`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          metadata: JSON.stringify({ ...metadata, tags: updatedTags })
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to save tags');
-
+    const success = await handleTagApproval(selectedVideo, proposedTags, globalData.APIbaseUrl);
+    if (success) {
       setProposedTags([]);
       onTagsApproved();
-    } catch (error) {
-      console.error('Error saving proposed tags:', error);
     }
   };
 

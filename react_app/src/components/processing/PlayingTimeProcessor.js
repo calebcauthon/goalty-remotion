@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { GlobalContext } from '../../index';
-import { findTagSequences } from '../stats/statUtils';
+import { calculatePlayingTimeTags } from '../stats/statUtils';
+import { handleTagApproval } from '../stats/tagApproval';
 
 function PlayingTimeProcessor({ selectedVideo, onTagsApproved }) {
   const globalData = useContext(GlobalContext);
@@ -37,57 +38,15 @@ function PlayingTimeProcessor({ selectedVideo, onTagsApproved }) {
 
   const processClips = () => {
     if (!selectedVideo?.tags || !playerName) return;
-
-    const playerTags = selectedVideo.tags.filter(tag => tag.name.includes(playerName));
-
-    const sequences = findTagSequences(
-      playerTags,
-      `${playerName} IN`,
-      `${playerName} OUT`,
-      [`${playerName} OUT`]
-    );
-
-    // Convert sequences to playing time tags
-    const newTags = sequences.map(seq => ({
-      name: `${playerName} playing`,
-      startFrame: seq.startFrame,
-      endFrame: seq.endFrame,
-      metadata: {
-        touchCount: seq.touches.length,
-        touches: seq.touches.map(t => ({
-          name: t.name,
-          frame: t.frame
-        }))
-      }
-    }));
-
+    const newTags = calculatePlayingTimeTags(selectedVideo.tags, playerName);
     setProposedTags(newTags);
   };
 
   const handleApproveProposedTags = async () => {
-    if (!selectedVideo || proposedTags.length === 0) return;
-
-    try {
-      const metadata = selectedVideo.metadata ? JSON.parse(selectedVideo.metadata) : {};
-      const existingTags = metadata.tags || [];
-      const updatedTags = [...existingTags, ...proposedTags];
-
-      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/${selectedVideo.id}/metadata`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          metadata: JSON.stringify({ ...metadata, tags: updatedTags })
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to save tags');
-
+    const success = await handleTagApproval(selectedVideo, proposedTags, globalData.APIbaseUrl);
+    if (success) {
       setProposedTags([]);
       onTagsApproved();
-    } catch (error) {
-      console.error('Error saving proposed tags:', error);
     }
   };
 

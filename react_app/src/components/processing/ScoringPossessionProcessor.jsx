@@ -1,38 +1,6 @@
 import React, { useState } from 'react';
-import { findTagSequences } from '../stats/statUtils';
-
-export const calculateTags = (tags, home) => {
-  if (!tags) return [];
-  
-  const away = home == "home" ? "away" : "home";
-
-  // Filter to only include relevant touches and scores
-  const relevantTags = tags.filter(tag => 
-    tag.name.includes("_touch_") ||
-    tag.name.includes("score")
-  );
-
-  // Find sequences that start with a touch and end with a score
-  const sequences = findTagSequences(
-    relevantTags,
-    `${home}_touch_attacking`,
-    [`${home}_score`],
-    [`${away}_touch_clearing`, `${away}_touch_attacking`]
-  );
-
-  return sequences.map(seq => ({
-    name: `${home}_scoring_possession`,
-    startFrame: seq.startFrame,
-    endFrame: seq.endFrame,
-    metadata: {
-      touchCount: seq.touches.length,
-      touches: seq.touches.map(t => ({
-        name: t.name,
-        frame: t.frame
-      }))
-    }
-  }));
-};
+import { calculateScoringPossessionTags } from '../stats/statUtils';
+import { handleTagApproval } from '../stats/tagApproval';
 
 function ScoringPossessionProcessor({ 
   selectedVideo,
@@ -44,34 +12,15 @@ function ScoringPossessionProcessor({
 
   const processClips = () => {
     if (!selectedVideo?.tags || !team) return;
-    const newTags = calculateTags(selectedVideo.tags, team);
+    const newTags = calculateScoringPossessionTags(selectedVideo.tags, team);
     setProposedTags(newTags);
   };
 
   const handleApproveProposedTags = async () => {
-    if (!selectedVideo || proposedTags.length === 0) return;
-
-    try {
-      const metadata = selectedVideo.metadata ? JSON.parse(selectedVideo.metadata) : {};
-      const existingTags = metadata.tags || [];
-      const updatedTags = [...existingTags, ...proposedTags];
-
-      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/${selectedVideo.id}/metadata`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          metadata: JSON.stringify({ ...metadata, tags: updatedTags })
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to save tags');
-
+    const success = await handleTagApproval(selectedVideo, proposedTags, globalData.APIbaseUrl);
+    if (success) {
       setProposedTags([]);
       onTagsApproved();
-    } catch (error) {
-      console.error('Error saving proposed tags:', error);
     }
   };
 

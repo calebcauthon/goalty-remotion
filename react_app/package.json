@@ -28,7 +28,7 @@
     "start": "export WATCHPACK_POLLING=true && react-scripts start",
     "build": "react-scripts build",
     "test": "vitest run",
-    "test:watch": "vitest --watch.usePolling",
+    "test:watch": "export CHOKIDAR_USEPOLLING=true && vitest --watch.usePolling",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

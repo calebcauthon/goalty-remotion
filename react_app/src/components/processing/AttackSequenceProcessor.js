@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { GlobalContext } from '../../index';
 import { findTeamAttackSequences } from '../stats/statUtils';
+import { handleTagApproval } from '../stats/tagApproval';
 
 function AttackSequenceProcessor({ 
   selectedVideo, 
@@ -15,15 +16,11 @@ function AttackSequenceProcessor({
   const processClips = () => {
     if (!selectedVideo?.tags) return;
 
-    // Get all attack sequences for the team
     let sequences = findTeamAttackSequences(selectedVideo, team);
-
-    // Filter for scoring sequences if requested
     if (scoringOnly) {
       sequences = sequences.filter(seq => seq.scored);
     }
 
-    // Convert sequences to tags format
     const newTags = sequences.map(seq => ({
       name: `${team}_attack_sequence`,
       startFrame: seq.startFrame,
@@ -42,29 +39,10 @@ function AttackSequenceProcessor({
   };
 
   const handleApproveProposedTags = async () => {
-    if (!selectedVideo || proposedTags.length === 0) return;
-
-    try {
-      const metadata = selectedVideo.metadata ? JSON.parse(selectedVideo.metadata) : {};
-      const existingTags = metadata.tags || [];
-      const updatedTags = [...existingTags, ...proposedTags];
-
-      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/${selectedVideo.id}/metadata`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          metadata: JSON.stringify({ ...metadata, tags: updatedTags })
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to save tags');
-
+    const success = await handleTagApproval(selectedVideo, proposedTags, globalData.APIbaseUrl);
+    if (success) {
       setProposedTags([]);
       onTagsApproved();
-    } catch (error) {
-      console.error('Error saving proposed tags:', error);
     }
   };
 

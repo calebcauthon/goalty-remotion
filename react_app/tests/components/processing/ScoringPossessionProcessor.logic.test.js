@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateTags } from '../../../src/components/processing/ScoringPossessionProcessor';
+import { calculateScoringPossessionTags } from '../../../src/components/stats/statUtils';
 import {
   HOME,
   HOME_TOUCH_ATTACKING,
@@ -11,7 +11,7 @@ import {
 
 describe('calculateTags', () => {
   it('should return empty array for null tags', () => {
-    expect(calculateTags(null, HOME)).toEqual([]);
+    expect(calculateScoringPossessionTags(null, HOME)).toEqual([]);
   });
 
   it('should calculate scoring sequence correctly', () => {
@@ -22,7 +22,7 @@ describe('calculateTags', () => {
       { name: 'some_other_tag', frame: 17 } // Should be ignored
     ];
 
-    const result = calculateTags(mockTags, HOME);
+    const result = calculateScoringPossessionTags(mockTags, HOME);
     
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe(HOME_SCORING_POSSESSION);
@@ -45,7 +45,7 @@ describe('calculateTags', () => {
       { name: HOME_SCORE, frame: 40 }
     ];
 
-    const result = calculateTags(mockTags, HOME);
+    const result = calculateScoringPossessionTags(mockTags, HOME);
     
     expect(result).toHaveLength(2);
     expect(result[1].metadata.touchCount).toBe(3);
@@ -60,7 +60,7 @@ describe('calculateTags', () => {
       { name: HOME_TOUCH_ATTACKING, frame: 15 }
     ];
 
-    const result = calculateTags(mockTags, HOME);
+    const result = calculateScoringPossessionTags(mockTags, HOME);
     
     expect(result).toHaveLength(0);
   });
@@ -72,7 +72,7 @@ describe('calculateTags', () => {
       { name: HOME_SCORE, frame: 20 }
     ];
 
-    const result = calculateTags(mockTags, HOME);
+    const result = calculateScoringPossessionTags(mockTags, HOME);
     
     expect(result).toHaveLength(0);
   });
@@ -84,7 +84,7 @@ describe('calculateTags', () => {
       { name: HOME_SCORE, frame: 20 }
     ];
 
-    const result = calculateTags(mockTags, HOME);
+    const result = calculateScoringPossessionTags(mockTags, HOME);
     
     expect(result).toHaveLength(0);
   });

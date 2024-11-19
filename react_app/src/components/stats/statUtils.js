@@ -230,6 +230,63 @@ export const findTurnoverSequences = (tags, teamTouchPrefix, maxPrecedingTouches
   });
 };
 
+export const calculateScoringPossessionTags = (tags, home) => {
+  if (!tags) return [];
+  
+  const away = home == "home" ? "away" : "home";
+
+  const relevantTags = tags.filter(tag => 
+    tag.name.includes("_touch_") ||
+    tag.name.includes("score")
+  );
+
+  const sequences = findTagSequences(
+    relevantTags,
+    `${home}_touch_attacking`,
+    [`${home}_score`],
+    [`${away}_touch_clearing`, `${away}_touch_attacking`]
+  );
+
+  return sequences.map(seq => ({
+    name: `${home}_scoring_possession`,
+    startFrame: seq.startFrame,
+    endFrame: seq.endFrame,
+    metadata: {
+      touchCount: seq.touches.length,
+      touches: seq.touches.map(t => ({
+        name: t.name,
+        frame: t.frame
+      }))
+    }
+  }));
+};
+
+export const calculatePlayingTimeTags = (tags, playerName) => {
+  if (!tags || !playerName) return [];
+
+  const playerTags = tags.filter(tag => tag.name.includes(playerName));
+
+  const sequences = findTagSequences(
+    playerTags,
+    `${playerName} IN`,
+    [`${playerName} OUT`],
+    [`${playerName} OUT`]
+  );
+
+  return sequences.map(seq => ({
+    name: `${playerName} playing`,
+    startFrame: seq.startFrame,
+    endFrame: seq.endFrame,
+    metadata: {
+      touchCount: seq.touches.length,
+      touches: seq.touches.map(t => ({
+        name: t.name,
+        frame: t.frame
+      }))
+    }
+  }));
+};
+
 export default {
   calculateTeamAttacks,
   calculateTeamScores,
@@ -239,5 +296,7 @@ export default {
   calculateTeamPossessions,
   findTeamAttackSequences,
   findTagSequences,
-  findTurnoverSequences
+  findTurnoverSequences,
+  calculateScoringPossessionTags,
+  calculatePlayingTimeTags,
 };
