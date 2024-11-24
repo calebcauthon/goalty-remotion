@@ -1,0 +1,56 @@
+.player-tracking {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.video-selector {
+  margin: 20px 0;
+}
+
+.video-selector select {
+  width: 100%;
+  padding: 8px;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.video-details {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.error-message {
+  color: #ff4444;
+  padding: 10px;
+  margin: 10px 0;
+  background-color: #ffebee;
+  border-radius: 4px;
+}
+
+.frame-container {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.frame-canvas {
+  border: 1px solid #ccc;
+  cursor: crosshair;
+  max-width: 100%;
+  height: auto;
+}
+
+.coordinates-display {
+  width: 100%;
+  max-width: 400px;
+  font-family: monospace;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+} 

@@ -9,6 +9,7 @@ import ClipMaker from 'components/pages/ClipMaker';
 import HotkeyConfig from 'components/pages/HotkeyConfig';
 import ViewHotkeyGroup from 'components/pages/ViewHotkeyGroup';
 import StatsReports from 'components/pages/StatsReports';
+import PlayerTracking from 'components/pages/PlayerTracking';
 import 'components/pages/App.css';
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
         <Route path="/hotkeys" element={<HotkeyConfig />} />
         <Route path="/hotkeys/:id" element={<ViewHotkeyGroup />} />
         <Route path="/stats" element={<StatsReports />} />
+        <Route path="/player-tracking" element={<PlayerTracking />} />
       </Routes>
     </Router>
   );

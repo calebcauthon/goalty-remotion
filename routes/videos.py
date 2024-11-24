@@ -5,6 +5,11 @@ from datetime import datetime
 import database
 from b2 import b2_api, bucket
 from database import add_video, get_video, get_tables, get_table_data, execute_query, update_video_metadata, commit_query
+import cv2
+import base64
+import numpy as np
+from io import BytesIO
+from PIL import Image
 
 videos_bp = Blueprint('videos', __name__)
 
@@ -101,3 +106,45 @@ def update_video_title(video_id):
         return jsonify({'message': 'Title updated successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@videos_bp.route('/first-frame', methods=['POST'])
+def get_first_frame():
+    try:
+        video_url = request.json.get('url')
+        if not video_url:
+            return jsonify({'error': 'No video URL provided'}), 400
+            
+        # Download video file or access it
+        import urllib.parse
+        cap = cv2.VideoCapture(urllib.parse.quote(video_url, safe=':/?='))
+        
+        # Read the first frame
+        ret, frame = cap.read()
+        cap.release()
+        
+        if not ret:
+            return jsonify({'error': 'Could not read frame'}), 400
+            
+        # Convert BGR to RGB
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        # Convert to PIL Image
+        pil_image = Image.fromarray(frame_rgb)
+        
+        # Save to bytes
+        img_io = BytesIO()
+        pil_image.save(img_io, 'JPEG', quality=70)
+        img_io.seek(0)
+        
+        # Convert to base64
+        img_base64 = base64.b64encode(img_io.getvalue()).decode()
+        
+        return jsonify({
+            'image': img_base64,
+            'width': pil_image.width,
+            'height': pil_image.height
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+    

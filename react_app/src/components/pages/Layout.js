@@ -11,6 +11,7 @@ function Layout({ children }) {
           <li><Link to="/videos">Videos</Link></li>
           <li><Link to="/clipmaker">Clip Maker</Link></li>
           <li><Link to="/studio">Studio</Link></li>
+          <li><Link to="/player-tracking">Player Tracking</Link></li>
           <li>Settings</li>
           <li><Link to="/hotkeys">Hotkey Config</Link></li>
           <li><Link to="/stats">Stats & Reports</Link></li>
