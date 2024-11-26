@@ -13,9 +13,10 @@ flask-cors = "^5.0.0"
 yt-dlp = "^2024.10.22"
 b2sdk = "^2.6.0"
 gunicorn = "^23.0.0"
-exponent-run = "^0.0.60"
 opencv-python = "^4.10.0.84"
 pillow = "^11.0.0"
+clip-client = "^0.8.3"
+replicate = "^1.0.4"
 
 
 [build-system]

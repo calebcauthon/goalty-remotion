@@ -15,6 +15,16 @@ function PlayerTracking() {
   const [currentRect, setCurrentRect] = useState(null);
   const canvasRef = useRef(null);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const [outputFilename, setOutputFilename] = useState('');
+  const [processing, setProcessing] = useState(false);
+  const [videoInfo, setVideoInfo] = useState(null);
+  const [clipResults, setClipResults] = useState(null);
+  const [clipPrompt, setClipPrompt] = useState('');
+  const [clipLoading, setClipLoading] = useState(false);
+  const [videoRef, setVideoRef] = useState(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [clipBoxes, setClipBoxes] = useState([]);
+  const [drawMode, setDrawMode] = useState('draw');
 
   useEffect(() => {
     fetchVideos();
@@ -22,6 +32,7 @@ function PlayerTracking() {
 
   useEffect(() => {
     if (selectedVideo) {
+      fetchVideoInfo();
       fetchFirstFrame();
     }
   }, [selectedVideo]);
@@ -78,10 +89,61 @@ function PlayerTracking() {
     }
   };
 
+  const fetchVideoInfo = async () => {
+    try {
+      const b2Response = await fetch(
+        `${globalData.APIbaseUrl}/api/videos/b2-info`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url: selectedVideo.url })
+        }
+      );
+      const b2Data = await b2Response.json();
+      
+      if (b2Data.error) {
+        console.error(b2Data.error);
+        setError(b2Data.error);
+      } else {
+        setVideoInfo(b2Data);
+        
+        // If boxes_data exists, process it
+        if (b2Data.boxes_data) {
+          // Convert the boxes data to rectangle format
+          const boxRectangles = b2Data.boxes_data.map(boxFrame => {
+            // Assuming each frame has bbox_to_vis data
+            const rects = [];
+            for (const [id, box] of Object.entries(boxFrame)) {
+              rects.push({
+                x: box[0],
+                y: box[1],
+                width: box[2],
+                height: box[3],
+                id: id
+              });
+            }
+            return rects;
+          });
+          
+          // For now, just use the first frame's boxes
+          // You might want to handle this differently based on your needs
+          if (boxRectangles.length > 0) {
+            setRectangles(boxRectangles[0]);
+          }
+        }
+      }
+    } catch (error) {
+      setError('Failed to fetch video info');
+    }
+  };
+
   const handleVideoSelect = (video) => {
     setSelectedVideo(video);
     setRectangles([]);
     setCurrentRect(null);
+    setClipBoxes([]);
   };
 
   const drawCanvas = () => {
@@ -103,6 +165,20 @@ function PlayerTracking() {
       // Add semi-transparent fill for completed rectangles
       ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
       ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+    });
+    
+    // Draw CLIP detection boxes
+    clipBoxes.forEach(box => {
+      ctx.strokeStyle = '#ff0000';  // Red for CLIP boxes
+      ctx.lineWidth = 2;
+      ctx.strokeRect(box.x, box.y, box.width, box.height);
+      ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+      ctx.fillRect(box.x, box.y, box.width, box.height);
+      
+      // Draw label
+      ctx.font = '14px Arial';
+      ctx.fillStyle = '#ff0000';
+      ctx.fillText(box.label, box.x, box.y - 5);
     });
     
     // Draw current rectangle if drawing
@@ -164,30 +240,168 @@ function PlayerTracking() {
     requestAnimationFrame(drawCanvas);
   };
 
+  const handleRectangleComplete = (newRect) => {
+    if (drawMode === 'draw') {
+      setRectangles(prev => [...prev, newRect]);
+    } else if (drawMode === 'keep') {
+      setRectangles(prev => prev.filter(rect => 
+        rect.x >= newRect.x && 
+        rect.y >= newRect.y && 
+        (rect.x + rect.width) <= (newRect.x + newRect.width) && 
+        (rect.y + rect.height) <= (newRect.y + newRect.height)
+      ));
+    } else if (drawMode === 'remove') {
+      setRectangles(prev => prev.filter(rect => 
+        !(rect.x >= newRect.x && 
+          rect.y >= newRect.y && 
+          (rect.x + rect.width) <= (newRect.x + newRect.width) && 
+          (rect.y + rect.height) <= (newRect.y + newRect.height))
+      ));
+    }
+  };
+
   const handleMouseUp = () => {
     if (!drawing || !currentRect) return;
     
-    setRectangles(prev => [...prev, currentRect]);
+    handleRectangleComplete(currentRect);
     setDrawing(false);
     setCurrentRect(null);
   };
 
-  if (loading) return (
-    <Layout>
-      <div className="player-tracking">
-        <h1>Player Tracking</h1>
-        <div>Loading...</div>
-      </div>
-    </Layout>
-  );
+  const handleCloudRender = async () => {
+    if (!outputFilename) {
+      setError('Please enter an output filename');
+      return;
+    }
 
-  if (error) return (
-    <Layout>
-      <div className="player-tracking">
-        <h1>Player Tracking</h1>
-        <div className="error-message">{error}</div>
+    // Combine manual rectangles and CLIP boxes
+    const allRectangles = [
+      ...rectangles,
+      ...clipBoxes.map(box => ({
+        x: box.x,
+        y: box.y,
+        width: box.width,
+        height: box.height,
+        label: box.label, // Optional: include label from CLIP
+        source: 'clip'    // Optional: mark the source
+      }))
+    ];
+
+    if (allRectangles.length === 0) {
+      setError('No rectangles or detections found');
+      return;
+    }
+
+    setProcessing(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/process-tracking`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rectangles: allRectangles,
+          sourceUrl: selectedVideo.url,
+          outputFilename: outputFilename.endsWith('.mp4') ? outputFilename : `${outputFilename}.mp4`
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        setError(data.error);
+      } else {
+        alert('Processing started successfully!');
+      }
+    } catch (error) {
+      setError('Failed to start processing');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleDeleteRectangle = (index) => {
+    setRectangles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleClipAnalysis = async () => {
+    if (!clipPrompt) {
+      setError('Please enter a text prompt');
+      return;
+    }
+
+    setClipLoading(true);
+    setError(null);
+
+    try {
+      const frameNumber = Math.floor(currentTime * 30); // Assuming 30fps
+
+      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/clip-analysis`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          video_url: selectedVideo.url,
+          frame_number: frameNumber,
+          text_prompt: clipPrompt
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        setError(data.error);
+      } else {
+        setClipResults(data);
+        // Add CLIP detections directly to rectangles array
+        if (data.detections) {
+          const clipRects = data.detections.map(d => ({
+            x: d.bbox[0],
+            y: d.bbox[1],
+            width: d.bbox[2] - d.bbox[0],
+            height: d.bbox[3] - d.bbox[1],
+            label: d.label,
+            source: 'clip'
+          }));
+          setRectangles(prev => [...prev, ...clipRects]);
+        }
+      }
+    } catch (error) {
+      setError('Failed to perform CLIP analysis');
+    } finally {
+      setClipLoading(false);
+    }
+  };
+
+  const ClipResultsDisplay = ({ results }) => {
+    if (!results) return null;
+
+    return (
+      <div className="clip-results">
+        <h3>CLIP Analysis Results</h3>
+        <p>Similarity Score: {(results.similarity_score * 100).toFixed(2)}%</p>
+        <img 
+          src={`data:image/jpeg;base64,${results.frame_image}`} 
+          alt="CLIP analysis frame"
+          style={{ maxWidth: '100%', marginTop: '10px' }}
+        />
       </div>
-    </Layout>
+    );
+  };
+
+  const videoPlayerJsx = (
+    <div className="video-player-container">
+      <video
+        ref={ref => setVideoRef(ref)}
+        src={selectedVideo?.url}
+        controls
+        style={{ maxWidth: '100%', marginBottom: '1rem' }}
+        onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
+      />
+    </div>
   );
 
   return (
@@ -200,6 +414,7 @@ function PlayerTracking() {
           <select 
             onChange={(e) => handleVideoSelect(videos.find(v => v.id === e.target.value))}
             value={selectedVideo?.id || ''}
+            disabled={loading}
           >
             <option value="">Choose a video...</option>
             {videos.map(video => (
@@ -208,10 +423,59 @@ function PlayerTracking() {
               </option>
             ))}
           </select>
+          {loading && <div className="status-message">Loading videos...</div>}
         </div>
+
+        {selectedVideo && (
+          <div className="video-details">
+            <h3>Selected Video: {selectedVideo.name}</h3>
+            <div className="video-info-grid">
+              <div>Size: {(selectedVideo.size / 1024 / 1024).toFixed(2)} MB</div>
+              <div>Uploaded: {new Date(selectedVideo.uploadTimestamp).toLocaleString()}</div>
+              {videoInfo && (
+                <>
+                  <div>Frames: {videoInfo.frame_count}</div>
+                  <div>Duration: {videoInfo.duration}s</div>
+                  <div>Resolution: {videoInfo.width}x{videoInfo.height}</div>
+                  <div>FPS: {videoInfo.fps}</div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {frameImage && (
           <div className="frame-container">
+            {videoPlayerJsx}
+            <div className="drawing-modes">
+              <label>
+                <input
+                  type="radio"
+                  value="draw"
+                  checked={drawMode === 'draw'}
+                  onChange={(e) => setDrawMode(e.target.value)}
+                />
+                Draw
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  value="keep"
+                  checked={drawMode === 'keep'}
+                  onChange={(e) => setDrawMode(e.target.value)}
+                />
+                Keep Inside
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  value="remove"
+                  checked={drawMode === 'remove'}
+                  onChange={(e) => setDrawMode(e.target.value)}
+                />
+                Remove Inside
+              </label>
+            </div>
             <canvas
               ref={canvasRef}
               width={imageSize.width}
@@ -222,24 +486,92 @@ function PlayerTracking() {
               onMouseLeave={handleMouseUp}
               className="frame-canvas"
             />
-            <textarea
-              className="coordinates-display"
-              value={rectangles.map(rect => 
-                `${Math.round(rect.x)},${Math.round(rect.y)},${Math.round(rect.width)},${Math.round(rect.height)}`
-              ).join('\n')}
-              readOnly
-              rows={rectangles.length + 1}
-            />
+            <div className="coordinates-table-container">
+              <table className="coordinates-table">
+                <thead>
+                  <tr>
+                    <th>X</th>
+                    <th>Y</th>
+                    <th>Width</th>
+                    <th>Height</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rectangles.map((rect, index) => (
+                    <tr key={index}>
+                      <td>{Math.round(rect.x)}</td>
+                      <td>{Math.round(rect.y)}</td>
+                      <td>{Math.round(rect.width)}</td>
+                      <td>{Math.round(rect.height)}</td>
+                      <td>
+                        <button
+                          className="delete-rectangle-button"
+                          onClick={() => handleDeleteRectangle(index)}
+                          title="Delete rectangle"
+                        >
+                          🗑️
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {rectangles.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="no-rectangles">
+                        No rectangles drawn yet
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="render-controls">
+              <div className="filename-input">
+                <label htmlFor="output-filename">Save as:</label>
+                <input
+                  id="output-filename"
+                  type="text"
+                  value={outputFilename}
+                  onChange={(e) => setOutputFilename(e.target.value)}
+                  placeholder="output.mp4"
+                />
+              </div>
+              
+              <div className="clip-controls">
+                <div className="clip-input">
+                  <label htmlFor="clip-prompt">CLIP Prompt:</label>
+                  <input
+                    id="clip-prompt"
+                    type="text"
+                    value={clipPrompt}
+                    onChange={(e) => setClipPrompt(e.target.value)}
+                    placeholder="Describe what to look for..."
+                  />
+                  <button
+                    className="clip-analyze-button"
+                    onClick={handleClipAnalysis}
+                    disabled={clipLoading || !clipPrompt || !selectedVideo}
+                  >
+                    {clipLoading ? 'Analyzing...' : 'Analyze with CLIP'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="render-status">
+                {error && <div className="error-message">{error}</div>}
+                <button
+                  className="cloud-render-button"
+                  onClick={handleCloudRender}
+                  disabled={processing || !outputFilename || rectangles.length === 0}
+                >
+                  {processing ? 'Processing...' : 'Cloud Render'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
-        {selectedVideo && !frameImage && (
-          <div className="video-details">
-            <h3>Selected Video: {selectedVideo.name}</h3>
-            <p>Size: {(selectedVideo.size / 1024 / 1024).toFixed(2)} MB</p>
-            <p>Uploaded: {new Date(selectedVideo.uploadTimestamp).toLocaleString()}</p>
-          </div>
-        )}
+        {clipResults && <ClipResultsDisplay results={clipResults} />}
       </div>
     </Layout>
   );

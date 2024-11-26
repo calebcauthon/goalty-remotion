@@ -143,7 +143,6 @@ def list_b2_videos():
     files = []
 
     for file_version, folder_name in bucket.ls():
-        print(f"file_version: {file_version}")
         file_name = file_version.file_name
         if file_name.lower().endswith('.mp4'):
             files.append({

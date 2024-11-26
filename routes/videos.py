@@ -3,13 +3,16 @@ import json
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 import database
-from b2 import b2_api, bucket
+from b2 import b2_api, bucket, check_file_exists_in_b2, sam_bucket
 from database import add_video, get_video, get_tables, get_table_data, execute_query, update_video_metadata, commit_query
 import cv2
 import base64
 import numpy as np
 from io import BytesIO
 from PIL import Image
+import requests
+import urllib.parse
+import replicate
 
 videos_bp = Blueprint('videos', __name__)
 
@@ -148,3 +151,138 @@ def get_first_frame():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
     
+@videos_bp.route('/process-tracking', methods=['POST'])
+def process_tracking():
+    data = request.json
+    if not all(k in data for k in ['rectangles', 'sourceUrl', 'outputFilename']):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    # Convert rectangles to string format
+    many_xywh = ','.join([
+        f"{int(r['x'])},{int(r['y'])},{int(r['width'])},{int(r['height'])}"
+        for r in data['rectangles']
+    ])
+
+    # Get source filename from URL
+    source_filename = data['sourceUrl'].split('/')[-1]
+    
+    # Call modal endpoint
+    modal_url = "https://calebcauthon-dev--remotion-samurai-distribute-processing.modal.run"
+    json_data = {
+        'many_xywh': many_xywh,
+        'source_filename': source_filename,
+        'output_path': data['outputFilename']
+    }
+    response = requests.post(
+        f"{modal_url}",
+        json=json_data
+    )
+
+    if response.ok:
+        return jsonify(response.json()), 200
+    else:
+        return jsonify({
+            'error': f'Modal processing failed: {response.text}',
+            'modal_params': json_data,
+            'modal_url': modal_url
+        }), 400
+
+@videos_bp.route('/b2-info', methods=['POST'])
+def get_b2_video_info():
+    try:
+        video_url = request.json.get('url')
+        if not video_url:
+            return jsonify({'error': 'No video URL provided'}), 400
+            
+        # Download video file or access it
+        import urllib.parse
+        cap = cv2.VideoCapture(urllib.parse.quote(video_url, safe=':/?='))
+        
+        if not cap.isOpened():
+            return jsonify({'error': 'Could not open video'}), 400
+        
+        # Get video properties
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        duration = frame_count / fps if fps > 0 else 0
+        
+        cap.release()
+
+        # Look for boxes.json file - remove .mp4 if present
+        video_filename = video_url.split('/')[-1]
+        base_filename = video_filename.replace('.mp4', '')  # Remove .mp4 extension
+        boxes_filename = f"{base_filename}.boxes.json"
+        
+        boxes_data = None
+        exists, file_info = check_file_exists_in_b2(boxes_filename, sam_bucket)
+        if exists:
+            print(f"Downloading boxes data from B2: {boxes_filename}")
+            downloaded_file = sam_bucket.download_file_by_name(boxes_filename)
+            
+            # Create a BytesIO object to read the file contents
+            file_data = BytesIO()
+            downloaded_file.save(file_data)
+            file_data.seek(0)  # Reset position to start of file
+            
+            # Parse JSON from the file data
+            boxes_data = json.loads(file_data.read().decode('utf-8'))
+        
+        return jsonify({
+            'frame_count': frame_count,
+            'fps': round(fps, 2),
+            'width': width,
+            'height': height,
+            'duration': round(duration, 2),
+            'boxes_data': boxes_data
+        }), 200
+        
+    except Exception as e:
+        print(f"Error getting video info: {str(e)}")
+        return jsonify({'error': str(e)}), 400
+
+@videos_bp.route('/clip-analysis', methods=['POST'])
+def analyze_frame_with_clip():
+    try:
+        data = request.json
+        if not all(k in data for k in ['video_url', 'frame_number', 'text_prompt']):
+            return jsonify({'error': 'Missing required fields'}), 400
+
+        # Extract frame from video
+        cap = cv2.VideoCapture(urllib.parse.quote(data['video_url'], safe=':/?='))
+        cap.set(cv2.CAP_PROP_POS_FRAMES, data['frame_number'])
+        ret, frame = cap.read()
+        cap.release()
+
+        if not ret:
+            return jsonify({'error': 'Could not read frame'}), 400
+
+        # Convert frame to jpg and base64
+        _, img_encoded = cv2.imencode('.jpg', frame)
+        img_bytes = img_encoded.tobytes()
+        img_base64 = base64.b64encode(img_bytes).decode()
+
+        # Run GroundingDINO
+        input = {
+            "image": f"data:image/jpeg;base64,{img_base64}",
+            "query": data['text_prompt'],
+            "box_threshold": 0.2,
+            "text_threshold": 0.2
+        }
+
+        output = replicate.run(
+            "adirik/grounding-dino:efd10a8ddc57ea28773327e881ce95e20cc1d734c589f7dd01d2036921ed78aa",
+            input=input
+        )
+
+        return jsonify({
+            'detections': output['detections'],
+            'frame_image': img_base64
+        }), 200
+
+    except Exception as e:
+        print(f"Error in CLIP analysis: {str(e)}")
+        return jsonify({'error': str(e)}), 400
+
+
