@@ -157,21 +157,44 @@ def process_tracking():
     if not all(k in data for k in ['rectangles', 'sourceUrl', 'outputFilename']):
         return jsonify({'error': 'Missing required fields'}), 400
 
-    # Convert rectangles to string format
-    many_xywh = ','.join([
-        f"{int(r['x'])},{int(r['y'])},{int(r['width'])},{int(r['height'])}"
-        for r in data['rectangles']
-    ])
+    # Convert rectangles to string format with names
+    rect_data = []
+    for r in data['rectangles']:
+        # Format: x,y,width,height,name (name is optional)
+        rect_str = f"{int(r['x'])},{int(r['y'])},{int(r['width'])},{int(r['height'])}"
+        if 'name' in r and r['name']:
+            if r['name'] == "":
+                r['name'] = "-1"
+            rect_str += f",{r['name']}"
+        else:
+            rect_str += ",-1"
+        rect_data.append(rect_str)
+    
+    many_xywh = ','.join(rect_data)
 
     # Get source filename from URL
     source_filename = data['sourceUrl'].split('/')[-1]
     
+    # Get frame range
+    start_frame = data.get('startFrame', 0)
+    end_frame = data.get('endFrame')
+    
     # Call modal endpoint
     modal_url = "https://calebcauthon-dev--remotion-samurai-distribute-processing.modal.run"
+    print(f"  ↳ Calling modal endpoint: {modal_url}")
+    print(f"  ↳ Many XYWH: {many_xywh}")
+    print(f"  ↳ Source filename: {source_filename}")
+    print(f"  ↳ Output filename: {data['outputFilename']}")
+    print(f"  ↳ Frame range: {start_frame} to {end_frame}")
+    
     json_data = {
         'many_xywh': many_xywh,
         'source_filename': source_filename,
-        'output_path': data['outputFilename']
+        'output_path': data['outputFilename'],
+        'frame_range': {
+            'start': start_frame,
+            'end': end_frame
+        } if end_frame is not None else None
     }
     response = requests.post(
         f"{modal_url}",
@@ -191,6 +214,8 @@ def process_tracking():
 def get_b2_video_info():
     try:
         video_url = request.json.get('url')
+        frame_number = request.json.get('frame_number', 0)  # Default to first frame
+        
         if not video_url:
             return jsonify({'error': 'No video URL provided'}), 400
             
@@ -207,6 +232,18 @@ def get_b2_video_info():
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         duration = frame_count / fps if fps > 0 else 0
+
+        # Set frame position and read frame
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+        ret, frame = cap.read()
+        
+        if not ret:
+            cap.release()
+            return jsonify({'error': 'Could not read frame'}), 400
+
+        # Convert frame to base64
+        _, buffer = cv2.imencode('.jpg', frame)
+        frame_base64 = base64.b64encode(buffer).decode('utf-8')
         
         cap.release()
 
@@ -235,7 +272,8 @@ def get_b2_video_info():
             'width': width,
             'height': height,
             'duration': round(duration, 2),
-            'boxes_data': boxes_data
+            'boxes_data': boxes_data,
+            'frame_image': frame_base64
         }), 200
         
     except Exception as e:

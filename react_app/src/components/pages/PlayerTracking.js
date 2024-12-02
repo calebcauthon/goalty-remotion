@@ -25,6 +25,8 @@ function PlayerTracking() {
   const [currentTime, setCurrentTime] = useState(0);
   const [clipBoxes, setClipBoxes] = useState([]);
   const [drawMode, setDrawMode] = useState('draw');
+  const [startFrame, setStartFrame] = useState(0);
+  const [endFrame, setEndFrame] = useState(0);
 
   useEffect(() => {
     fetchVideos();
@@ -33,7 +35,6 @@ function PlayerTracking() {
   useEffect(() => {
     if (selectedVideo) {
       fetchVideoInfo();
-      fetchFirstFrame();
     }
   }, [selectedVideo]);
 
@@ -42,6 +43,18 @@ function PlayerTracking() {
       drawCanvas();
     }
   }, [frameImage, rectangles, currentRect]);
+
+  useEffect(() => {
+    if (videoInfo) {
+      setEndFrame(videoInfo.frame_count);
+    }
+  }, [videoInfo]);
+
+  useEffect(() => {
+    if (selectedVideo && startFrame >= 0) {
+      fetchVideoInfo(startFrame);
+    }
+  }, [startFrame]);
 
   const fetchVideos = async () => {
     try {
@@ -60,36 +73,7 @@ function PlayerTracking() {
     }
   };
 
-  const fetchFirstFrame = async () => {
-    try {
-      const response = await fetch(
-        `${globalData.APIbaseUrl}/api/videos/first-frame`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ url: selectedVideo.url })
-        }
-      );
-      const data = await response.json();
-      
-      if (data.error) {
-        setError(data.error);
-      } else {
-        const img = new Image();
-        img.onload = () => {
-          setImageSize({ width: data.width, height: data.height });
-          setFrameImage(img);
-        };
-        img.src = `data:image/jpeg;base64,${data.image}`;
-      }
-    } catch (error) {
-      setError('Failed to fetch first frame');
-    }
-  };
-
-  const fetchVideoInfo = async () => {
+  const fetchVideoInfo = async (frameNumber = 0) => {
     try {
       const b2Response = await fetch(
         `${globalData.APIbaseUrl}/api/videos/b2-info`,
@@ -98,7 +82,10 @@ function PlayerTracking() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ url: selectedVideo.url })
+          body: JSON.stringify({ 
+            url: selectedVideo.url,
+            frame_number: frameNumber
+          })
         }
       );
       const b2Data = await b2Response.json();
@@ -108,6 +95,14 @@ function PlayerTracking() {
         setError(b2Data.error);
       } else {
         setVideoInfo(b2Data);
+        
+        // Create and set the frame image
+        const img = new Image();
+        img.onload = () => {
+          setImageSize({ width: b2Data.width, height: b2Data.height });
+          setFrameImage(img);
+        };
+        img.src = `data:image/jpeg;base64,${b2Data.frame_image}`;
         
         // If boxes_data exists, process it
         if (b2Data.boxes_data) {
@@ -121,14 +116,14 @@ function PlayerTracking() {
                 y: box[1],
                 width: box[2],
                 height: box[3],
-                id: id
+                id: id,
+                name: id
               });
             }
             return rects;
           });
           
           // For now, just use the first frame's boxes
-          // You might want to handle this differently based on your needs
           if (boxRectangles.length > 0) {
             setRectangles(boxRectangles[0]);
           }
@@ -242,7 +237,7 @@ function PlayerTracking() {
 
   const handleRectangleComplete = (newRect) => {
     if (drawMode === 'draw') {
-      setRectangles(prev => [...prev, newRect]);
+      setRectangles(prev => [...prev, { ...newRect, name: '' }]);
     } else if (drawMode === 'keep') {
       setRectangles(prev => prev.filter(rect => 
         rect.x >= newRect.x && 
@@ -258,6 +253,12 @@ function PlayerTracking() {
           (rect.y + rect.height) <= (newRect.y + newRect.height))
       ));
     }
+  };
+
+  const handleNameChange = (index, name) => {
+    setRectangles(prev => prev.map((rect, i) => 
+      i === index ? { ...rect, name } : rect
+    ));
   };
 
   const handleMouseUp = () => {
@@ -276,14 +277,21 @@ function PlayerTracking() {
 
     // Combine manual rectangles and CLIP boxes
     const allRectangles = [
-      ...rectangles,
+      ...rectangles.map(r => ({
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
+        name: r.name,
+        source: 'manual'
+      })),
       ...clipBoxes.map(box => ({
         x: box.x,
         y: box.y,
         width: box.width,
         height: box.height,
-        label: box.label, // Optional: include label from CLIP
-        source: 'clip'    // Optional: mark the source
+        label: box.label,
+        source: 'clip'
       }))
     ];
 
@@ -304,7 +312,9 @@ function PlayerTracking() {
         body: JSON.stringify({
           rectangles: allRectangles,
           sourceUrl: selectedVideo.url,
-          outputFilename: outputFilename.endsWith('.mp4') ? outputFilename : `${outputFilename}.mp4`
+          outputFilename: outputFilename.endsWith('.mp4') ? outputFilename : `${outputFilename}.mp4`,
+          startFrame,
+          endFrame
         })
       });
 
@@ -404,6 +414,63 @@ function PlayerTracking() {
     </div>
   );
 
+  const tableJsx = (
+    <table className="coordinates-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>X</th>
+          <th>Y</th>
+          <th>Width</th>
+          <th>Height</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rectangles.map((rect, index) => (
+          <tr key={index}>
+            <td>
+              <input
+                type="text"
+                value={rect.name || ''}
+                onChange={(e) => handleNameChange(index, e.target.value)}
+                placeholder="Player name"
+                style={{ width: '100px' }}
+              />
+            </td>
+            <td>{Math.round(rect.x)}</td>
+            <td>{Math.round(rect.y)}</td>
+            <td>{Math.round(rect.width)}</td>
+            <td>{Math.round(rect.height)}</td>
+            <td>
+              <button
+                className="delete-rectangle-button"
+                onClick={() => handleDeleteRectangle(index)}
+                title="Delete rectangle"
+              >
+                🗑️
+              </button>
+            </td>
+          </tr>
+        ))}
+        {rectangles.length === 0 && (
+          <tr>
+            <td colSpan="6" className="no-rectangles">
+              No rectangles drawn yet
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  );
+
+  const handleSetCurrentFrame = () => {
+    if (videoRef && videoRef.currentTime) {
+      const frameNumber = Math.floor(videoRef.currentTime * (videoInfo?.fps || 30));
+      setStartFrame(frameNumber);
+    }
+  };
+
   return (
     <Layout>
       <div className="player-tracking">
@@ -487,43 +554,7 @@ function PlayerTracking() {
               className="frame-canvas"
             />
             <div className="coordinates-table-container">
-              <table className="coordinates-table">
-                <thead>
-                  <tr>
-                    <th>X</th>
-                    <th>Y</th>
-                    <th>Width</th>
-                    <th>Height</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rectangles.map((rect, index) => (
-                    <tr key={index}>
-                      <td>{Math.round(rect.x)}</td>
-                      <td>{Math.round(rect.y)}</td>
-                      <td>{Math.round(rect.width)}</td>
-                      <td>{Math.round(rect.height)}</td>
-                      <td>
-                        <button
-                          className="delete-rectangle-button"
-                          onClick={() => handleDeleteRectangle(index)}
-                          title="Delete rectangle"
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {rectangles.length === 0 && (
-                    <tr>
-                      <td colSpan="5" className="no-rectangles">
-                        No rectangles drawn yet
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+              {tableJsx}
             </div>
             <div className="render-controls">
               <div className="filename-input">
@@ -554,6 +585,38 @@ function PlayerTracking() {
                   >
                     {clipLoading ? 'Analyzing...' : 'Analyze with CLIP'}
                   </button>
+                </div>
+              </div>
+
+              <div className="frame-range-controls">
+                <div>
+                  <label htmlFor="start-frame">Start Frame:</label>
+                  <input
+                    id="start-frame"
+                    type="number"
+                    min="0"
+                    max={videoInfo?.frame_count || 0}
+                    value={startFrame}
+                    onChange={(e) => setStartFrame(parseInt(e.target.value))}
+                  />
+                  <button 
+                    className="set-current-frame-button"
+                    onClick={handleSetCurrentFrame}
+                    title="Set to current frame"
+                  >
+                    📍
+                  </button>
+                </div>
+                <div>
+                  <label htmlFor="end-frame">End Frame:</label>
+                  <input
+                    id="end-frame"
+                    type="number"
+                    min={startFrame}
+                    max={videoInfo?.frame_count || 0}
+                    value={endFrame}
+                    onChange={(e) => setEndFrame(parseInt(e.target.value))}
+                  />
                 </div>
               </div>
 
