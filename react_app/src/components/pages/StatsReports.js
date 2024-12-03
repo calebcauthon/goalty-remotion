@@ -11,6 +11,7 @@ import TeamAttackTouches from 'components/stats/TeamAttackTouches';
 import TeamAttackDurations from 'components/stats/TeamAttackDurations';
 import GameAggregateStats from 'components/stats/GameAggregateStats';
 import './StatsReports.css';
+import { statDescriptions } from 'components/stats/statDescriptions';
 
 function StatsReports() {
   const globalData = useContext(GlobalContext);
@@ -104,91 +105,106 @@ function StatsReports() {
               />
             </div>
 
-            <div className="team-stats-grid">
-              <div className="team-stats-column">
-                <h3>Home Team</h3>
-                <TeamAggregateStats 
-                  video={selectedVideo} 
-                  team="home" 
-                  frameRange={getCurrentGameFrameRange()} 
-                />
-                <TeamAttackTouches 
-                  video={selectedVideo} 
-                  team="home" 
-                  frameRange={getCurrentGameFrameRange()} 
-                />
-                <TeamAttackDurations 
-                  video={selectedVideo} 
-                  team="home" 
-                  frameRange={getCurrentGameFrameRange()} 
-                />
-                <TeamTouchCount 
-                  video={selectedVideo} 
-                  team="home" 
-                  frameRange={getCurrentGameFrameRange()} 
-                />
-                <TeamPossessionCount 
-                  video={selectedVideo} 
-                  team="home" 
-                  frameRange={getCurrentGameFrameRange()} 
-                />
-                <TeamScoreCount 
-                  video={selectedVideo} 
-                  team="home" 
-                  frameRange={getCurrentGameFrameRange()} 
-                />
-                <TeamAttackCount 
-                  video={selectedVideo} 
-                  team="home" 
-                  frameRange={getCurrentGameFrameRange()} 
-                />
+            <div className="stats-table">
+              <div className="stats-header">
+                <div className="stats-cell description-header"></div>
+                <div className="stats-cell">Home Team</div>
+                <div className="stats-cell">Away Team</div>
               </div>
 
-              <div className="team-stats-column">
-                <h3>Away Team</h3>
-                <TeamAggregateStats 
-                  video={selectedVideo} 
-                  team="away" 
-                  frameRange={getCurrentGameFrameRange()} 
-                />
-                <TeamAttackTouches 
-                  video={selectedVideo} 
-                  team="away" 
-                  frameRange={getCurrentGameFrameRange()} 
-                />
-                <TeamAttackDurations 
-                  video={selectedVideo} 
-                  team="away" 
-                  frameRange={getCurrentGameFrameRange()} 
-                />
-                <TeamTouchCount 
-                  video={selectedVideo} 
-                  team="away" 
-                  frameRange={getCurrentGameFrameRange()} 
-                />
-                <TeamPossessionCount 
-                  video={selectedVideo} 
-                  team="away" 
-                  frameRange={getCurrentGameFrameRange()} 
-                />
-                <TeamScoreCount 
-                  video={selectedVideo} 
-                  team="away" 
-                  frameRange={getCurrentGameFrameRange()} 
-                />
-                <TeamAttackCount 
-                  video={selectedVideo} 
-                  team="away" 
-                  frameRange={getCurrentGameFrameRange()} 
-                />
+              <div className="stats-row">
+                <div className="stats-cell description-cell">
+                  <h4>{statDescriptions.efficiency.title}</h4>
+                  <p>{statDescriptions.efficiency.description}</p>
+                </div>
+                <div className="stats-cell">
+                  <TeamAggregateStats video={selectedVideo} team="home" frameRange={getCurrentGameFrameRange()} />
+                </div>
+                <div className="stats-cell">
+                  <TeamAggregateStats video={selectedVideo} team="away" frameRange={getCurrentGameFrameRange()} />
+                </div>
+              </div>
+
+              <div className="stats-row">
+                <div className="stats-cell description-cell">
+                  <h4>{statDescriptions.attackLength.title}</h4>
+                  <p>{statDescriptions.attackLength.description}</p>
+                </div>
+                <div className="stats-cell">
+                  <TeamAttackTouches video={selectedVideo} team="home" frameRange={getCurrentGameFrameRange()} />
+                </div>
+                <div className="stats-cell">
+                  <TeamAttackTouches video={selectedVideo} team="away" frameRange={getCurrentGameFrameRange()} />
+                </div>
+              </div>
+
+              <div className="stats-row">
+                <div className="stats-cell description-cell">
+                  <h4>{statDescriptions.attackDuration.title}</h4>
+                  <p>{statDescriptions.attackDuration.description}</p>
+                </div>
+                <div className="stats-cell">
+                  <TeamAttackDurations video={selectedVideo} team="home" frameRange={getCurrentGameFrameRange()} />
+                </div>
+                <div className="stats-cell">
+                  <TeamAttackDurations video={selectedVideo} team="away" frameRange={getCurrentGameFrameRange()} />
+                </div>
+              </div>
+
+              <div className="stats-row">
+                <div className="stats-cell description-cell">
+                  <h4>{statDescriptions.touches.title}</h4>
+                  <p>{statDescriptions.touches.description}</p>
+                </div>
+                <div className="stats-cell">
+                  <TeamTouchCount video={selectedVideo} team="home" frameRange={getCurrentGameFrameRange()} />
+                </div>
+                <div className="stats-cell">
+                  <TeamTouchCount video={selectedVideo} team="away" frameRange={getCurrentGameFrameRange()} />
+                </div>
+              </div>
+
+              <div className="stats-row">
+                <div className="stats-cell description-cell">
+                  <h4>{statDescriptions.possessions.title}</h4>
+                  <p>{statDescriptions.possessions.description}</p>
+                </div>
+                <div className="stats-cell">
+                  <TeamPossessionCount video={selectedVideo} team="home" frameRange={getCurrentGameFrameRange()} />
+                </div>
+                <div className="stats-cell">
+                  <TeamPossessionCount video={selectedVideo} team="away" frameRange={getCurrentGameFrameRange()} />
+                </div>
+              </div>
+
+              <div className="stats-row">
+                <div className="stats-cell description-cell">
+                  <h4>{statDescriptions.scores.title}</h4>
+                  <p>{statDescriptions.scores.description}</p>
+                </div>
+                <div className="stats-cell">
+                  <TeamScoreCount video={selectedVideo} team="home" frameRange={getCurrentGameFrameRange()} />
+                </div>
+                <div className="stats-cell">
+                  <TeamScoreCount video={selectedVideo} team="away" frameRange={getCurrentGameFrameRange()} />
+                </div>
+              </div>
+
+              <div className="stats-row">
+                <div className="stats-cell description-cell">
+                  <h4>{statDescriptions.attacks.title}</h4>
+                  <p>{statDescriptions.attacks.description}</p>
+                </div>
+                <div className="stats-cell">
+                  <TeamAttackCount video={selectedVideo} team="home" frameRange={getCurrentGameFrameRange()} />
+                </div>
+                <div className="stats-cell">
+                  <TeamAttackCount video={selectedVideo} team="away" frameRange={getCurrentGameFrameRange()} />
+                </div>
               </div>
             </div>
 
             <div className="overall-stats">
-              <TagCount 
-                video={selectedVideo} 
-                frameRange={getCurrentGameFrameRange()} 
-              />
             </div>
           </div>
         )}

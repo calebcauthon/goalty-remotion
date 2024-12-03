@@ -27,18 +27,60 @@
   border-radius: 6px;
 }
 
-.team-stats-grid {
+.stats-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.2fr 1fr 1fr;
   gap: 15px;
   margin-bottom: 15px;
   align-items: start;
+}
+
+.stats-description-column {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.stat-description-card {
+  background: white;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.stat-description-card h4 {
+  margin: 0 0 4px 0;
+  color: #495057;
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
+.stat-description-card p {
+  margin: 0;
+  font-size: 0.8em;
+  color: #6c757d;
+  line-height: 1.3;
+}
+
+.stat-row-header {
+  text-align: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 1.1em;
+  font-weight: 500;
 }
 
 .team-stats-column {
   background: #f8f9fa;
   padding: 12px;
   border-radius: 6px;
+  border-left: 1px solid #eee;
+}
+
+.team-stats-column:last-child {
+  border-right: 1px solid #eee;
 }
 
 .team-stats-column h3 {
@@ -115,5 +157,99 @@ h2 {
 /* Add some subtle dividers */
 .team-stats-column:last-child {
   border-left: 1px solid #eee;
+}
+
+.stats-table {
+  background: #f8f9fa;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 15px;
+}
+
+.stats-header {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  background: #e9ecef;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.stats-row:last-child {
+  border-bottom: none;
+}
+
+.stats-cell {
+  padding: 12px;
+  border-right: 1px solid #dee2e6;
+}
+
+.stats-cell:last-child {
+  border-right: none;
+}
+
+.description-header {
+  font-weight: 500;
+  font-size: 1.1em;
+  padding: 12px;
+}
+
+.description-cell {
+  background: #fff;
+  text-align: right;
+  padding-right: 20px;
+}
+
+.description-cell h4 {
+  margin: 0 0 4px 0;
+  color: #495057;
+  font-size: 1.1em;
+  font-weight: 700;
+  text-align: right;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.description-cell p {
+  margin: 0;
+  font-size: 0.8em;
+  color: #6c757d;
+  line-height: 1.3;
+  text-align: right;
+  padding-left: 15px;
+}
+
+/* Update stat-card styles for the new layout */
+.stat-card {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+}
+
+.stat-card h3 {
+  display: none; /* Hide the stat titles since they're in descriptions now */
+}
+
+.stat-value {
+  font-size: 1.1em;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.stat-subtext {
+  font-size: 0.8em;
+  color: #6c757d;
+  margin-top: 3px;
+  line-height: 1.2;
+}
+
+/* Keep the hover effect but make it more subtle */
+.stats-row:hover {
+  background: rgba(0,0,0,0.02);
 }
  
