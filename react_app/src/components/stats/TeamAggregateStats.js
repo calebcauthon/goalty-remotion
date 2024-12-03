@@ -1,10 +1,10 @@
 import React from 'react';
 import { calculateTeamAggregateStats } from './statUtils';
 
-function TeamAggregateStats({ video, team }) {
+function TeamAggregateStats({ video, team, frameRange }) {
   if (!video) return null;
 
-  const stats = calculateTeamAggregateStats(video, team);
+  const stats = calculateTeamAggregateStats(video, team, frameRange);
   if (!stats) return null;
 
   const teamName = team === 'home' ? 'Home' : 'Away';

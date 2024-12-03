@@ -1,10 +1,10 @@
 import React from 'react';
 import { calculateTeamAttacks } from './statUtils';
 
-function TeamAttackCount({ video, team }) {
+function TeamAttackCount({ video, team, frameRange }) {
   if (!video) return null;
 
-  const attackCount = calculateTeamAttacks(video, team);
+  const attackCount = calculateTeamAttacks(video, team, frameRange);
   const teamName = team === 'home' ? 'Home' : 'Away';
 
   return (

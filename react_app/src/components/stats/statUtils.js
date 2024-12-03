@@ -1,11 +1,29 @@
-export const calculateTotalTags = (video) => {
+export const calculateTotalTags = (video, frameRange) => {
   if (!video?.tags) return 0;
+  
+  // Filter tags by frame range if provided
+  if (frameRange) {
+    return video.tags.filter(tag => {
+      const tagFrame = tag.frame || tag.startFrame;
+      return tagFrame >= frameRange.startFrame && tagFrame <= frameRange.endFrame;
+    }).length;
+  }
+  
   return video.tags.length;
 };
 
-export const calculateTeamTouches = (video, team) => {
+export const calculateTeamTouches = (video, team, frameRange) => {
   if (!video?.tags) return 0;
-  return video.tags.filter(tag => 
+  
+  // Filter tags by frame range if provided
+  const tagsToUse = frameRange ? 
+    video.tags.filter(tag => {
+      const tagFrame = tag.frame || tag.startFrame;
+      return tagFrame >= frameRange.startFrame && tagFrame <= frameRange.endFrame;
+    }) : 
+    video.tags;
+  
+  return tagsToUse.filter(tag => 
     tag.name.startsWith(`${team}_touch_`)
   ).length;
 };
@@ -45,18 +63,63 @@ export const findTeamAttackSequences = (video, team) => {
     });
 };
 
-export const calculateTeamAttacks = (video, team) => {
-  return findTeamAttackSequences(video, team).length;
+export const calculateTeamAttacks = (video, team, frameRange) => {
+  if (!video?.tags) return 0;
+  
+  // Filter tags by frame range if provided
+  const tagsToUse = frameRange ? 
+    video.tags.filter(tag => {
+      const tagFrame = tag.frame || tag.startFrame;
+      return tagFrame >= frameRange.startFrame && tagFrame <= frameRange.endFrame;
+    }) : 
+    video.tags;
+  
+  const videoWithFilteredTags = {
+    ...video,
+    tags: tagsToUse
+  };
+
+  return findTeamAttackSequences(videoWithFilteredTags, team).length;
 };
 
-export const calculateTeamScores = (video, team) => {
-  return findTeamAttackSequences(video, team)
+export const calculateTeamScores = (video, team, frameRange) => {
+  if (!video?.tags) return 0;
+  
+  // Filter tags by frame range if provided
+  const tagsToUse = frameRange ? 
+    video.tags.filter(tag => {
+      const tagFrame = tag.frame || tag.startFrame;
+      return tagFrame >= frameRange.startFrame && tagFrame <= frameRange.endFrame;
+    }) : 
+    video.tags;
+  
+  const videoWithFilteredTags = {
+    ...video,
+    tags: tagsToUse
+  };
+
+  return findTeamAttackSequences(videoWithFilteredTags, team)
     .filter(sequence => sequence.scored)
     .length;
 };
 
-export const calculateTeamAttackTouches = (video, team) => {
-  const sequences = findTeamAttackSequences(video, team);
+export const calculateTeamAttackTouches = (video, team, frameRange) => {
+  if (!video?.tags) return null;
+  
+  // Filter tags by frame range if provided
+  const tagsToUse = frameRange ? 
+    video.tags.filter(tag => {
+      const tagFrame = tag.frame || tag.startFrame;
+      return tagFrame >= frameRange.startFrame && tagFrame <= frameRange.endFrame;
+    }) : 
+    video.tags;
+  
+  const videoWithFilteredTags = {
+    ...video,
+    tags: tagsToUse
+  };
+
+  const sequences = findTeamAttackSequences(videoWithFilteredTags, team);
   
   const stats = sequences.reduce((acc, sequence) => {
     const category = sequence.scored ? 'scoring' : 'nonScoring';
@@ -82,8 +145,23 @@ export const calculateTeamAttackTouches = (video, team) => {
   };
 };
 
-export const calculateTeamAttackDurations = (video, team) => {
-  const sequences = findTeamAttackSequences(video, team);
+export const calculateTeamAttackDurations = (video, team, frameRange) => {
+  if (!video?.tags) return null;
+  
+  // Filter tags by frame range if provided
+  const tagsToUse = frameRange ? 
+    video.tags.filter(tag => {
+      const tagFrame = tag.frame || tag.startFrame;
+      return tagFrame >= frameRange.startFrame && tagFrame <= frameRange.endFrame;
+    }) : 
+    video.tags;
+  
+  const videoWithFilteredTags = {
+    ...video,
+    tags: tagsToUse
+  };
+
+  const sequences = findTeamAttackSequences(videoWithFilteredTags, team);
   
   const stats = sequences.reduce((acc, sequence) => {
     const category = sequence.scored ? 'scoring' : 'nonScoring';
@@ -110,11 +188,26 @@ export const calculateTeamAttackDurations = (video, team) => {
   };
 };
 
-export const calculateTeamAggregateStats = (video, team) => {
-  const sequences = findTeamAttackSequences(video, team);
+export const calculateTeamAggregateStats = (video, team, frameRange) => {
+  if (!video?.tags) return null;
+  
+  // Filter tags by frame range if provided
+  const tagsToUse = frameRange ? 
+    video.tags.filter(tag => {
+      const tagFrame = tag.frame || tag.startFrame;
+      return tagFrame >= frameRange.startFrame && tagFrame <= frameRange.endFrame;
+    }) : 
+    video.tags;
+  
+  const videoWithFilteredTags = {
+    ...video,
+    tags: tagsToUse
+  };
+
+  const sequences = findTeamAttackSequences(videoWithFilteredTags, team);
   const scores = sequences.filter(s => s.scored).length;
   const attacks = sequences.length;
-  const possessions = calculateTeamPossessions(video, team);
+  const possessions = calculateTeamPossessions(videoWithFilteredTags, team);
   
   return {
     scores,
@@ -124,13 +217,24 @@ export const calculateTeamAggregateStats = (video, team) => {
   };
 };
 
-export const calculateTeamPossessions = (video, team) => {
+export const calculateTeamPossessions = (video, team, frameRange) => {
   if (!video?.tags) return 0;
   
+  // Filter tags by frame range if provided
+  const tagsToUse = frameRange ? 
+    video.tags.filter(tag => {
+      const tagFrame = tag.frame || tag.startFrame;
+      return tagFrame >= frameRange.startFrame && tagFrame <= frameRange.endFrame;
+    }) : 
+    video.tags;
+  
   const away = team === 'home' ? 'away' : 'home';
-  const tagsToUse = video.tags.filter(tag => tag.name.includes('_touch_') || tag.name.includes('score'));
+  const relevantTags = tagsToUse.filter(tag => 
+    tag.name.includes('_touch_') || tag.name.includes('score')
+  );
+  
   const sequences = findTagSequences(
-    tagsToUse,
+    relevantTags,
     `${team}_touch_clearing`,
     [`score`, `${away}_touch_clearing`], // End sequence on score or opponent clearing
     [] // No break conditions needed
@@ -365,6 +469,36 @@ export const calculateAttackSequenceTags = (tags, team) => {
   return newTags;
 };
 
+export const calculateGameAggregateStats = (video, frameRange) => {
+  if (!video?.tags) return null;
+  
+  // Filter tags by frame range if provided
+  const tagsToUse = frameRange ? 
+    video.tags.filter(tag => {
+      const tagFrame = tag.frame || tag.startFrame;
+      return tagFrame >= frameRange.startFrame && tagFrame <= frameRange.endFrame;
+    }) : 
+    video.tags;
+  
+  const videoWithFilteredTags = {
+    ...video,
+    tags: tagsToUse
+  };
+
+  const homeScores = calculateTeamScores(videoWithFilteredTags, 'home');
+  const awayScores = calculateTeamScores(videoWithFilteredTags, 'away');
+  
+  const durationInSeconds = frameRange ? 
+    (frameRange.endFrame - frameRange.startFrame) / 30 : 
+    0;
+
+  return {
+    homeScore: homeScores,
+    awayScore: awayScores,
+    durationInSeconds
+  };
+};
+
 export default {
   calculateTeamAttacks,
   calculateTeamScores,
@@ -380,4 +514,5 @@ export default {
   findGameSequences,
   calculateScreenSequenceTags,
   calculateAttackSequenceTags,
+  calculateGameAggregateStats,
 };

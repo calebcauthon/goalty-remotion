@@ -1,10 +1,10 @@
 import React from 'react';
 import { calculateTeamAttackDurations } from './statUtils';
 
-function TeamAttackDurations({ video, team }) {
+function TeamAttackDurations({ video, team, frameRange }) {
   if (!video) return null;
 
-  const stats = calculateTeamAttackDurations(video, team);
+  const stats = calculateTeamAttackDurations(video, team, frameRange);
   if (!stats) return null;
 
   const teamName = team === 'home' ? 'Home' : 'Away';

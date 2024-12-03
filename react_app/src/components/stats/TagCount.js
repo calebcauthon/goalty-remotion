@@ -1,10 +1,10 @@
 import React from 'react';
 import { calculateTotalTags } from './statUtils';
 
-function TagCount({ video }) {
+function TagCount({ video, frameRange }) {
   if (!video) return null;
 
-  const tagCount = calculateTotalTags(video);
+  const tagCount = calculateTotalTags(video, frameRange);
 
   return (
     <div className="stat-card">

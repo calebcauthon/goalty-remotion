@@ -1,10 +1,10 @@
 import React from 'react';
 import { calculateTeamAttackTouches } from './statUtils';
 
-function TeamAttackTouches({ video, team }) {
+function TeamAttackTouches({ video, team, frameRange }) {
   if (!video) return null;
 
-  const stats = calculateTeamAttackTouches(video, team);
+  const stats = calculateTeamAttackTouches(video, team, frameRange);
   if (!stats) return null;
 
   const teamName = team === 'home' ? 'Home' : 'Away';

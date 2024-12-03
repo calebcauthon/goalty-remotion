@@ -1,10 +1,10 @@
 import React from 'react';
 import { calculateTeamPossessions } from './statUtils';
 
-function TeamPossessionCount({ video, team }) {
+function TeamPossessionCount({ video, team, frameRange }) {
   if (!video) return null;
 
-  const possessionCount = calculateTeamPossessions(video, team);
+  const possessionCount = calculateTeamPossessions(video, team, frameRange);
   const teamName = team === 'home' ? 'Home' : 'Away';
 
   return (
