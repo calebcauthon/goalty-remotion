@@ -321,6 +321,41 @@ export const calculateScreenSequenceTags = (tags, screenTagName) => {
   return sequences;
 };
 
+export const calculateAttackSequenceTags = (tags, team) => {
+  if (!tags || !team) return [];
+
+  const newTags = [];
+  const opponent = team === 'home' ? 'away' : 'home';
+  let lastAttackFrame = null;
+
+  for (let i = 0; i < tags.length; i++) {
+    const currentTag = tags[i];
+    const nextTag = tags[i + 1];
+
+    // Reset sequence on opponent touch
+    if (currentTag.name.includes(`${opponent}_touch_`)) {
+      lastAttackFrame = null;
+      continue;
+    }
+
+    if (currentTag.name === `${team}_touch_attacking`) {
+      lastAttackFrame = currentTag.frame;
+    }
+
+    if (lastAttackFrame && 
+        nextTag?.name === `${team}_touch_clearing` && 
+        currentTag.name === `${team}_touch_attacking`) {
+      newTags.push({
+        name: 'score',
+        frame: currentTag.frame + 1
+      });
+      lastAttackFrame = null;
+    }
+  }
+
+  return newTags;
+};
+
 export default {
   calculateTeamAttacks,
   calculateTeamScores,
@@ -335,4 +370,5 @@ export default {
   calculatePlayingTimeTags,
   findGameSequences,
   calculateScreenSequenceTags,
+  calculateAttackSequenceTags,
 };
