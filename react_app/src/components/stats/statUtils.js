@@ -145,7 +145,10 @@ export const findTagSequences = (tags, startTagName, completeSequenceTags, break
   const sequences = [];
   let currentSequence = null;
 
-  tags.forEach(tag => {
+  // Sort tags by frame number
+  const sortedTags = [...tags].sort((a, b) => a.frame - b.frame);
+
+  sortedTags.forEach(tag => {
     if (tag.name.includes(startTagName) && !currentSequence) {
       currentSequence = {
         startFrame: tag.frame,

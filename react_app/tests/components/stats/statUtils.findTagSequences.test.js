@@ -114,4 +114,22 @@ describe('findTagSequences', () => {
     expect(result).toHaveLength(1);
     expect(result[0].endFrame).toBe(20);
   });
+
+  it('should handle out-of-order tags by sorting by frame number', () => {
+    const tags = [
+      { name: HOME_SCORE, frame: 20 },
+      { name: HOME_TOUCH_ATTACKING, frame: 15 },
+      { name: HOME_TOUCH_ATTACKING, frame: 10 }
+    ];
+
+    const result = findTagSequences(tags, HOME_TOUCH_ATTACKING, [HOME_SCORE]);
+    
+    expect(result).toHaveLength(1);
+    expect(result[0].startFrame).toBe(10);
+    expect(result[0].endFrame).toBe(20);
+    expect(result[0].touches).toHaveLength(3);
+    expect(result[0].touches[0].frame).toBe(10);
+    expect(result[0].touches[1].frame).toBe(15);
+    expect(result[0].touches[2].frame).toBe(20);
+  });
 }); 
