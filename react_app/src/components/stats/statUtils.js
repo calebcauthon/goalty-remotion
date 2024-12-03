@@ -328,9 +328,15 @@ export const calculateAttackSequenceTags = (tags, team) => {
   const opponent = team === 'home' ? 'away' : 'home';
   let lastAttackFrame = null;
 
-  for (let i = 0; i < tags.length; i++) {
-    const currentTag = tags[i];
-    const nextTag = tags[i + 1];
+  // Filter to only include relevant tags
+  const relevantTags = tags.filter(tag => 
+    tag.name.includes('_touch_attacking') || 
+    tag.name.includes('_touch_clearing')
+  );
+
+  for (let i = 0; i < relevantTags.length; i++) {
+    const currentTag = relevantTags[i];
+    const nextTag = relevantTags[i + 1];
 
     // Reset sequence on opponent touch
     if (currentTag.name.includes(`${opponent}_touch_`)) {

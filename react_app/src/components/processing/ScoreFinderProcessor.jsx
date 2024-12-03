@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { calculateAttackSequenceTags } from '../stats/statUtils';
 import { handleTagApproval } from '../stats/tagApproval';
 
-function AttackSequenceProcessor({ 
+function ScoreFinderProcessor({ 
   selectedVideo,
   onTagsApproved,
   team,
@@ -31,12 +31,12 @@ function AttackSequenceProcessor({
         onClick={processClips}
         disabled={!team}
       >
-        {`Process ${team || ''} Attack Sequences`}
+        {`Find Scores (${team})`}
       </button>
 
       {proposedTags.length > 0 && (
         <div className="proposed-tags-container">
-          <h2>{team} Attack Sequence Tags</h2>
+          <h2>{team} Score Tags</h2>
           <textarea
             readOnly
             value={JSON.stringify(proposedTags, null, 2)}
@@ -55,4 +55,4 @@ function AttackSequenceProcessor({
   );
 }
 
-export default AttackSequenceProcessor; 
+export default ScoreFinderProcessor; 

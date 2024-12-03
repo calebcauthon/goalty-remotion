@@ -12,6 +12,7 @@ import { getVideoMetadata } from '@remotion/media-utils';
 import VideoPlayer from 'components/VideoPlayer';
 import FrameRangeSlider from 'components/FrameRangeSlider';
 import { useLocation } from 'react-router-dom';
+import ScoreFinderProcessor from 'components/processing/ScoreFinderProcessor';
 
 function ClipMaker() {
   const globalData = useContext(GlobalContext);
@@ -312,6 +313,19 @@ function ClipMaker() {
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
                 onPreview={handlePreview}
+              />
+
+              <ScoreFinderProcessor
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                team="home"
+                globalData={globalData}
+              />
+              <ScoreFinderProcessor
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                team="away"
+                globalData={globalData}
               />
 
               {/* Move filter section here, just above the table */}

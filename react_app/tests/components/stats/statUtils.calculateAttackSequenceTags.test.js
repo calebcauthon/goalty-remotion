@@ -22,14 +22,33 @@ describe('calculateAttackSequenceTags', () => {
     });
   });
 
-  it('should find multiple attack sequences', () => {
+  it('should ignore non-attacking/clearing tags', () => {
     const tags = [
       { name: 'home_touch_attacking', frame: 10 },
+      { name: 'some_other_tag', frame: 12 },
+      { name: 'random_event', frame: 14 },
+      { name: 'home_touch_attacking', frame: 15 },
+      { name: 'irrelevant_tag', frame: 18 },
+      { name: 'home_touch_clearing', frame: 20 }
+    ];
+
+    const result = calculateAttackSequenceTags(tags, 'home');
+    expect(result).toHaveLength(1);
+    expect(result[0].frame).toBe(16);
+  });
+
+  it('should find multiple attack sequences ignoring other tags', () => {
+    const tags = [
+      { name: 'game_start', frame: 5 },
+      { name: 'home_touch_attacking', frame: 10 },
+      { name: 'random_tag', frame: 12 },
       { name: 'home_touch_attacking', frame: 15 },
       { name: 'home_touch_attacking', frame: 18 },
       { name: 'home_touch_clearing', frame: 20 },
+      { name: 'some_event', frame: 25 },
       // Second sequence
       { name: 'home_touch_attacking', frame: 30 },
+      { name: 'irrelevant_tag', frame: 32 },
       { name: 'home_touch_attacking', frame: 35 },
       { name: 'home_touch_attacking', frame: 38 },
       { name: 'home_touch_clearing', frame: 40 }
@@ -44,9 +63,10 @@ describe('calculateAttackSequenceTags', () => {
   it('should break sequence on opponent touches', () => {
     const tags = [
       { name: 'home_touch_attacking', frame: 10 },
+      { name: 'random_tag', frame: 12 },
       { name: 'home_touch_attacking', frame: 15 },
       { name: 'away_touch_attacking', frame: 18 },
-      { name: 'home_touch_clearing', frame: 20 },
+      { name: 'home_touch_clearing', frame: 20 }
     ];
 
     const result = calculateAttackSequenceTags(tags, 'home');
@@ -55,12 +75,16 @@ describe('calculateAttackSequenceTags', () => {
 
   it('should only create score when no opponent touches between attacks and clear', () => {
     const tags = [
+      { name: 'game_start', frame: 5 },
       { name: 'home_touch_attacking', frame: 10 },
+      { name: 'random_event', frame: 12 },
       { name: 'home_touch_attacking', frame: 15 },
       { name: 'home_touch_attacking', frame: 18 },
       { name: 'home_touch_clearing', frame: 20 },
+      { name: 'some_tag', frame: 25 },
       // Second sequence with opponent touch
       { name: 'home_touch_attacking', frame: 30 },
+      { name: 'irrelevant_tag', frame: 32 },
       { name: 'home_touch_attacking', frame: 35 },
       { name: 'away_touch_attacking', frame: 38 },
       { name: 'home_touch_clearing', frame: 45 }
