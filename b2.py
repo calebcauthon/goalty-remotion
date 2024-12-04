@@ -8,17 +8,19 @@ b2_api = B2Api(info)
 B2_KEY_ID = os.getenv('BACKBLAZE_KEY_ID')
 B2_APPLICATION_KEY = os.getenv('BACKBLAZE_APPLICATION_KEY')
 B2_BUCKET_NAME = 'remotion-videos'
+B2_SAM_BUCKET = 'sam-videos'
 
 # Initialize B2 connection
 b2_api.authorize_account("production", B2_KEY_ID, B2_APPLICATION_KEY)
 bucket = b2_api.get_bucket_by_name(B2_BUCKET_NAME)
+sam_bucket = b2_api.get_bucket_by_name(B2_SAM_BUCKET)
 
 
-def check_file_exists_in_b2(filename):
+def check_file_exists_in_b2(filename, this_bucket=bucket):
     try:
         # Get file info directly using file name
-        file_version = bucket.get_file_info_by_name(filename)
-        url = bucket.get_download_url(filename)
+        file_version = this_bucket.get_file_info_by_name(filename)
+        url = this_bucket.get_download_url(filename)
         
         # If we get here, file exists - construct response
         file_info = {

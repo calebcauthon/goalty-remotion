@@ -4,6 +4,7 @@ import os
 from database import add_video
 from werkzeug.utils import secure_filename
 from b2 import check_file_exists_in_b2
+from b2sdk.v2 import B2Api, InMemoryAccountInfo
 
 upload_bp = Blueprint('upload', __name__)
 
@@ -130,4 +131,26 @@ def check_b2_files():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
     
-  
+@upload_bp.route('/list-b2-videos', methods=['GET'])
+def list_b2_videos():
+    info = InMemoryAccountInfo()
+    b2_api = B2Api(info)
+    b2_api.authorize_account("production", os.getenv('BACKBLAZE_KEY_ID'), os.getenv('BACKBLAZE_APPLICATION_KEY'))
+    
+    bucket = b2_api.get_bucket_by_name("remotion-videos")
+    
+    # List all files in the bucket
+    files = []
+
+    for file_version, folder_name in bucket.ls():
+        file_name = file_version.file_name
+        if file_name.lower().endswith('.mp4'):
+            files.append({
+                'name': file_name,
+                'id': file_version.id_,
+                'size': file_version.size,
+                'uploadTimestamp': file_version.upload_timestamp,
+                'url': f"https://f005.backblazeb2.com/file/remotion-videos/{file_name}"
+            })
+    
+    return jsonify({'files': files}), 200
