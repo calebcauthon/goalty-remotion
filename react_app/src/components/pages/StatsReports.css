@@ -354,4 +354,17 @@ h2 {
 .result-cell.no-score {
   color: #dc3545;
 }
+
+.sequences-table tr.last-played {
+  background: #edeea4;
+}
+
+.sequences-table tr.currently-playing {
+  background: #edeea4;
+}
+
+.sequences-table tr.last-played:hover,
+.sequences-table tr.currently-playing:hover {
+  background: #fdff81;
+}
  

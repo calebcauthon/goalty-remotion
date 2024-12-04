@@ -69,6 +69,7 @@ function StatsReports() {
   const [slowPreviewEndFrame, setSlowPreviewEndFrame] = useState(null);
   const [previewPending, setPreviewPending] = useState(false);
   const [currentPlayingSequence, setCurrentPlayingSequence] = useState(null);
+  const [lastPlayedSequence, setLastPlayedSequence] = useState(null);
 
   useEffect(() => {
     fetchVideos();
@@ -164,6 +165,7 @@ function StatsReports() {
       setPreviewStartFrame(sequence.startFrame);
       setPreviewEndFrame(sequence.endFrame);
       setCurrentPlayingSequence(sequence);
+      setLastPlayedSequence(sequence);
     }
   };
 
@@ -260,7 +262,12 @@ function StatsReports() {
                   </thead>
                   <tbody>
                     {selectedPossessionData.sequences.map((sequence, index) => (
-                      <tr key={index}>
+                      <tr 
+                        key={index} 
+                        className={`${lastPlayedSequence === sequence ? 'last-played' : ''} ${
+                          currentPlayingSequence === sequence ? 'currently-playing' : ''
+                        }`}
+                      >
                         <td>{index + 1}</td>
                         <td>{formatFrameToTime(sequence.startFrame)}</td>
                         <td>{formatFrameToTime(sequence.endFrame)}</td>
@@ -288,7 +295,7 @@ function StatsReports() {
                             onClick={() => handlePlaySequence(sequence)}
                             className={`play-sequence-button ${currentPlayingSequence === sequence ? 'playing' : ''}`}
                           >
-                            {currentPlayingSequence === sequence ? '⏸️' : '▶️'} 
+                            {currentPlayingSequence === sequence ? '🔄' : '▶️'} 
                           </button>
                         </td>
                       </tr>
