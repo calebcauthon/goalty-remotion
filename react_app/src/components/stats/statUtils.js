@@ -218,7 +218,7 @@ export const calculateTeamAggregateStats = (video, team, frameRange) => {
 };
 
 export const calculateTeamPossessions = (video, team, frameRange) => {
-  if (!video?.tags) return 0;
+  if (!video?.tags) return { count: 0, sequences: [] };
   
   // Filter tags by frame range if provided
   const tagsToUse = frameRange ? 
@@ -240,7 +240,10 @@ export const calculateTeamPossessions = (video, team, frameRange) => {
     [] // No break conditions needed
   );
 
-  return sequences.length;
+  return {
+    count: sequences.length,
+    sequences
+  };
 };
 
 export const findTagSequences = (tags, startTagName, completeSequenceTags, breakSequenceTags = []) => {

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext, useEffect, useMemo } from 'react';
 import { AbsoluteFill, Video, Sequence, useCurrentFrame, staticFile } from 'remotion';
 
 export const calculateFirstFiveSecondsDuration = (selectedTags) => {
@@ -11,7 +11,11 @@ export const calculateFirstFiveSecondsDuration = (selectedTags) => {
 };
 
 export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, useStaticFile, onFrameUpdate=() => {} }) => {
-  const tagArray = Array.from(selectedTags);
+  const tagArray = useMemo(() => {
+    console.log('selectedTags', selectedTags);
+    return Array.from(selectedTags);
+  }, []);
+  console.log(`Rendering ${tagArray.length} tags`);
   const currentFrame = useCurrentFrame();
   const totalDuration = calculateFirstFiveSecondsDuration(selectedTags);
 
@@ -25,7 +29,15 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
     <AbsoluteFill>
       {tagArray.map((tagInfo, index) => {
         const video = videos.find(v => v.id === tagInfo.videoId);
-        if (!video) return null;
+        if (!video) {
+          console.error(`No video found for tag ${tagInfo.key}`, { tagInfo, videos });
+          return null;
+        }
+
+        if (!video.filepath) {
+          console.error(`No filepath found for video ${video.id}`);
+          return null;
+        }
 
         // Calculate the starting frame for this sequence
         const previousClipsDuration = tagArray
@@ -55,6 +67,7 @@ export const VideoFirstFiveSeconds = ({ selectedVideos, videos, selectedTags, us
         ? staticFile(`${video.filepath.split('/').pop()}`) 
         : video.filepath
 
+        console.log(`Rendering sequence for ${VIDEO_BASE_URL}, from starting frame ${tagInfo.startFrame} to ending frame ${tagInfo.endFrame}`);
         return (
           <Sequence
             key={tagInfo.key}

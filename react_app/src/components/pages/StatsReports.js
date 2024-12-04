@@ -12,6 +12,46 @@ import TeamAttackDurations from 'components/stats/TeamAttackDurations';
 import GameAggregateStats from 'components/stats/GameAggregateStats';
 import './StatsReports.css';
 import { statDescriptions } from 'components/stats/statDescriptions';
+import { Player } from '@remotion/player';
+import { VideoFirstFiveSeconds } from 'components/templates';
+
+const calculateVideoDuration = (video) => {
+  if (!video?.tags || video.tags.length === 0) return 3000; // default duration
+  
+  return Math.max(...video.tags.flatMap(tag => [
+    tag.frame || 0,
+    tag.startFrame || 0,
+    tag.endFrame || 0
+  ]));
+};
+
+const createFullVideoTag = (video) => {
+  if (!video) return null;
+  const duration = calculateVideoDuration(video);
+  
+  return {
+    key: `${video.id}-full-video-0-${duration}`,
+    videoId: video.id,
+    videoName: video.name,
+    videoFilepath: video.filepath,
+    tagName: 'full_video',
+    frame: 0,
+    startFrame: 0,
+    endFrame: duration
+  };
+};
+
+const formatFrameToTime = (frame) => {
+  const totalSeconds = frame / 30;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
+const getSequenceResult = (sequence) => {
+  const hasScore = sequence.touches.some(touch => touch.name === 'score');
+  return hasScore ? '🏆 Score' : '❌ No Score';
+};
 
 function StatsReports() {
   const globalData = useContext(GlobalContext);
@@ -19,6 +59,16 @@ function StatsReports() {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [gameSequences, setGameSequences] = useState([]);
   const [selectedGameIndex, setSelectedGameIndex] = useState(null);
+  const [playerRef, setPlayerRef] = useState(null);
+  const [previewEndFrame, setPreviewEndFrame] = useState(null);
+  const [previewStartFrame, setPreviewStartFrame] = useState(null);
+  const [currentFrame, setCurrentFrame] = useState(0);
+  const [selectedPossessionData, setSelectedPossessionData] = useState(null);
+  const [previewPlaybackRate, setPreviewPlaybackRate] = useState(1);
+  const [previewLoopCount, setPreviewLoopCount] = useState(0);
+  const [slowPreviewEndFrame, setSlowPreviewEndFrame] = useState(null);
+  const [previewPending, setPreviewPending] = useState(false);
+  const [currentPlayingSequence, setCurrentPlayingSequence] = useState(null);
 
   useEffect(() => {
     fetchVideos();
@@ -48,6 +98,10 @@ function StatsReports() {
     }
   };
 
+  useEffect(() => {
+    setSelectedPossessionData(null);
+  }, [selectedVideo, selectedGameIndex]);
+
   const getCurrentGameFrameRange = () => {
     if (selectedGameIndex === null || !gameSequences[selectedGameIndex]) {
       return null;
@@ -58,6 +112,77 @@ function StatsReports() {
       endFrame: game.endFrame
     };
   };
+
+  const handleFrameUpdate = (frame) => {
+    setCurrentFrame(frame);
+    
+    if (previewEndFrame) {
+      // Handle slow preview loops
+      if (previewLoopCount < 5 && slowPreviewEndFrame && frame >= slowPreviewEndFrame) {
+        setPreviewLoopCount(prev => prev + 1);
+        setSlowPreviewEndFrame(frame + 2);
+        setPreviewPlaybackRate(0.2);
+      }
+      
+      // After 3 loops, play at normal speed
+      if (previewLoopCount >= 3 && slowPreviewEndFrame) {
+        setPreviewPlaybackRate(1);
+        setSlowPreviewEndFrame(null);
+      }
+      
+      // Stop at end
+      if (frame >= previewEndFrame) {
+        playerRef?.pause();
+        setPreviewEndFrame(null);
+        setPreviewPlaybackRate(1);
+        setPreviewLoopCount(0);
+        setPreviewStartFrame(null);
+        setCurrentPlayingSequence(null);
+      }
+    }
+  };
+
+  const handlePossessionSelect = (data) => {
+    console.log('Possession clicked:', data);
+    setSelectedPossessionData(data);
+    if (data.sequences?.[0]) {
+      const sequence = data.sequences[0];
+      if (playerRef) {
+        playerRef.seekTo(sequence.startFrame);
+        setPreviewStartFrame(sequence.startFrame);
+        setPreviewEndFrame(sequence.endFrame);
+        playerRef.play();
+      }
+    }
+  };
+
+  const handlePlaySequence = (sequence) => {
+    if (playerRef) {
+      playerRef.seekTo(sequence.startFrame);
+      playerRef.pause();
+      setPreviewPending(true);
+      setPreviewStartFrame(sequence.startFrame);
+      setPreviewEndFrame(sequence.endFrame);
+      setCurrentPlayingSequence(sequence);
+    }
+  };
+
+  useEffect(() => {
+    let timeoutId;
+    if (previewPending) {
+      timeoutId = setTimeout(() => {
+        setPreviewPending(false);
+        setPreviewLoopCount(0);
+        setPreviewPlaybackRate(0.2);
+        setSlowPreviewEndFrame(previewStartFrame + 2);
+        playerRef?.play();
+      }, 500);
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [previewPending, previewStartFrame]);
 
   return (
     <Layout>
@@ -93,6 +218,87 @@ function StatsReports() {
             </div>
           )}
         </div>
+
+        {selectedVideo && (
+          <div className="video-player" style={{ marginBottom: '2rem' }}>
+            <Player
+              ref={setPlayerRef}
+              component={VideoFirstFiveSeconds}
+              inputProps={{
+                selectedVideos: new Set([selectedVideo.id]),
+                videos: [selectedVideo],
+                selectedTags: new Set([createFullVideoTag(selectedVideo)]),
+                onFrameUpdate: handleFrameUpdate
+              }}
+              durationInFrames={calculateVideoDuration(selectedVideo)}
+              compositionWidth={1280}
+              compositionHeight={720}
+              fps={30}
+              controls
+              loop={!previewEndFrame}
+              playbackRate={previewPlaybackRate}
+              style={{
+                width: '100%',
+                aspectRatio: '16/9'
+              }}
+            />
+            
+            {selectedPossessionData && (
+              <div className="sequences-table-container">
+                <h3>{selectedPossessionData.team === 'home' ? 'Home' : 'Away'} Team Possession Sequences</h3>
+                <table className="sequences-table">
+                  <thead>
+                    <tr>
+                      <th>Sequence</th>
+                      <th>Start Time</th>
+                      <th>End Time</th>
+                      <th>Duration</th>
+                      <th>Touch Count</th>
+                      <th>Result</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedPossessionData.sequences.map((sequence, index) => (
+                      <tr key={index}>
+                        <td>{index + 1}</td>
+                        <td>{formatFrameToTime(sequence.startFrame)}</td>
+                        <td>{formatFrameToTime(sequence.endFrame)}</td>
+                        <td className="duration-cell">
+                          <div className="duration-content">
+                            <span>{((sequence.endFrame - sequence.startFrame) / 30).toFixed(1)}s</span>
+                            {currentPlayingSequence === sequence && (
+                              <div className="clip-progress">
+                                <div 
+                                  className="progress-bar"
+                                  style={{
+                                    width: `${Math.round(((currentFrame - sequence.startFrame) / (sequence.endFrame - sequence.startFrame)) * 100)}%`
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td>{sequence.touches.length}</td>
+                        <td className={`result-cell ${getSequenceResult(sequence).includes('Score') ? 'score' : 'no-score'}`}>
+                          {getSequenceResult(sequence)}
+                        </td>
+                        <td>
+                          <button 
+                            onClick={() => handlePlaySequence(sequence)}
+                            className={`play-sequence-button ${currentPlayingSequence === sequence ? 'playing' : ''}`}
+                          >
+                            {currentPlayingSequence === sequence ? '⏸️' : '▶️'} 
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         {selectedVideo && (
           <div className="stats-panel">
@@ -170,10 +376,20 @@ function StatsReports() {
                   <p>{statDescriptions.possessions.description}</p>
                 </div>
                 <div className="stats-cell">
-                  <TeamPossessionCount video={selectedVideo} team="home" frameRange={getCurrentGameFrameRange()} />
+                  <TeamPossessionCount 
+                    video={selectedVideo} 
+                    team="home" 
+                    frameRange={getCurrentGameFrameRange()}
+                    onSelect={handlePossessionSelect}
+                  />
                 </div>
                 <div className="stats-cell">
-                  <TeamPossessionCount video={selectedVideo} team="away" frameRange={getCurrentGameFrameRange()} />
+                  <TeamPossessionCount 
+                    video={selectedVideo} 
+                    team="away" 
+                    frameRange={getCurrentGameFrameRange()}
+                    onSelect={handlePossessionSelect} 
+                  />
                 </div>
               </div>
 
