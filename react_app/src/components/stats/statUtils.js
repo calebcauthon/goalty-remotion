@@ -502,6 +502,41 @@ export const calculateGameAggregateStats = (video, frameRange) => {
   };
 };
 
+export const findPlayerSequences = (video, playerName) => {
+  if (!video?.boxes || !Array.isArray(video.boxes)) return [];
+  
+  const sequences = [];
+  let currentSequence = null;
+  
+  console.log(video.boxes);
+  video.boxes.forEach((frameData, frameNum) => {
+    if (!frameData) return;
+    const playerPresent = Object.keys(frameData).includes(playerName);
+    
+    if (playerPresent && !currentSequence) {
+      currentSequence = {
+        startFrame: frameNum,
+        endFrame: frameNum
+      };
+    } else if (playerPresent && currentSequence) {
+      currentSequence.endFrame = frameNum;
+    } else if (!playerPresent && currentSequence) {
+      // Only add sequences that are at least 3 frames long
+      if (currentSequence.endFrame - currentSequence.startFrame >= 2) {
+        sequences.push(currentSequence);
+      }
+      currentSequence = null;
+    }
+  });
+  
+  // Don't forget the last sequence if it's still open
+  if (currentSequence && currentSequence.endFrame - currentSequence.startFrame >= 2) {
+    sequences.push(currentSequence);
+  }
+  
+  return sequences;
+};
+
 export default {
   calculateTeamAttacks,
   calculateTeamScores,
@@ -518,4 +553,5 @@ export default {
   calculateScreenSequenceTags,
   calculateAttackSequenceTags,
   calculateGameAggregateStats,
+  findPlayerSequences,
 };

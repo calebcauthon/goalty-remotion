@@ -4,6 +4,7 @@ import 'components/pages/ClipMaker.css';
 import PlayingTimeProcessor from 'components/processing/PlayingTimeProcessor';
 import TurnoverProcessor from 'components/processing/TurnoverProcessor';
 import AttackSequenceProcessor from 'components/processing/AttackSequenceProcessor';
+import PlayerSequenceProcessor from 'components/processing/PlayerSequenceProcessor';
 import GameProcessor from 'components/processing/GameProcessor';
 import ScreenProcessor from 'components/processing/ScreenProcessor';
 import { GlobalContext } from '../../index';
@@ -328,6 +329,12 @@ function ClipMaker() {
                 globalData={globalData}
               />
 
+              <PlayerSequenceProcessor
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                onPreview={handlePreview}
+              />
+
               {/* Move filter section here, just above the table */}
               <div className="tag-filters" style={{ marginBottom: '20px', marginTop: '30px' }}>
                 <input
@@ -367,6 +374,12 @@ function ClipMaker() {
                     className={tagFilter === 'score' ? 'active' : ''}
                   >
                     Scores
+                  </button>
+                  <button 
+                    onClick={() => setTagFilter('_in_game')}
+                    className={tagFilter === '_in_game' ? 'active' : ''}
+                  >
+                    Player Sequences
                   </button>
                 </div>
               </div>
