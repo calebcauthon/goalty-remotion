@@ -60,7 +60,7 @@
   width: 100%;
   max-width: 720px;
   margin: 0 auto 20px;
-  margin-bottom: 20px;
+  position: relative;
 }
 
 /* Add styles for buttons or additional functionality */
@@ -480,4 +480,143 @@
 .hotkey-action-button:not(.draggable):hover {
   background: #34495e;
   transform: translateY(-1px);
+}
+
+.shapes-container {
+  margin: 20px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.shapes-header {
+  padding: 10px;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+.shapes-content {
+  padding: 15px;
+}
+
+.action-button.active {
+  background: #ff4444;
+  color: white;
+}
+
+.shapes-table-container {
+  margin-top: 15px;
+  overflow-x: auto;
+}
+
+.shapes-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.shapes-table th,
+.shapes-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.shapes-table th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+}
+
+.shapes-table tr:hover {
+  background-color: #f8f8f8;
+}
+
+.delete-shape-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 14px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.delete-shape-button:hover {
+  opacity: 1;
+}
+
+.shape-name-input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.shape-name-input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.shape-name-input:hover {
+  border-color: #999;
+}
+
+.shapes-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.save-shapes-button {
+  padding: 10px 15px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.save-shapes-button:hover {
+  background-color: #218838;
+}
+
+.save-shapes-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.shape-name-input {
+  width: 140px;
+  min-width: 0;
+  padding: 4px 8px;
+}
+
+.shape-color-input {
+  width: 40px;
+  height: 25px;
+  padding: 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.shape-visibility-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 16px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.shape-visibility-button:hover {
+  opacity: 1;
+}
+
+.shape-visibility-button.visible {
+  opacity: 1;
 }

@@ -17,6 +17,7 @@ import { debounce } from 'lodash';
 import { FaPencilAlt, FaSave } from 'react-icons/fa';
 import { GlobalContext } from '../../index'; 
 import Draggable from 'react-draggable';
+import { Stage, Layer, Line, Circle } from 'react-konva';
 
 function VideoDetail() {
   const globalData = useContext(GlobalContext);
@@ -49,6 +50,13 @@ function VideoDetail() {
   const [buttonOrder, setButtonOrder] = useState([]);
   const [dragMode, setDragMode] = useState(false);
   const [buttonPositions, setButtonPositions] = useState({});
+  const [shapesExpanded, setShapesExpanded] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [currentPoints, setCurrentPoints] = useState([]);
+  const [shapes, setShapes] = useState([]);
+  const stageRef = useRef(null);
+  const [shapesData, setShapesData] = useState([]);
+  const [shapesSaveStatus, setShapesSaveStatus] = useState('');
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -57,6 +65,12 @@ function VideoDetail() {
         setVideo(response.data);
         setMetadata(JSON.stringify(response.data.metadata, null, 2));
         setParsedMetadata(response.data.metadata);
+        
+        // Load saved shapes if they exist
+        if (response.data.metadata?.shapes) {
+          setShapesData(response.data.metadata.shapes);
+          setShapes(response.data.metadata.shapes.map(shape => shape.points));
+        }
         
         // Get video metadata using Remotion
         const videoUrl = response.data.filepath;
@@ -328,6 +342,65 @@ function VideoDetail() {
     localStorage.setItem(`hotkey-positions-${activeGroupId}`, JSON.stringify(newPositions));
   };
 
+  const calculatePolygonArea = (points) => {
+    let area = 0;
+    const numPoints = points.length / 2;
+    
+    for (let i = 0; i < numPoints; i++) {
+      const j = (i + 1) % numPoints;
+      area += points[i * 2] * points[j * 2 + 1];
+      area -= points[j * 2] * points[i * 2 + 1];
+    }
+    
+    return Math.abs(area / 2).toFixed(2);
+  };
+
+  const handleDeleteShape = (shapeId) => {
+    setShapesData(shapesData.filter(shape => shape.id !== shapeId));
+    setShapes(shapes.filter((_, index) => shapesData[index].id !== shapeId));
+  };
+
+  const handleShapeNameChange = (shapeId, newName) => {
+    setShapesData(shapesData.map(shape => 
+      shape.id === shapeId ? { ...shape, name: newName } : shape
+    ));
+  };
+
+  const handleSaveShapes = async () => {
+    setShapesSaveStatus('Saving...');
+    try {
+      const newMetadata = JSON.parse(metadata);
+      newMetadata.shapes = shapesData;
+      
+      const metadataString = JSON.stringify(newMetadata, null, 2);
+      setMetadata(metadataString);
+      setParsedMetadata(newMetadata);
+      
+      await axios.post(`${globalData.APIbaseUrl}/api/videos/${id}/metadata`, { 
+        metadata: metadataString 
+      });
+      
+      setShapesSaveStatus('Saved ✅');
+      setTimeout(() => setShapesSaveStatus(''), 2000);
+    } catch (error) {
+      console.error('Error saving shapes:', error);
+      setShapesSaveStatus('Error ❌');
+      setTimeout(() => setShapesSaveStatus(''), 2000);
+    }
+  };
+
+  const handleShapeColorChange = (shapeId, newColor) => {
+    setShapesData(shapesData.map(shape => 
+      shape.id === shapeId ? { ...shape, color: newColor } : shape
+    ));
+  };
+
+  const handleShapeVisibilityToggle = (shapeId) => {
+    setShapesData(shapesData.map(shape => 
+      shape.id === shapeId ? { ...shape, visible: !shape.visible } : shape
+    ));
+  };
+
   if (loading) {
     return <Layout><div>Loading...</div></Layout>;
   }
@@ -386,7 +459,7 @@ function VideoDetail() {
         </div>
 
         {video.filepath.includes('backblaze') ? (
-          <div className="video-player">
+          <div className="video-player" style={{ position: 'relative' }}>
             <Player
               ref={playerRef}
               component={VideoPlayer}
@@ -402,6 +475,88 @@ function VideoDetail() {
               controls
               renderLoading={() => <div>Loading...</div>}
             />
+            
+            {shapesExpanded && (
+              <Stage
+                ref={stageRef}
+                width={desiredWidth}
+                height={Math.round(desiredWidth * (videoMetadata?.height / videoMetadata?.width))}
+                onClick={(e) => {
+                  if (!isDrawing) return;
+                  
+                  const stage = e.target.getStage();
+                  const point = stage.getPointerPosition();
+                  setCurrentPoints([...currentPoints, point.x, point.y]);
+                  
+                  // If clicking near start point, complete the polygon
+                  if (currentPoints.length >= 4) {
+                    const [startX, startY] = currentPoints;
+                    const dist = Math.hypot(point.x - startX, point.y - startY);
+                    if (dist < 20) {
+                      const newShape = {
+                        id: Date.now(),
+                        points: [...currentPoints],
+                        frame: currentFrame,
+                        area: calculatePolygonArea(currentPoints),
+                        name: `Shape ${shapesData.length + 1}`,
+                        color: '#ff0000', // Default red
+                        visible: true
+                      };
+                      setShapes([...shapes, [...currentPoints]]);
+                      setShapesData([...shapesData, newShape]);
+                      setCurrentPoints([]);
+                      setIsDrawing(false);
+                    }
+                  }
+                }}
+                style={{ 
+                  position: 'absolute', 
+                  top: 0, 
+                  left: 0,
+                  pointerEvents: isDrawing ? 'auto' : 'none'
+                }}
+              >
+                <Layer>
+                  {/* Draw completed shapes */}
+                  {shapes.map((points, i) => {
+                    const shapeData = shapesData[i];
+                    if (!shapeData?.visible) return null;
+                    
+                    return (
+                      <Line
+                        key={i}
+                        points={points}
+                        closed
+                        fill={`${shapeData.color}4D`} // 30% opacity
+                        stroke={shapeData.color}
+                        strokeWidth={2}
+                      />
+                    );
+                  })}
+                  
+                  {/* Draw current shape being created */}
+                  {currentPoints.length > 0 && (
+                    <>
+                      <Line
+                        points={currentPoints}
+                        stroke="red"
+                        strokeWidth={2}
+                      />
+                      {/* Draw points */}
+                      {Array.from({ length: currentPoints.length / 2 }, (_, i) => (
+                        <Circle
+                          key={i}
+                          x={currentPoints[i * 2]}
+                          y={currentPoints[i * 2 + 1]}
+                          radius={4}
+                          fill="red"
+                        />
+                      ))}
+                    </>
+                  )}
+                </Layer>
+              </Stage>
+            )}
           </div>
         ) : (
           <div className="video-unavailable-message">
@@ -580,6 +735,102 @@ function VideoDetail() {
             </>
           )}
         </div> 
+
+        <div className="shapes-container">
+          <div className="shapes-header" onClick={() => setShapesExpanded(!shapesExpanded)}>
+            <h3>Shapes {shapesExpanded ? '▼' : '▶'}</h3>
+          </div>
+          {shapesExpanded && (
+            <div className="shapes-content">
+              <div className="shapes-controls">
+                <button 
+                  onClick={() => {
+                    setIsDrawing(!isDrawing);
+                    setCurrentPoints([]);
+                  }}
+                  className={`action-button ${isDrawing ? 'active' : ''}`}
+                >
+                  {isDrawing ? 'Cancel Drawing' : 'Add Shape'}
+                </button>
+                
+                <button 
+                  onClick={handleSaveShapes}
+                  className="save-shapes-button"
+                  disabled={shapesData.length === 0}
+                >
+                  {shapesSaveStatus || 'Save Shapes'}
+                </button>
+              </div>
+
+              {shapesData.length > 0 && (
+                <div className="shapes-table-container">
+                  <table className="shapes-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '150px' }}>Name</th>
+                        <th>Frame</th>
+                        <th>Color</th>
+                        <th>Visible</th>
+                        <th>Area (px²)</th>
+                        <th>Points</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {shapesData.map((shape) => (
+                        <tr key={shape.id}>
+                          <td>
+                            <input
+                              type="text"
+                              value={shape.name}
+                              onChange={(e) => handleShapeNameChange(shape.id, e.target.value)}
+                              className="shape-name-input"
+                              style={{ width: '140px' }}
+                            />
+                          </td>
+                          <td 
+                            onClick={() => playerRef.current?.seekTo(shape.frame)}
+                            style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                          >
+                            {shape.frame}
+                          </td>
+                          <td>
+                            <input
+                              type="color"
+                              value={shape.color}
+                              onChange={(e) => handleShapeColorChange(shape.id, e.target.value)}
+                              className="shape-color-input"
+                            />
+                          </td>
+                          <td>
+                            <button
+                              onClick={() => handleShapeVisibilityToggle(shape.id)}
+                              className={`shape-visibility-button ${shape.visible ? 'visible' : ''}`}
+                              title={shape.visible ? 'Hide shape' : 'Show shape'}
+                            >
+                              {shape.visible ? '👁️' : '👁️‍🗨️'}
+                            </button>
+                          </td>
+                          <td>{shape.area}</td>
+                          <td>{shape.points.length / 2}</td>
+                          <td>
+                            <button
+                              onClick={() => handleDeleteShape(shape.id)}
+                              className="delete-shape-button"
+                              title="Delete shape"
+                            >
+                              🗑️
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </Layout>
   );
