@@ -14,6 +14,7 @@ import './StatsReports.css';
 import { statDescriptions } from 'components/stats/statDescriptions';
 import { Player } from '@remotion/player';
 import { VideoFirstFiveSeconds } from 'components/templates';
+import TrackSequenceButton from 'components/stats/TrackSequenceButton';
 
 const calculateVideoDuration = (video) => {
   if (!video?.tags || video.tags.length === 0) return 3000; // default duration
@@ -53,6 +54,48 @@ const getSequenceResult = (sequence) => {
   return hasScore ? '🏆 Score' : '❌ No Score';
 };
 
+const DetectionsTable = ({ detections, onRemove, onHover }) => {
+  return (
+    <div className="detections-table-container">
+      <h3>Detected Objects</h3>
+      <table className="detections-table">
+        <thead>
+          <tr>
+            <th>Label</th>
+            <th>Confidence</th>
+            <th>Position</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {detections.map((detection, index) => (
+            <tr 
+              key={index}
+              onMouseEnter={() => onHover(index)}
+              onMouseLeave={() => onHover(null)}
+            >
+              <td>{detection.label}</td>
+              <td>{(detection.confidence * 100).toFixed(1)}%</td>
+              <td>
+                x: {detection.x.toFixed(0)}, y: {detection.y.toFixed(0)},
+                w: {detection.width.toFixed(0)}, h: {detection.height.toFixed(0)}
+              </td>
+              <td>
+                <button 
+                  onClick={() => onRemove(index)}
+                  className="remove-detection-btn"
+                >
+                  ❌
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 function StatsReports() {
   const globalData = useContext(GlobalContext);
   const [videos, setVideos] = useState([]);
@@ -70,6 +113,11 @@ function StatsReports() {
   const [previewPending, setPreviewPending] = useState(false);
   const [currentPlayingSequence, setCurrentPlayingSequence] = useState(null);
   const [lastPlayedSequence, setLastPlayedSequence] = useState(null);
+  const [clipResults, setClipResults] = useState(null);
+  const [showFrameImage, setShowFrameImage] = useState(true);
+  const [hoveredDetectionIndex, setHoveredDetectionIndex] = useState(null);
+  const [validDetections, setValidDetections] = useState([]);
+  const [detections, setDetections] = useState(null);
 
   useEffect(() => {
     fetchVideos();
@@ -186,6 +234,26 @@ function StatsReports() {
     };
   }, [previewPending, previewStartFrame]);
 
+  const handleClipResults = (results) => {
+    console.log(`clipResults`, { results });
+    setClipResults(results);
+    setValidDetections(results.detections || []);
+    setDetections(results.detections || []);
+    // Seek video to the frame where CLIP analysis was done
+    if (playerRef) {
+      playerRef.currentTime = results.frame / 30; // Assuming 30fps
+    }
+  };
+
+  const handleRemoveDetection = (index) => {
+    setClipResults(prev => ({
+      ...prev,
+      detections: prev.detections.filter((_, i) => i !== index)
+    }));
+    setValidDetections(prev => prev.filter((_, i) => i !== index));
+    setDetections(prev => prev.filter((_, i) => i !== index));
+  };
+
   return (
     <Layout>
       <div className="stats-container">
@@ -223,28 +291,42 @@ function StatsReports() {
 
         {selectedVideo && (
           <div className="video-player" style={{ marginBottom: '2rem' }}>
-            <Player
-              ref={setPlayerRef}
-              component={VideoFirstFiveSeconds}
-              inputProps={{
-                selectedVideos: new Set([selectedVideo.id]),
-                videos: [selectedVideo],
-                selectedTags: new Set([createFullVideoTag(selectedVideo)]),
-                onFrameUpdate: handleFrameUpdate
-              }}
-              durationInFrames={calculateVideoDuration(selectedVideo)}
-              compositionWidth={1280}
-              compositionHeight={720}
-              fps={30}
-              controls
-              loop={!previewEndFrame}
-              playbackRate={previewPlaybackRate}
-              style={{
-                width: '100%',
-                aspectRatio: '16/9'
-              }}
-            />
-            
+            <div className="video-container">
+              <div className="video-controls">
+                {clipResults && (
+                  <button
+                    onClick={() => setShowFrameImage(!showFrameImage)}
+                    className="toggle-frame-button"
+                  >
+                    {showFrameImage ? 'Show Video' : 'Show Analysis Frame'}
+                  </button>
+                )}
+              </div>
+              <Player
+                ref={setPlayerRef}
+                component={VideoFirstFiveSeconds}
+                inputProps={{
+                  selectedVideos: new Set([selectedVideo.id]),
+                  videos: [selectedVideo],
+                  selectedTags: new Set([createFullVideoTag(selectedVideo)]),
+                  onFrameUpdate: handleFrameUpdate,
+                  detections: detections || [],
+                  frameImage: showFrameImage ? clipResults?.frameImage : null,
+                  hoveredDetectionIndex
+                }}
+                durationInFrames={calculateVideoDuration(selectedVideo)}
+                compositionWidth={1280}
+                compositionHeight={720}
+                fps={30}
+                controls
+                loop={!previewEndFrame}
+                playbackRate={previewPlaybackRate}
+                style={{
+                  width: '100%',
+                  //aspectRatio: '16/9'
+                }}
+              />
+            </div>
             {selectedPossessionData && (
               <div className="sequences-table-container">
                 <h3>{selectedPossessionData.team === 'home' ? 'Home' : 'Away'} Team Possession Sequences</h3>
@@ -258,6 +340,7 @@ function StatsReports() {
                       <th>Touch Count</th>
                       <th>Result</th>
                       <th>Actions</th>
+                      <th>Clip</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -297,6 +380,16 @@ function StatsReports() {
                           >
                             {currentPlayingSequence === sequence ? '🔄' : '▶️'} 
                           </button>
+                        </td>
+                        <td>
+                          <TrackSequenceButton 
+                            sequence={sequence}
+                            video={selectedVideo}
+                            onClipResults={handleClipResults}
+                            validDetections={validDetections}
+                            detections={detections}
+                            setDetections={setDetections}
+                          />
                         </td>
                       </tr>
                     ))}
@@ -432,6 +525,13 @@ function StatsReports() {
           </div>
         )}
       </div>
+      {clipResults && (
+        <DetectionsTable 
+          detections={detections || []}
+          onRemove={handleRemoveDetection}
+          onHover={setHoveredDetectionIndex}
+        />
+      )}
     </Layout>
   );
 }

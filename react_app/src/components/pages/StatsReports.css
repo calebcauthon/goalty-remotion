@@ -367,4 +367,200 @@ h2 {
 .sequences-table tr.currently-playing:hover {
   background: #fdff81;
 }
+
+.track-sequence-button {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #f0f0f0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.track-sequence-button:hover {
+  background: #e0e0e0;
+}
+
+.track-sequence-button.processing {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.track-sequence-button.processing:hover {
+  background: #f0f0f0;
+}
+
+.video-player-container {
+  position: relative;
+}
+
+.clip-results-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clip-results-content {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.clip-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+.confirm-track-button {
+  padding: 0.5rem 1rem;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.confirm-track-button:hover {
+  background: #218838;
+}
+
+.cancel-track-button {
+  padding: 0.5rem 1rem;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancel-track-button:hover {
+  background: #c82333;
+}
+
+.video-container {
+  position: relative;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.frame-thumbnail {
+  flex: 0 0 240px;
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.frame-thumbnail h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.frame-thumbnail img {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.thumbnail-info {
+  font-size: 0.8rem;
+  color: #666;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.thumbnail-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Update video player width to account for thumbnail */
+.video-player .remotion-player {
+  flex: 1;
+}
+
+.video-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 100;
+}
+
+.toggle-frame-button {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.toggle-frame-button:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.track-sequence-button.process {
+  background: #28a745;
+  color: white;
+  border: none;
+}
+
+.track-sequence-button.process:hover {
+  background: #218838;
+}
+
+.track-sequence-button.process.processing {
+  background: #218838;
+  opacity: 0.7;
+}
+
+.detections-table-container {
+  margin-top: 1rem;
+  max-width: 800px;
+}
+
+.detections-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.detections-table th,
+.detections-table td {
+  padding: 8px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.detections-table tr:hover {
+  background-color: #f5f5f5;
+  cursor: pointer;
+}
+
+.remove-detection-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.remove-detection-btn:hover {
+  opacity: 0.7;
+}
  
