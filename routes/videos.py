@@ -337,7 +337,7 @@ def analyze_frame_with_clip():
 def get_boxes():
     try:
         video_url = request.json.get('video_url')
-        frame_number = request.json.get('frame_number', 0)
+        frame_number = request.json.get('frame_number')  # Now optional
         
         if not video_url:
             return jsonify({'error': 'No video URL provided'}), 400
@@ -357,14 +357,24 @@ def get_boxes():
             file_data.seek(0)
             boxes_data = json.loads(file_data.read().decode('utf-8'))
             
-            if frame_number < len(boxes_data):
-                print(f"  ↳ Returning boxes for frame {frame_number}")
-                return jsonify({
-                    'boxes': boxes_data[frame_number],
-                    'frame_number': frame_number
-                }), 200
-            else:
-                return jsonify({'error': f'Frame {frame_number} not found in boxes data'}), 404
+            # If frame_number is specified, return just that frame
+            if frame_number is not None:
+                if frame_number < len(boxes_data):
+                    print(f"  ↳ Returning boxes for frame {frame_number}")
+                    return jsonify({
+                        'boxes': boxes_data[frame_number],
+                        'frame_number': frame_number
+                    }), 200
+                else:
+                    return jsonify({'error': f'Frame {frame_number} not found in boxes data'}), 404
+            
+            # If no frame_number, return all frames
+            print(f"  ↳ Returning all frames")
+            return jsonify({
+                'boxes': boxes_data,
+                'total_frames': len(boxes_data)
+            }), 200
+            
         else:
             return jsonify({'error': 'No boxes data found for this video'}), 404
             

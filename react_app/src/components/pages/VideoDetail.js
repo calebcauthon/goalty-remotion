@@ -57,6 +57,8 @@ function VideoDetail() {
   const stageRef = useRef(null);
   const [shapesData, setShapesData] = useState([]);
   const [shapesSaveStatus, setShapesSaveStatus] = useState('');
+  const [boxesData, setBoxesData] = useState(null);
+  const [boxesLoading, setBoxesLoading] = useState(false);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -401,6 +403,39 @@ function VideoDetail() {
     ));
   };
 
+  const handleFetchBoxes = async () => {
+    setBoxesLoading(true);
+    try {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/get-boxes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          video_url: video.filepath,
+        })
+      });
+      
+
+      const data = await response.json();
+      console.log('data', data);
+      setBoxesData(data.boxes);
+      
+      
+      // Update the metadata display without saving
+      const newMetadata = JSON.parse(metadata);
+      newMetadata.boxes = data.boxes;
+      setMetadata(JSON.stringify(newMetadata, null, 2));
+      setParsedMetadata(newMetadata);
+      
+    } catch (error) {
+      console.error('Error fetching boxes:', error);
+      alert('Failed to fetch boxes data');
+    } finally {
+      setBoxesLoading(false);
+    }
+  };
+
   if (loading) {
     return <Layout><div>Loading...</div></Layout>;
   }
@@ -661,7 +696,7 @@ function VideoDetail() {
               <p><strong>Resolution:</strong> {videoMetadata?.width}x{videoMetadata?.height}</p>
               <p><strong>FPS:</strong> {videoMetadata?.fps}</p>
               <p><strong>Current Frame:</strong> {currentFrame}</p>
-              <p><strong>Playback Speed:</strong> {playbackRate}x</p> 
+              <p><strong>Playback Speed:</strong> {playbackRate}x</p>  
             </div>
           )}
         </div>
@@ -732,7 +767,22 @@ function VideoDetail() {
                 cols={50}
               />
               <button onClick={handleSaveMetadata} disabled={!!jsonError}>{saveButtonText}</button>
+
+              <button 
+                onClick={handleFetchBoxes}
+                disabled={boxesLoading}
+                className="action-button"
+                style={{ marginTop: '10px' }}
+              >
+                {boxesLoading ? 'Loading Boxes...' : 'Load Boxes Data'}
+              </button>
+              {boxesData && (
+                <p><strong>Boxes Data:</strong> Loaded for frame {currentFrame}</p>
+              )}
             </>
+
+
+
           )}
         </div> 
 
