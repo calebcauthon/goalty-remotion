@@ -414,6 +414,51 @@ function PlayerTracking() {
     </div>
   );
 
+  const handlePullBoxes = async () => {
+    if (!videoRef || !selectedVideo) return;
+    
+    const frameNumber = Math.floor(videoRef.currentTime * (videoInfo?.fps || 30));
+    
+    try {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/get-boxes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          video_url: selectedVideo.url,
+          frame_number: frameNumber
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        setError(data.error);
+      } else if (data.boxes) {
+        // Convert boxes to rectangle format
+        const newRects = Object.entries(data.boxes).map(([id, boxData]) => {
+          // boxData.bbox is [x, y, w, h] format
+          const [x, y, w, h] = boxData.bbox;
+          return {
+            x: x,
+            y: y,
+            width: w,
+            height: h,
+            id: id,
+            name: id
+          };
+        });
+        
+        console.log('New rectangles:', newRects);
+        setRectangles(newRects);
+      }
+    } catch (error) {
+      console.error('Error fetching boxes data:', { error });
+      setError(`Failed to fetch boxes data: ${error}`);
+    }
+  };
+
   const tableJsx = (
     <table className="coordinates-table">
       <thead>
@@ -468,6 +513,15 @@ function PlayerTracking() {
     if (videoRef && videoRef.currentTime) {
       const frameNumber = Math.floor(videoRef.currentTime * (videoInfo?.fps || 30));
       setStartFrame(frameNumber);
+    }
+  };
+
+  const handleSetVideoFrame = () => {
+    if (videoRef && startFrame >= 0) {
+      // Set video time based on frame number
+      videoRef.currentTime = startFrame / (videoInfo?.fps || 30);
+      // Fetch the frame image
+      fetchVideoInfo(startFrame);
     }
   };
 
@@ -554,6 +608,13 @@ function PlayerTracking() {
               className="frame-canvas"
             />
             <div className="coordinates-table-container">
+              <button 
+                onClick={handlePullBoxes}
+                className="pull-boxes-button"
+                disabled={!videoRef || !selectedVideo}
+              >
+                Pull boxes for frame {videoRef ? Math.floor(videoRef.currentTime * (videoInfo?.fps || 30)) : 0}
+              </button>
               {tableJsx}
             </div>
             <div className="render-controls">
@@ -599,6 +660,14 @@ function PlayerTracking() {
                     value={startFrame}
                     onChange={(e) => setStartFrame(parseInt(e.target.value))}
                   />
+                  <button 
+                    className="set-frame-button"
+                    onClick={handleSetVideoFrame}
+                    title="Set video to this frame"
+                    disabled={!videoRef || !selectedVideo}
+                  >
+                    ⏯️
+                  </button>
                   <button 
                     className="set-current-frame-button"
                     onClick={handleSetCurrentFrame}
