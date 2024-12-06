@@ -10,6 +10,7 @@ import HotkeyConfig from 'components/pages/HotkeyConfig';
 import ViewHotkeyGroup from 'components/pages/ViewHotkeyGroup';
 import StatsReports from 'components/pages/StatsReports';
 import PlayerTracking from 'components/pages/PlayerTracking';
+import Homography from 'components/pages/Homography';
 import 'components/pages/App.css';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
         <Route path="/hotkeys/:id" element={<ViewHotkeyGroup />} />
         <Route path="/stats" element={<StatsReports />} />
         <Route path="/player-tracking" element={<PlayerTracking />} />
+        <Route path="/homography" element={<Homography />} />
       </Routes>
     </Router>
   );

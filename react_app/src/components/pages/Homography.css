@@ -1,0 +1,238 @@
+.homography-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.video-selection {
+  margin: 20px 0;
+}
+
+.video-selection select {
+  width: 100%;
+  padding: 8px;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.sequences-container {
+  margin-top: 30px;
+}
+
+.player-sequences {
+  margin-bottom: 40px;
+}
+
+.player-sequences h2 {
+  color: #333;
+  font-size: 1.2em;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #eee;
+}
+
+.sequences-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border-radius: 8px;
+}
+
+.sequences-table th,
+.sequences-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.sequences-table th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.sequences-table tr:hover {
+  background-color: #f8f8f8;
+}
+
+.sequences-table tr:last-child td {
+  border-bottom: none;
+}
+
+.no-sequences {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 20px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.player-selection {
+  margin: 30px 0;
+}
+
+.player-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.player-button {
+  padding: 8px 16px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.player-button:hover {
+  border-color: #666;
+}
+
+.player-button.selected {
+  background: #4CAF50;
+  color: white;
+  border-color: #4CAF50;
+}
+
+.visualization-container {
+  margin: 30px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.field-canvas {
+  background: #1a472a;  /* Dark green background */
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Update sequences container for selected player view */
+.sequences-container {
+  margin-top: 30px;
+}
+
+.sequences-container h2 {
+  color: #333;
+  font-size: 1.2em;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #eee;
+}
+
+.test-form-container {
+  margin: 20px 0;
+  padding: 20px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.test-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.input-group {
+  display: flex;
+  gap: 20px;
+}
+
+.input-group label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.input-group input {
+  width: 80px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.test-form button {
+  padding: 8px 16px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.test-form button:hover {
+  background: #45a049;
+}
+
+.test-result {
+  margin-top: 15px;
+  padding: 10px;
+  background: white;
+  border-radius: 4px;
+}
+
+.test-result h4 {
+  margin: 0 0 5px 0;
+  color: #333;
+}
+
+.test-result p {
+  margin: 0;
+  font-family: monospace;
+}
+
+.points-table-container {
+  margin: 20px 0;
+  padding: 20px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.points-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.points-table th,
+.points-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.points-table th {
+  background: #f0f0f0;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+.use-point-button {
+  padding: 4px 8px;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.use-point-button:hover {
+  background: #357abd;
+}
+
+.points-table tr:hover {
+  background: #f8f8f8;
+} 
