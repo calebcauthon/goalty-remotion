@@ -57,7 +57,7 @@ function Homography() {
       
       // Extract field points from metadata
       if (metadata.shapes) {
-        const homographyShape = metadata.shapes.find(shape => shape.name === 'homography');
+        const homographyShape = metadata.shapes.find(shape => shape.name === 'homography_buckets');
         if (homographyShape && homographyShape.points.length === 8) {
           // Convert points array [x1,y1,x2,y2,...] to array of points [[x1,y1], [x2,y2],...]
           const points = [];
