@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useContext, useRef, useMemo } from 'react';
 import Layout from './Layout';
 import { GlobalContext } from '../../index';
 import { findPlayerSequences } from '../stats/statUtils';
 import './Homography.css';
+import { Player } from '@remotion/player';
+import { VideoWithBoxes } from '../templates/VideoWithBoxes';
 
 function Homography() {
   const globalData = useContext(GlobalContext);
@@ -17,6 +19,8 @@ function Homography() {
   const [testPoint, setTestPoint] = useState({ x: 0, y: 0 });
   const [testResult, setTestResult] = useState(null);
   const [playerPoints, setPlayerPoints] = useState([]);
+  const [bounding_box_dimensions, setBoundingBoxDimensions] = useState([960, 540]);
+  const [metadata, setMetadata] = useState(null);
 
   // Constants for visualization
   const FIELD_WIDTH = 400;
@@ -25,9 +29,21 @@ function Homography() {
 
   // scale factors
   const polygon_boundary_dimensions = [800, 600];
-  const bounding_box_dimensions = [1920, 1080];
   const x_scale = polygon_boundary_dimensions[0] / bounding_box_dimensions[0];
   const y_scale = polygon_boundary_dimensions[1] / bounding_box_dimensions[1];
+
+  const x_scale_bbox = useMemo(() => {
+    if (!metadata) return 1;
+    const value = 1280 / metadata.width;
+    console.log('x_scale_bbox', { value, metadata });
+    return value;
+  }, [metadata]);
+  const y_scale_bbox = useMemo(() => {
+    if (!metadata) return 1;
+    const value = 720 / metadata.height;
+    console.log('y_scale_bbox', { value, metadata });
+    return value;
+  }, [metadata]);
 
   useEffect(() => {
     fetchVideos();
@@ -72,6 +88,7 @@ function Homography() {
       
       setPlayerSequences(allSequences);
       setSelectedPlayer(null); // Reset selected player when video changes
+      setBoundingBoxDimensions([metadata.width, metadata.height]);
     }
   }, [selectedVideo]);
 
@@ -83,10 +100,9 @@ function Homography() {
 
   useEffect(() => {
     if (selectedPlayer && boxes.length > 0) {
-      // Collect first 100 points for the selected player
       const points = [];
       boxes.forEach((frameData, frameIndex) => {
-        if (frameData && frameData[selectedPlayer] && points.length < 100) {
+        if (frameData && frameData[selectedPlayer]) {
           const box = frameData[selectedPlayer].bbox;
           const x = box[0] + (box[2] / 2);
           const y = box[1] + (box[3] / 2);
@@ -116,7 +132,14 @@ function Homography() {
   const handleVideoSelect = (videoId) => {
     const video = videos.find(v => v.id === parseInt(videoId));
     setSelectedVideo(video);
+    const videoMetadata = JSON.parse(video.metadata);
+    setMetadata(videoMetadata);
   };
+
+  const videoDurationInFrames = useMemo(() => {
+    console.log('setting videoDurationInFrames', boxes.length);
+    return boxes.length;
+  }, [boxes]);
 
   const handlePlayerSelect = (playerName) => {
     setSelectedPlayer(playerName);
@@ -275,6 +298,46 @@ function Homography() {
     }
   };
 
+  const renderVideoPlayer = () => {
+    if (!selectedVideo || !selectedPlayer) return null;
+    console.log('selectedVideo', { selectedVideo, metadata });
+
+    const video = videos.find(v => v.id === selectedVideo.id);
+    if (!video) return null;
+
+    // Find the first sequence for this player
+    const sequence = playerSequences[selectedPlayer]?.[0];
+    if (!sequence) return null;
+
+    return (
+      <div className="video-preview">
+        <h3>Video Preview</h3>
+        <Player
+          component={VideoWithBoxes}
+          inputProps={{
+            videoSrc: video.filepath,
+            boxes: boxes,
+            selectedPlayer: selectedPlayer,
+            startFrame: 1,
+            endFrame: videoDurationInFrames,
+            xScale: x_scale_bbox,
+            yScale: y_scale_bbox
+          }}
+          durationInFrames={videoDurationInFrames}
+          compositionWidth={1280}
+          compositionHeight={720}
+          fps={29.97}
+          controls
+          style={{
+            width: '100%',
+            maxWidth: '800px',
+            margin: '20px 0'
+          }}
+        />
+      </div>
+    );
+  };
+
   return (
     <Layout>
       <div className="homography-container">
@@ -320,6 +383,7 @@ function Homography() {
                 className="field-canvas"
               />
             </div>
+            {renderVideoPlayer()}
 
             {selectedPlayer && (
               <div className="sequences-container">
