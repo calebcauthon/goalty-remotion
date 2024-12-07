@@ -12,7 +12,7 @@ function Homography() {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [playerSequences, setPlayerSequences] = useState({});
   const [boxes, setBoxes] = useState([]);
-  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [selectedPlayers, setSelectedPlayers] = useState(new Set());
   const canvasRef = useRef(null);
   const [transformedPoints, setTransformedPoints] = useState([]);
   const [fieldPoints, setFieldPoints] = useState(null);
@@ -87,37 +87,39 @@ function Homography() {
       });
       
       setPlayerSequences(allSequences);
-      setSelectedPlayer(null); // Reset selected player when video changes
+      setSelectedPlayers(new Set()); // Reset selected players when video changes
       setBoundingBoxDimensions([metadata.width, metadata.height]);
     }
   }, [selectedVideo]);
 
   useEffect(() => {
-    if (selectedPlayer && boxes.length > 0) {
+    if (selectedPlayers.size > 0 && boxes.length > 0) {
       drawTrajectory();
     }
-  }, [selectedPlayer, boxes]);
+  }, [selectedPlayers, boxes]);
 
   useEffect(() => {
-    if (selectedPlayer && boxes.length > 0) {
+    if (selectedPlayers.size > 0 && boxes.length > 0) {
       const points = [];
       boxes.forEach((frameData, frameIndex) => {
-        if (frameData && frameData[selectedPlayer]) {
-          const box = frameData[selectedPlayer].bbox;
-          const x = box[0] + (box[2] / 2);
-          const y = box[1] + (box[3] / 2);
-          points.push({
-            frame: frameIndex,
-            x: Math.round(x),
-            y: Math.round(y)
-          });
-        }
+        selectedPlayers.forEach(playerName => {
+          if (frameData && frameData[playerName]) {
+            const box = frameData[playerName].bbox;
+            const x = box[0] + (box[2] / 2);
+            const y = box[1] + (box[3] / 2);
+            points.push({
+              frame: frameIndex,
+              x: Math.round(x),
+              y: Math.round(y)
+            });
+          }
+        });
       });
       setPlayerPoints(points);
     } else {
       setPlayerPoints([]);
     }
-  }, [selectedPlayer, boxes]);
+  }, [selectedPlayers, boxes]);
 
   const fetchVideos = async () => {
     try {
@@ -142,7 +144,15 @@ function Homography() {
   }, [boxes]);
 
   const handlePlayerSelect = (playerName) => {
-    setSelectedPlayer(playerName);
+    setSelectedPlayers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(playerName)) {
+        newSet.delete(playerName);
+      } else {
+        newSet.add(playerName);
+      }
+      return newSet;
+    });
   };
 
   const transformPoints = async (points) => {
@@ -205,16 +215,18 @@ function Homography() {
       return;
     }
 
-    // Collect points for the selected player
+    // Collect points for the selected players
     const points = [];
     boxes.forEach((frameData, frameIndex) => {
-      if (frameData && frameData[selectedPlayer]) {
-        const box = frameData[selectedPlayer].bbox;
-        // Calculate center point of the box
-        const x = box[0] + (box[2] / 2);
-        const y = box[1] + (box[3] / 2);
-        points.push([x, y]);
-      }
+      selectedPlayers.forEach(playerName => {
+        if (frameData && frameData[playerName]) {
+          const box = frameData[playerName].bbox;
+          // Calculate center point of the box
+          const x = box[0] + (box[2] / 2);
+          const y = box[1] + (box[3] / 2);
+          points.push([x, y]);
+        }
+      });
     });
 
     if (points.length > 0) {
@@ -299,15 +311,11 @@ function Homography() {
   };
 
   const renderVideoPlayer = () => {
-    if (!selectedVideo || !selectedPlayer) return null;
+    if (!selectedVideo || selectedPlayers.size === 0) return null;
     console.log('selectedVideo', { selectedVideo, metadata });
 
     const video = videos.find(v => v.id === selectedVideo.id);
     if (!video) return null;
-
-    // Find the first sequence for this player
-    const sequence = playerSequences[selectedPlayer]?.[0];
-    if (!sequence) return null;
 
     return (
       <div className="video-preview">
@@ -317,7 +325,7 @@ function Homography() {
           inputProps={{
             videoSrc: video.filepath,
             boxes: boxes,
-            selectedPlayer: selectedPlayer,
+            selectedPlayers: Array.from(selectedPlayers),
             startFrame: 1,
             endFrame: videoDurationInFrames,
             xScale: x_scale_bbox,
@@ -367,7 +375,7 @@ function Homography() {
                   <button
                     key={playerName}
                     onClick={() => handlePlayerSelect(playerName)}
-                    className={`player-button ${selectedPlayer === playerName ? 'selected' : ''}`}
+                    className={`player-button ${selectedPlayers.has(playerName) ? 'selected' : ''}`}
                   >
                     {playerName}
                   </button>
@@ -385,9 +393,9 @@ function Homography() {
             </div>
             {renderVideoPlayer()}
 
-            {selectedPlayer && (
+            {selectedPlayers.size > 0 && (
               <div className="sequences-container">
-                <h2>{selectedPlayer}'s Sequences</h2>
+                <h2>Selected Players' Sequences</h2>
                 <table className="sequences-table">
                   <thead>
                     <tr>
@@ -398,13 +406,15 @@ function Homography() {
                     </tr>
                   </thead>
                   <tbody>
-                    {playerSequences[selectedPlayer].map((seq, index) => (
-                      <tr key={index}>
-                        <td>{seq.startFrame}</td>
-                        <td>{seq.endFrame}</td>
-                        <td>{seq.endFrame - seq.startFrame}</td>
-                        <td>{((seq.endFrame - seq.startFrame) / 30).toFixed(2)}s</td>
-                      </tr>
+                    {selectedPlayers.size > 0 && Object.entries(playerSequences).map(([playerName, sequences]) => (
+                      sequences.map((seq, index) => (
+                        <tr key={`${playerName}-${index}`}>
+                          <td>{seq.startFrame}</td>
+                          <td>{seq.endFrame}</td>
+                          <td>{seq.endFrame - seq.startFrame}</td>
+                          <td>{((seq.endFrame - seq.startFrame) / 30).toFixed(2)}s</td>
+                        </tr>
+                      ))
                     ))}
                   </tbody>
                 </table>
@@ -419,7 +429,7 @@ function Homography() {
           </div>
         )}
 
-        {selectedPlayer && playerPoints.length > 0 && (
+        {selectedPlayers.size > 0 && playerPoints.length > 0 && (
           <div className="points-table-container">
             <h3>First 100 Points</h3>
             <table className="points-table">

@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { AbsoluteFill, Video, useCurrentFrame } from 'remotion';
 
 export const VideoWithBoxes = ({ 
   videoSrc,
   boxes = [],
-  selectedPlayer,
+  selectedPlayers,
   startFrame = 0,
   endFrame,
   xScale = 1,
@@ -14,18 +14,16 @@ export const VideoWithBoxes = ({
   
   // Get boxes for current frame
   const currentBoxes = boxes[frame] || {};
-  const frameNumberFromBoxData = currentBoxes[selectedPlayer]?.frame;
-  const playerBox = currentBoxes[selectedPlayer]?.bbox;
-  const hasBoxes = !!playerBox;
-  const numBoxes = hasBoxes ? 1 : 0;
+  const numBoxes = selectedPlayers.reduce((count, player) => 
+    count + (currentBoxes[player] ? 1 : 0), 0);
 
-  // Scale the box coordinates if we have a box
-  const scaledBox = playerBox ? {
-    x: playerBox[0] * xScale,
-    y: playerBox[1] * yScale,
-    width: playerBox[2] * xScale,
-    height: playerBox[3] * yScale
-  } : null;
+  // Generate random colors for each player
+  const playerColors = useMemo(() => {
+    return selectedPlayers.reduce((acc, player) => {
+      acc[player] = `hsl(${Math.random() * 360}, 100%, 50%)`;
+      return acc;
+    }, {});
+  }, [selectedPlayers.join(',')]);
 
   return (
     <AbsoluteFill>
@@ -35,43 +33,55 @@ export const VideoWithBoxes = ({
         endAt={endFrame}
       />
       
-      {/* Draw bounding box if exists for current frame */}
-      {scaledBox && (
-        <>
-          {/* Frame number label above box */}
-          <div
-            style={{
-              position: 'absolute',
-              left: `${scaledBox.x}px`,
-              top: `${scaledBox.y - 20}px`,
-              background: 'rgba(0, 0, 0, 0.7)',
-              color: '#00ff00',
-              padding: '2px 6px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              zIndex: 1
-            }}
-          >
-            Frame: {frameNumberFromBoxData}
-          </div>
-          
-          {/* Bounding box */}
-          <div
-            style={{
-              position: 'absolute',
-              left: `${scaledBox.x}px`,
-              top: `${scaledBox.y}px`,
-              width: `${scaledBox.width}px`,
-              height: `${scaledBox.height}px`,
-              border: '2px solid #00ff00',
-              boxShadow: '0 0 0 1px rgba(0,0,0,0.5)',
-              borderRadius: '2px',
-              pointerEvents: 'none'
-            }}
-          />
-        </>
-      )}
+      {/* Draw bounding boxes for all selected players */}
+      {selectedPlayers.map(player => {
+        const playerBox = currentBoxes[player]?.bbox;
+        if (!playerBox) return null;
+
+        const scaledBox = {
+          x: playerBox[0] * xScale,
+          y: playerBox[1] * yScale,
+          width: playerBox[2] * xScale,
+          height: playerBox[3] * yScale
+        };
+
+        return (
+          <React.Fragment key={player}>
+            {/* Frame number label above box */}
+            <div
+              style={{
+                position: 'absolute',
+                left: `${scaledBox.x}px`,
+                top: `${scaledBox.y - 20}px`,
+                background: 'rgba(0, 0, 0, 0.7)',
+                color: playerColors[player],
+                padding: '2px 6px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                zIndex: 1
+              }}
+            >
+              {player}: {currentBoxes[player].frame}
+            </div>
+            
+            {/* Bounding box */}
+            <div
+              style={{
+                position: 'absolute',
+                left: `${scaledBox.x}px`,
+                top: `${scaledBox.y}px`,
+                width: `${scaledBox.width}px`,
+                height: `${scaledBox.height}px`,
+                border: `2px solid ${playerColors[player]}`,
+                boxShadow: '0 0 0 1px rgba(0,0,0,0.5)',
+                borderRadius: '2px',
+                pointerEvents: 'none'
+              }}
+            />
+          </React.Fragment>
+        );
+      })}
 
       {/* Frame counter */}
       <div style={{
@@ -98,7 +108,7 @@ export const VideoWithBoxes = ({
           width: '24px',
           height: '24px',
           borderRadius: '50%',
-          backgroundColor: hasBoxes ? '#00ff00' : '#ff0000',
+          backgroundColor: numBoxes > 0 ? '#00ff00' : '#ff0000',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
