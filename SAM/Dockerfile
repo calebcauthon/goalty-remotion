@@ -6,9 +6,25 @@ ENV PYTHONUNBUFFERED=1
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
-    python3-pip \
-    python3-dev \
+    software-properties-common \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update \
+    && apt-get install -y \
+    python3.9 \
+    python3.9-dev \
+    python3.9-distutils \
     && rm -rf /var/lib/apt/lists/*
+
+
+RUN apt-get update && apt-get install -y \
+    curl
+
+# Install pip for Python 3.9
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.9
+
+# Create symlinks
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1
+RUN update-alternatives --set python3 /usr/bin/python3.9
 
 # Clone Semantic-SAM early
 WORKDIR /sam_app
