@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Clone Semantic-SAM early
-WORKDIR /app
+WORKDIR /sam_app
 RUN git clone https://github.com/UX-Decoder/Semantic-SAM .
 
 # Install PyTorch with CUDA support
