@@ -85,6 +85,7 @@ def render_video(render_params: RenderVideoRequest):
 )
 @modal.web_endpoint(method="POST")
 def split_render_request(render_params: RenderVideoRequest):
+    import time
     # Add this function to download raw videos to the volume
     def download_raw_videos(video_urls: list[str]):
         import requests
@@ -145,6 +146,8 @@ def split_render_request(render_params: RenderVideoRequest):
         distributed_renders = []
         for chunk_start, chunk_end in chunk_ranges:
             chunk_request = create_chunk_request(render_params, chunk_start, chunk_end)
+            
+            time.sleep(0.5)  # Wait 500ms
             pollable = render_video.spawn(chunk_request)
             distributed_renders.append(pollable)
         return distributed_renders
