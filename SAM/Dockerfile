@@ -45,6 +45,9 @@ RUN python3 -m pip install -r requirements.txt
 # Install requests
 RUN python3 -m pip install requests
 
+RUN ln -sf /usr/bin/python3.9 /usr/bin/python3
+RUN ln -sf /usr/bin/python3.9 /usr/bin/python
+
 # Set environment variable for dataset path
 ENV DATASET=/data/coco
 
