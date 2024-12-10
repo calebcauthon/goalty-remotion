@@ -26,8 +26,12 @@ RUN pip3 install git+https://github.com/cocodataset/panopticapi.git
 # Install requirements
 RUN python3 -m pip install -r requirements.txt
 
+# Install requests
+RUN python3 -m pip install requests
+
 # Set environment variable for dataset path
 ENV DATASET=/data/coco
 
 # Default command
 CMD ["bash"]
+
