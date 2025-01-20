@@ -214,7 +214,7 @@ function ViewHotkeyGroup() {
 
   const handleAddHotkey = async () => {
     try {
-      const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
+      const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ,.;'.split('');
       const existingKeys = Object.keys(group.shortcuts);
       
       // Filter out already used keys

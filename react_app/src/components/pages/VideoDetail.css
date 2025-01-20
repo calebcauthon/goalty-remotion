@@ -620,3 +620,8 @@
 .shape-visibility-button.visible {
   opacity: 1;
 }
+
+.active-increment {
+  background-color: #4CAF50;
+  color: white;
+}

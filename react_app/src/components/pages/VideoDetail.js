@@ -59,6 +59,7 @@ function VideoDetail() {
   const [shapesSaveStatus, setShapesSaveStatus] = useState('');
   const [boxesData, setBoxesData] = useState(null);
   const [boxesLoading, setBoxesLoading] = useState(false);
+  const [activeIncrementButtons, setActiveIncrementButtons] = useState(new Set());
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -619,6 +620,11 @@ function VideoDetail() {
                 const shortcut = hotkeyGroups.find(g => g.id === activeGroupId)?.shortcuts[key];
                 if (!shortcut) return null;
                 
+                // Check if this is an increment button
+                const isIncrementButton = shortcut.description.startsWith('+');
+                const incrementKey = isIncrementButton ? shortcut.description.slice(1) : null;
+                const isActive = isIncrementButton && activeIncrementButtons.has(incrementKey);
+                
                 return (
                   <Draggable 
                     key={key}
@@ -633,12 +639,28 @@ function VideoDetail() {
                         if (!dragMode) {
                           try {
                             eval(shortcut.action);
+                            
+                            // Handle increment/decrement button states
+                            if (isIncrementButton) {
+                              setActiveIncrementButtons(prev => {
+                                const next = new Set(prev);
+                                next.add(incrementKey);
+                                return next;
+                              });
+                            } else if (shortcut.description.startsWith('-')) {
+                              const decrementKey = shortcut.description.slice(1);
+                              setActiveIncrementButtons(prev => {
+                                const next = new Set(prev);
+                                next.delete(decrementKey);
+                                return next;
+                              });
+                            }
                           } catch (error) {
                             console.error('Error executing hotkey action:', error);
                           }
                         }
                       }}
-                      className={`hotkey-action-button ${dragMode ? 'draggable' : ''}`}
+                      className={`hotkey-action-button ${dragMode ? 'draggable' : ''} ${isActive ? 'active-increment' : ''}`}
                     >
                       {shortcut.description} ({key})
                     </button>
@@ -780,9 +802,6 @@ function VideoDetail() {
                 <p><strong>Boxes Data:</strong> Loaded for frame {currentFrame}</p>
               )}
             </>
-
-
-
           )}
         </div> 
 
