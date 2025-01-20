@@ -620,9 +620,10 @@ function VideoDetail() {
                 const shortcut = hotkeyGroups.find(g => g.id === activeGroupId)?.shortcuts[key];
                 if (!shortcut) return null;
                 
-                // Check if this is an increment button
+                // Check if this is an increment button and get the key word
                 const isIncrementButton = shortcut.description.startsWith('+');
-                const incrementKey = isIncrementButton ? shortcut.description.slice(1) : null;
+                const incrementKey = isIncrementButton ? 
+                  shortcut.description.slice(1).match(/^\S+/)?.[0] : null;
                 const isActive = isIncrementButton && activeIncrementButtons.has(incrementKey);
                 
                 return (
@@ -641,19 +642,21 @@ function VideoDetail() {
                             eval(shortcut.action);
                             
                             // Handle increment/decrement button states
-                            if (isIncrementButton) {
+                            if (isIncrementButton && incrementKey) {
                               setActiveIncrementButtons(prev => {
                                 const next = new Set(prev);
                                 next.add(incrementKey);
                                 return next;
                               });
                             } else if (shortcut.description.startsWith('-')) {
-                              const decrementKey = shortcut.description.slice(1);
-                              setActiveIncrementButtons(prev => {
-                                const next = new Set(prev);
-                                next.delete(decrementKey);
-                                return next;
-                              });
+                              const decrementKey = shortcut.description.slice(1).match(/^\S+/)?.[0];
+                              if (decrementKey) {
+                                setActiveIncrementButtons(prev => {
+                                  const next = new Set(prev);
+                                  next.delete(decrementKey);
+                                  return next;
+                                });
+                              }
                             }
                           } catch (error) {
                             console.error('Error executing hotkey action:', error);
