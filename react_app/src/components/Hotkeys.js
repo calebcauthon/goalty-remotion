@@ -5,6 +5,7 @@ import { useHighlightAdder } from './hotkeys/HighlightAdder';
 import { useSpeedController } from './hotkeys/SpeedController';
 import { usePlayPauseController } from './hotkeys/PlayPauseController';
 import { useRangeBuilder } from './hotkeys/RangeBuilder';
+import { useListen } from './hotkeys/Listen';
 
 export function useHotkeys(hotkeyMode, playerTools, currentFrame, initialHotkeys) {
   playerTools.registerHotkey = (...args) => { return registerHotkey(...args) };
@@ -13,12 +14,16 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame, initialHotkeys
   playerTools.clearTemporaryHotkeys = (...args) => { return clearTemporaryHotkeys(...args) };
   playerTools.clearUnregisteredHotkeys = (...args) => { return clearUnregisteredHotkeys(...args) };
 
-//  const addTag = useTagAdder(playerTools, currentFrame);
-//  const { seekBackward, seekForward } = useVideoSeeker(playerTools, currentFrame);
-//  const addHighlight = useHighlightAdder(playerTools, currentFrame);
-//  const { slowDown, speedUp, resetSpeed } = useSpeedController(playerTools);
-//  const { togglePlayPause } = usePlayPauseController(playerTools);
+  const addTag = useTagAdder(playerTools, currentFrame);
+  const { seekBackward, seekForward } = useVideoSeeker(playerTools, currentFrame);
+  const addHighlight = useHighlightAdder(playerTools, currentFrame);
+  const { slowDown, speedUp, resetSpeed } = useSpeedController(playerTools);
+  const { togglePlayPause } = usePlayPauseController(playerTools);
   const { markFrame, breakRange } = useRangeBuilder(playerTools, currentFrame);
+  var { startListening, stopListening } = useListen();
+  startListening = function() {
+    console.log('startListening fake');
+  }
 
   const [hotkeyMap, setHotkeyMap] = useState(initialHotkeys);
 
@@ -28,6 +33,7 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame, initialHotkeys
   const hotkeyMapRef = useRef(hotkeyMap);
   const unregisteredHotkeysRef = useRef(unregisteredHotkeys);
   const temporaryHotkeysRef = useRef(temporaryHotkeys);
+
 
   const registerHotkey = useCallback((key, action) => {
     setHotkeyMap(prevMap => {
@@ -113,10 +119,6 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame, initialHotkeys
     clearUnregisteredHotkeys();
   }, [clearTemporaryHotkeys, clearUnregisteredHotkeys]);
 
-  useEffect(() => {
-    registerHotkey('m', markFrame);
-    registerHotkey('b', breakRange);
-  }, [markFrame, breakRange, registerHotkey]);
 
   return { 
     registerHotkey, 

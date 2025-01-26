@@ -14,12 +14,14 @@ import { useHighlightAdder } from '../hotkeys/HighlightAdder';
 import { useSpeedController } from '../hotkeys/SpeedController';
 import { usePlayPauseController } from '../hotkeys/PlayPauseController';
 import { useRangeBuilder } from '../hotkeys/RangeBuilder';
+import { useListen } from '../hotkeys/Listen';
 import { debounce } from 'lodash';
 import { FaPencilAlt, FaSave } from 'react-icons/fa';
 import { GlobalContext } from '../../index'; 
 import Draggable from 'react-draggable';
 import { Stage, Layer, Line, Circle } from 'react-konva';
 import { RangesSection } from '../RangesSection';
+import { DictationDisplay } from '../DictationDisplay';
 
 function VideoDetail() {
   const globalData = useContext(GlobalContext);
@@ -64,6 +66,17 @@ function VideoDetail() {
   const [activeIncrementButtons, setActiveIncrementButtons] = useState(new Set());
   const [rangesExpanded, setRangesExpanded] = useState(false);
   const { markFrame, breakRange, ranges, enforceRangeById } = useRangeBuilder({ playerRef }, currentFrame);
+  var { 
+    isListening, 
+    transcript, 
+    analysis, 
+    isProcessing, 
+    startListening, 
+    stopListening, 
+    processTranscript,
+    setDictationCurrentFrame,
+    setNotes
+  } = useListen(GlobalContext);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -141,6 +154,8 @@ function VideoDetail() {
 
   const handleFrameUpdate = useCallback((frame) => {
     setCurrentFrame(frame);
+    console.log('setting dictation current frame to', frame);
+    setDictationCurrentFrame(frame);
   }, []);
 
   const handleMetadataChange = (e) => {
@@ -440,6 +455,10 @@ function VideoDetail() {
       setBoxesLoading(false);
     }
   };
+
+  useEffect(() => {
+    setCurrentFrame(currentFrame);
+  }, [currentFrame, setCurrentFrame]);
 
   if (loading) {
     return <Layout><div>Loading...</div></Layout>;
@@ -915,6 +934,16 @@ function VideoDetail() {
           playerRef={playerRef}
           breakRange={breakRange}
           enforceRangeById={enforceRangeById}
+        />
+
+        <DictationDisplay 
+          isListening={isListening} 
+          transcript={transcript} 
+          analysis={analysis}
+          isProcessing={isProcessing}
+          currentFrame={currentFrame}
+          setNotes={setNotes}
+          updateMetadata={updateMetadata}
         />
 
       </div>

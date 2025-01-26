@@ -681,3 +681,89 @@
 .active-range:hover {
   background-color: rgba(76, 175, 80, 0.2) !important;
 }
+
+.dictation-container {
+  margin: 20px 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.dictation-header {
+  padding: 10px;
+  background: #f5f5f5;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dictation-content {
+  padding: 15px;
+}
+
+.transcript-box {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  min-height: 50px;
+  white-space: pre-wrap;
+}
+
+.notes-input {
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.analysis-box {
+  margin-top: 15px;
+  padding: 10px;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.analysis-box pre {
+  margin: 10px 0 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+}
+
+.error-box {
+  margin-top: 10px;
+  padding: 10px;
+  background: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  color: #c62828;
+}
+
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.save-tags-button {
+  padding: 6px 12px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-tags-button:hover {
+  background: #43A047;
+}
+
+.save-tags-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
