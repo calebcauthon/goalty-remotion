@@ -149,7 +149,7 @@ function VideoDetail() {
     if (hotkeyGroups.length > 0 && activeGroupId) {
       const currentGroup = hotkeyGroups.find(g => g.id === activeGroupId);
       if (currentGroup?.shortcuts) {
-        setButtonOrder(Object.keys(currentGroup.shortcuts));
+        setButtonOrder(Object.keys(currentGroup.shortcuts.shortcuts ? currentGroup.shortcuts.shortcuts : currentGroup.shortcuts));
       }
     }
   }, [hotkeyGroups, activeGroupId]);
