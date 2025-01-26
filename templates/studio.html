@@ -6,33 +6,44 @@
     <title>Database Studio</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-        h1 { color: #333; }
-        form { margin-bottom: 20px; }
+        h1, h2 { color: #333; }
+        form { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
         select, input[type="text"], input[type="submit"] { margin: 5px 0; padding: 5px; }
         table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
         tr:nth-child(even) { background-color: #f9f9f9; }
         .error { color: red; }
+        .success { color: green; }
     </style>
 </head>
 <body>
     <h1>Database Studio</h1>
     
+    <select id="tableSelect" onchange="updateQueries()">
+        {% for table in tables %}
+        <option value="{{ table }}" {% if table == selected_table %}selected{% endif %}>{{ table }}</option>
+        {% endfor %}
+    </select>
+
     <form method="POST">
-        <select name="table">
-            {% for table in tables %}
-            <option value="{{ table }}" {% if table == selected_table %}selected{% endif %}>{{ table }}</option>
-            {% endfor %}
-        </select>
-        <br>
-        <input type="text" name="query" value="{{ query }}" style="width: 100%;">
-        <br>
-        <input type="submit" value="Execute Query">
+        <h2>SELECT Query</h2>
+        <input type="text" name="select_query" value="{{ select_query }}" style="width: 100%;">
+        <input type="submit" name="execute_select" value="Execute SELECT">
+    </form>
+
+    <form method="POST">
+        <h2>UPDATE Query</h2>
+        <input type="text" name="update_query" value="{{ update_query }}" style="width: 100%;" placeholder="UPDATE table SET column = value WHERE condition">
+        <input type="submit" name="execute_update" value="Execute UPDATE">
     </form>
 
     {% if error %}
     <p class="error">{{ error }}</p>
+    {% endif %}
+
+    {% if update_message %}
+    <p class="success">{{ update_message }}</p>
     {% endif %}
 
     {% if results %}
@@ -55,5 +66,13 @@
         </tbody>
     </table>
     {% endif %}
+
+    <script>
+        function updateQueries() {
+            const table = document.getElementById('tableSelect').value;
+            document.querySelector('input[name="select_query"]').value = `SELECT * FROM ${table}`;
+            document.querySelector('input[name="update_query"]').value = `UPDATE ${table} SET column = value WHERE id = `;
+        }
+    </script>
 </body>
 </html>

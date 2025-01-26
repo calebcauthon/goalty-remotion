@@ -39,20 +39,36 @@ test_mode = False
 def studio():
     tables = get_tables()
     selected_table = request.form.get('table', tables[0] if tables else None)
-    query = request.form.get('query', f'SELECT * FROM {selected_table}' if selected_table else '')
+    select_query = request.form.get('select_query', f'SELECT * FROM {selected_table}' if selected_table else '')
+    update_query = request.form.get('update_query', f'UPDATE {selected_table} SET column = value WHERE id = ' if selected_table else '')
     
     results = []
     columns = []
     error = None
+    update_message = None
     
-    if query:
+    if request.form.get('execute_select') and select_query:
         try:
-            results, columns = execute_query(query)
+            results, columns = execute_query(select_query)
+        except Exception as e:
+            error = str(e)
+            
+    if request.form.get('execute_update') and update_query:
+        try:
+            commit_query(update_query)
+            update_message = "Update executed successfully"
         except Exception as e:
             error = str(e)
     
-    return render_template('studio.html', tables=tables, selected_table=selected_table, 
-                           query=query, results=results, columns=columns, error=error)
+    return render_template('studio.html', 
+                         tables=tables, 
+                         selected_table=selected_table,
+                         select_query=select_query,
+                         update_query=update_query,
+                         results=results, 
+                         columns=columns, 
+                         error=error,
+                         update_message=update_message)
 
 # Serve React App
 @app.route('/', defaults={'path': ''})
