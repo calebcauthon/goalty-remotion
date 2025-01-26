@@ -7,3 +7,4 @@ react_app/out
 *.bak
 .env*
 .jest-cache
+logdir
