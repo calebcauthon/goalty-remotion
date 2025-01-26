@@ -13,8 +13,22 @@ from PIL import Image
 import requests
 import urllib.parse
 import replicate
+import ell
 
 videos_bp = Blueprint('videos', __name__)
+
+# Initialize ell with storage for versioning
+ell.init(store='./logdir', autocommit=True)
+
+@ell.simple(model="gpt-4o", temperature=0.75)
+def analyze_play(dictation: str, notes: str, frame: int):
+    """You are converting dictated notes into a structured format."""
+    return f"""Given this dictation of a play at frame {frame}: "{dictation}"
+And these additional notes: "{notes}"
+Return an array of JSON objects.
+Only return the JSON objects, no other text.
+Do not start it with ```json or ``` or anything like that. If you do the world will explode.
+"""
 
 @videos_bp.route('/', methods=['GET'])
 def get_videos():
@@ -380,6 +394,24 @@ def get_boxes():
             
     except Exception as e:
         print(f"Error getting boxes data: {str(e)}")
+        return jsonify({'error': str(e)}), 400
+
+@videos_bp.route('/process-dictation', methods=['POST'])
+def process_dictation():
+    try:
+        data = request.json
+        if not all(k in data for k in ['dictation', 'notes', 'frame']):
+            return jsonify({'error': 'Missing required fields'}), 400
+
+        # Use our Ell LMP to analyze the play
+        analysis = analyze_play(data['dictation'], data['notes'], data['frame'])
+
+        return jsonify({
+            'analysis': analysis
+        }), 200
+
+    except Exception as e:
+        print(f"Error in process_dictation: {str(e)}")
         return jsonify({'error': str(e)}), 400
 
 

@@ -4,19 +4,18 @@ version = "0.1.0"
 description = ""
 authors = ["Caleb <calebcauthon@gmail.com>"]
 readme = "README.md"
-packages = []
 
 [tool.poetry.dependencies]
-python = "^3.11"
-flask = "^3.0.3"
+python = "^3.13"
+flask = "^3.1.0"
 flask-cors = "^5.0.0"
-yt-dlp = "^2024.10.22"
-b2sdk = "^2.6.0"
+yt-dlp = "^2025.1.12"
+b2sdk = "^2.7.0"
 gunicorn = "^23.0.0"
 opencv-python = "^4.10.0.84"
-pillow = "^11.0.0"
-clip-client = "^0.8.3"
 replicate = "^1.0.4"
+b2 = "^4.3.0"
+ell-ai = {extras = ["all"], version = "^0.0.15"}
 
 
 [build-system]
