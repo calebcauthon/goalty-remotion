@@ -13,6 +13,7 @@ import { useVideoSeeker } from '../hotkeys/VideoSeeker';
 import { useHighlightAdder } from '../hotkeys/HighlightAdder';
 import { useSpeedController } from '../hotkeys/SpeedController';
 import { usePlayPauseController } from '../hotkeys/PlayPauseController';
+import { useRangeBuilder } from '../hotkeys/RangeBuilder';
 import { debounce } from 'lodash';
 import { FaPencilAlt, FaSave } from 'react-icons/fa';
 import { GlobalContext } from '../../index'; 
@@ -198,6 +199,7 @@ function VideoDetail() {
   const addHighlight = useHighlightAdder({ updateMetadata, playerRef }, currentFrame);
   const { slowDown, speedUp, resetSpeed } = useSpeedController({ getPlaybackRate, setPlaybackRate });
   const { togglePlayPause } = usePlayPauseController({ playerRef });
+  const { markFrame, breakRange } = useRangeBuilder({ playerRef }, currentFrame);
 
   const getCurrentHotkeys = useCallback(() => {
     if (!hotkeyGroups.length || activeGroupId === null) return {};

@@ -4,6 +4,7 @@ import { useVideoSeeker } from './hotkeys/VideoSeeker';
 import { useHighlightAdder } from './hotkeys/HighlightAdder';
 import { useSpeedController } from './hotkeys/SpeedController';
 import { usePlayPauseController } from './hotkeys/PlayPauseController';
+import { useRangeBuilder } from './hotkeys/RangeBuilder';
 
 export function useHotkeys(hotkeyMode, playerTools, currentFrame, initialHotkeys) {
   playerTools.registerHotkey = (...args) => { return registerHotkey(...args) };
@@ -12,11 +13,12 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame, initialHotkeys
   playerTools.clearTemporaryHotkeys = (...args) => { return clearTemporaryHotkeys(...args) };
   playerTools.clearUnregisteredHotkeys = (...args) => { return clearUnregisteredHotkeys(...args) };
 
-  const addTag = useTagAdder(playerTools, currentFrame);
-  const { seekBackward, seekForward } = useVideoSeeker(playerTools, currentFrame);
-  const addHighlight = useHighlightAdder(playerTools, currentFrame);
-  const { slowDown, speedUp, resetSpeed } = useSpeedController(playerTools);
-  const { togglePlayPause } = usePlayPauseController(playerTools);
+//  const addTag = useTagAdder(playerTools, currentFrame);
+//  const { seekBackward, seekForward } = useVideoSeeker(playerTools, currentFrame);
+//  const addHighlight = useHighlightAdder(playerTools, currentFrame);
+//  const { slowDown, speedUp, resetSpeed } = useSpeedController(playerTools);
+//  const { togglePlayPause } = usePlayPauseController(playerTools);
+  const { markFrame, breakRange } = useRangeBuilder(playerTools, currentFrame);
 
   const [hotkeyMap, setHotkeyMap] = useState(initialHotkeys);
 
@@ -110,6 +112,11 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame, initialHotkeys
     clearTemporaryHotkeys();
     clearUnregisteredHotkeys();
   }, [clearTemporaryHotkeys, clearUnregisteredHotkeys]);
+
+  useEffect(() => {
+    registerHotkey('m', markFrame);
+    registerHotkey('b', breakRange);
+  }, [markFrame, breakRange, registerHotkey]);
 
   return { 
     registerHotkey, 
