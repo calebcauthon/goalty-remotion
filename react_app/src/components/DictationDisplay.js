@@ -7,7 +7,8 @@ export function DictationDisplay({
   isProcessing, 
   currentFrame, 
   setNotes,
-  updateMetadata
+  updateMetadata,
+  instructions = []
 }) {
   const [expanded, setExpanded] = React.useState(false);
   const [myNotes, setMyNotes] = useState('');
@@ -62,6 +63,17 @@ export function DictationDisplay({
       </div>
       {expanded && (
         <div className="dictation-content">
+          {instructions.length > 0 && (
+            <div className="dictation-instructions">
+              <h4>Instructions:</h4>
+              <ul>
+                {instructions.map((instruction, index) => (
+                  <li key={index}>{instruction}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {isListening && <div style={{ color: '#ff4444' }}>🎤 Recording...</div>}
           
           <textarea
@@ -106,4 +118,32 @@ export function DictationDisplay({
       )}
     </div>
   );
-} 
+}
+
+const styles = `
+.dictation-instructions {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.dictation-instructions h4 {
+  margin: 0 0 8px 0;
+  color: #444;
+}
+
+.dictation-instructions ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.dictation-instructions li {
+  margin: 4px 0;
+  color: #666;
+}
+`;
+
+const styleSheet = document.createElement("style");
+styleSheet.innerText = styles;
+document.head.appendChild(styleSheet); 

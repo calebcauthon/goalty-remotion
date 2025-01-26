@@ -255,4 +255,47 @@
 .delete-cell {
   text-align: center;
   width: 50px;
+}
+
+.instructions-container {
+  margin: 20px 0;
+  padding: 20px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.add-instruction {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.add-instruction input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.instructions-list {
+  list-style: none;
+  padding: 0;
+}
+
+.instructions-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  margin: 5px 0;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.instructions-list .delete-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
 } 

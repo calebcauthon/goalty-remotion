@@ -19,6 +19,8 @@ function ViewHotkeyGroup() {
   const [editedAction, setEditedAction] = useState('');
   const [editingDescription, setEditingDescription] = useState(null);
   const [editedDescription, setEditedDescription] = useState('');
+  const [instructions, setInstructions] = useState([]);
+  const [newInstruction, setNewInstruction] = useState('');
 
   useEffect(() => {
     fetch(`${globalData.APIbaseUrl}/api/hotkeys/${id}`)
@@ -27,7 +29,29 @@ function ViewHotkeyGroup() {
         if (data.error) {
           setError(data.error);
         } else {
-          setGroup(data);
+          // Handle both old and new format
+
+          console.log({ data, shortcuts, instructions });
+          var shortcuts = data.shortcuts;
+          var instructions = data.instructions || [];
+          if (shortcuts.shortcuts) {
+            instructions = shortcuts.instructions;
+            shortcuts = shortcuts.shortcuts;
+            console.log({ instructions });
+            if (typeof instructions === typeof []) {
+              console.log('instructions is an array');
+              var instructions2 = instructions.reduce((obj, val, i) => {
+                obj[String.fromCharCode(97 + i)] = val;
+                return obj;
+              }, {});
+              console.log('after instructions is an array', { instructions });
+            }
+          }
+          
+          
+          
+          setGroup({ ...data, shortcuts });  // Spread to avoid reference issues
+          setInstructions(instructions);
         }
       })
       .catch(err => setError('Failed to load hotkey group'));
@@ -119,8 +143,8 @@ function ViewHotkeyGroup() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          groupId: id,
-          shortcuts: updatedShortcuts
+          shortcuts: updatedShortcuts,
+          instructions: instructions
         }),
       });
 
@@ -156,8 +180,8 @@ function ViewHotkeyGroup() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          groupId: id,
-          shortcuts: updatedShortcuts
+          shortcuts: updatedShortcuts,
+          instructions: instructions
         }),
       });
 
@@ -197,8 +221,8 @@ function ViewHotkeyGroup() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          groupId: id,
-          shortcuts: updatedShortcuts
+          shortcuts: updatedShortcuts,
+          instructions: instructions
         }),
       });
 
@@ -240,8 +264,8 @@ function ViewHotkeyGroup() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          groupId: id,
-          shortcuts: updatedShortcuts
+          shortcuts: updatedShortcuts,
+          instructions: instructions
         }),
       });
 
@@ -264,8 +288,8 @@ function ViewHotkeyGroup() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          groupId: id,
-          shortcuts: updatedShortcuts
+          shortcuts: updatedShortcuts,
+          instructions: instructions
         }),
       });
 
@@ -274,6 +298,55 @@ function ViewHotkeyGroup() {
       setGroup({ ...group, shortcuts: updatedShortcuts });
     } catch (err) {
       setError('Failed to delete shortcut');
+    }
+  };
+
+  const handleAddInstruction = async () => {
+    if (!newInstruction.trim()) return;
+
+    try {
+      const updatedInstructions = [...instructions, newInstruction];
+      
+      const response = await fetch(`${globalData.APIbaseUrl}/api/hotkeys/${id}/update-shortcuts`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          shortcuts: group.shortcuts,
+          instructions: updatedInstructions
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to add instruction');
+
+      setInstructions(updatedInstructions);
+      setNewInstruction('');
+    } catch (err) {
+      setError('Failed to add instruction');
+    }
+  };
+
+  const handleDeleteInstruction = async (index) => {
+    try {
+      const updatedInstructions = instructions.filter((_, i) => i !== index);
+      
+      const response = await fetch(`${globalData.APIbaseUrl}/api/hotkeys/${id}/update-shortcuts`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          shortcuts: group.shortcuts,
+          instructions: updatedInstructions
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to delete instruction');
+
+      setInstructions(updatedInstructions);
+    } catch (err) {
+      setError('Failed to delete instruction');
     }
   };
 
@@ -309,6 +382,37 @@ function ViewHotkeyGroup() {
             <button onClick={startEditing} className="edit-button" title="Edit name">✏️</button>
           </h1>
         )}
+        <div className="instructions-container">
+          <h2>Dictation Instructions</h2>
+          <div className="add-instruction">
+            <input
+              type="text"
+              value={newInstruction}
+              onChange={(e) => setNewInstruction(e.target.value)}
+              placeholder="Enter new instruction..."
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleAddInstruction();
+                }
+              }}
+            />
+            <button onClick={handleAddInstruction}>Add</button>
+          </div>
+          <ul className="instructions-list">
+            {instructions.map((instruction, index) => (
+              <li key={index}>
+                {instruction}
+                <button 
+                  onClick={() => handleDeleteInstruction(index)}
+                  className="delete-button"
+                  title="Delete instruction"
+                >
+                  🗑️
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
         <div className="shortcuts-container">
           <div className="shortcuts-header">
             <h2>Shortcuts</h2>

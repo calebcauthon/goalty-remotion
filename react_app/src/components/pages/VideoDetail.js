@@ -77,6 +77,7 @@ function VideoDetail() {
     setDictationCurrentFrame,
     setNotes
   } = useListen(GlobalContext);
+  const [activeGroupInstructions, setActiveGroupInstructions] = useState([]);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -124,7 +125,9 @@ function VideoDetail() {
         const response = await axios.get(`${globalData.APIbaseUrl}/api/hotkeys/`);
         setHotkeyGroups(response.data);
         if (response.data.length > 0) {
-          setActiveGroupId(response.data[0].id);
+          const firstGroup = response.data[0];
+          setActiveGroupId(firstGroup.id);
+          setActiveGroupInstructions(firstGroup.instructions || []);
         }
       } catch (error) {
         console.error('Error fetching hotkeys:', error);
@@ -133,6 +136,13 @@ function VideoDetail() {
 
     fetchHotkeys();
   }, []);
+
+  useEffect(() => {
+    if (hotkeyGroups.length > 0 && activeGroupId) {
+      const currentGroup = hotkeyGroups.find(g => g.id === activeGroupId);
+      setActiveGroupInstructions(currentGroup?.instructions || []);
+    }
+  }, [activeGroupId, hotkeyGroups]);
 
   useEffect(() => {
     if (hotkeyGroups.length > 0 && activeGroupId) {
@@ -275,9 +285,23 @@ function VideoDetail() {
 
     return (
       <ul>
-        {Object.entries(currentGroup.shortcuts).map(([key, shortcut]) => (
-          <li key={key}>'{key}': {shortcut.description}</li>
-        ))}
+        {currentGroup.shortcuts.shortcuts ? (
+          <>
+            <h2>Shortcuts</h2>
+            {Object.entries(currentGroup.shortcuts.shortcuts).map(([key, shortcut]) => (
+              <li key={key}>'{key}': {shortcut.description}</li>
+            ))}
+            <br/>
+            <h2>Instructions</h2>
+            {Object.entries(currentGroup.shortcuts.instructions).map(([key, instruction]) => (
+              <li key={key}>'{key}': {instruction}</li>
+            ))}
+          </>
+        ) : (
+          Object.entries(currentGroup.shortcuts).map(([key, shortcut]) => (
+            <li key={key}>'{key}': {shortcut.description}</li>
+          ))
+        )}
       </ul>
     );
   };
@@ -944,6 +968,7 @@ function VideoDetail() {
           currentFrame={currentFrame}
           setNotes={setNotes}
           updateMetadata={updateMetadata}
+          instructions={activeGroupInstructions}
         />
 
       </div>
