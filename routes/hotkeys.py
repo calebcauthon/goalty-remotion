@@ -50,15 +50,22 @@ def update_hotkey_shortcuts(group_id):
     try:
         data = request.get_json()
         shortcuts = data.get('shortcuts')
+        instructions = data.get('instructions', [])  # Default to empty list if not provided
         
         if shortcuts is None:
             return jsonify({'error': 'Shortcuts data is required'}), 400
             
-        success = database.update_hotkey_shortcuts(group_id, shortcuts)
+        # Save both shortcuts and instructions in the same object
+        config = {
+            'shortcuts': shortcuts,
+            'instructions': instructions
+        }
+            
+        success = database.update_hotkey_shortcuts(group_id, config)
         
         if success:
-            return jsonify({'message': 'Shortcuts updated successfully'})
-        return jsonify({'error': 'Failed to update shortcuts'}), 400
+            return jsonify({'message': 'Config updated successfully'})
+        return jsonify({'error': 'Failed to update config'}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
