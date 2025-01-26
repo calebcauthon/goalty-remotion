@@ -19,6 +19,7 @@ import { FaPencilAlt, FaSave } from 'react-icons/fa';
 import { GlobalContext } from '../../index'; 
 import Draggable from 'react-draggable';
 import { Stage, Layer, Line, Circle } from 'react-konva';
+import { RangesSection } from '../RangesSection';
 
 function VideoDetail() {
   const globalData = useContext(GlobalContext);
@@ -61,6 +62,8 @@ function VideoDetail() {
   const [boxesData, setBoxesData] = useState(null);
   const [boxesLoading, setBoxesLoading] = useState(false);
   const [activeIncrementButtons, setActiveIncrementButtons] = useState(new Set());
+  const [rangesExpanded, setRangesExpanded] = useState(false);
+  const { markFrame, breakRange, ranges, enforceRangeById } = useRangeBuilder({ playerRef }, currentFrame);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -199,7 +202,6 @@ function VideoDetail() {
   const addHighlight = useHighlightAdder({ updateMetadata, playerRef }, currentFrame);
   const { slowDown, speedUp, resetSpeed } = useSpeedController({ getPlaybackRate, setPlaybackRate });
   const { togglePlayPause } = usePlayPauseController({ playerRef });
-  const { markFrame, breakRange } = useRangeBuilder({ playerRef }, currentFrame);
 
   const getCurrentHotkeys = useCallback(() => {
     if (!hotkeyGroups.length || activeGroupId === null) return {};
@@ -905,6 +907,16 @@ function VideoDetail() {
             </div>
           )}
         </div>
+
+        <RangesSection 
+          rangesExpanded={rangesExpanded}
+          setRangesExpanded={setRangesExpanded}
+          ranges={ranges}
+          playerRef={playerRef}
+          breakRange={breakRange}
+          enforceRangeById={enforceRangeById}
+        />
+
       </div>
     </Layout>
   );
