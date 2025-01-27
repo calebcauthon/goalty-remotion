@@ -21,6 +21,7 @@ function ViewHotkeyGroup() {
   const [editedDescription, setEditedDescription] = useState('');
   const [instructions, setInstructions] = useState([]);
   const [newInstruction, setNewInstruction] = useState('');
+  const [localInstructionNames, setLocalInstructionNames] = useState({});
 
   useEffect(() => {
     fetch(`${globalData.APIbaseUrl}/api/hotkeys/${id}`)
@@ -30,27 +31,32 @@ function ViewHotkeyGroup() {
           setError(data.error);
         } else {
           // Handle both old and new format
-
-          console.log({ data, shortcuts, instructions });
           var shortcuts = data.shortcuts;
           var instructions = data.instructions || [];
           if (shortcuts.shortcuts) {
             instructions = shortcuts.instructions;
             shortcuts = shortcuts.shortcuts;
-            console.log({ instructions });
-            if (typeof instructions === typeof []) {
-              console.log('instructions is an array');
-              var instructions2 = instructions.reduce((obj, val, i) => {
-                obj[String.fromCharCode(97 + i)] = val;
-                return obj;
-              }, {});
-              console.log('after instructions is an array', { instructions });
-            }
           }
           
+          // Ensure all instructions have the required format
+          instructions = instructions.map(instruction => {
+            if (typeof instruction === 'string') {
+              return {
+                id: Date.now() + Math.random(),
+                name: 'No name yet',
+                text: instruction
+              };
+            }
+            if (!instruction.name) {
+              return {
+                ...instruction,
+                name: 'No name yet'
+              };
+            }
+            return instruction;
+          });
           
-          
-          setGroup({ ...data, shortcuts });  // Spread to avoid reference issues
+          setGroup({ ...data, shortcuts });
           setInstructions(instructions);
         }
       })
@@ -305,7 +311,11 @@ function ViewHotkeyGroup() {
     if (!newInstruction.trim()) return;
 
     try {
-      const updatedInstructions = [...instructions, newInstruction];
+      const updatedInstructions = [...instructions, {
+        id: Date.now(), // Add unique ID
+        name: `Instruction ${instructions.length + 1}`, // Default name
+        text: newInstruction
+      }];
       
       const response = await fetch(`${globalData.APIbaseUrl}/api/hotkeys/${id}/update-shortcuts`, {
         method: 'PUT',
@@ -327,9 +337,34 @@ function ViewHotkeyGroup() {
     }
   };
 
-  const handleDeleteInstruction = async (index) => {
+  const handleInstructionNameChange = async (instructionId, newName) => {
     try {
-      const updatedInstructions = instructions.filter((_, i) => i !== index);
+      const updatedInstructions = instructions.map(instruction => 
+        instruction.id === instructionId ? { ...instruction, name: newName } : instruction
+      );
+
+      const response = await fetch(`${globalData.APIbaseUrl}/api/hotkeys/${id}/update-shortcuts`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          shortcuts: group.shortcuts,
+          instructions: updatedInstructions
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update instruction name');
+
+      setInstructions(updatedInstructions);
+    } catch (err) {
+      setError('Failed to update instruction name');
+    }
+  };
+
+  const handleDeleteInstruction = async (id) => {
+    try {
+      const updatedInstructions = instructions.filter(instruction => instruction.id !== id);
       
       const response = await fetch(`${globalData.APIbaseUrl}/api/hotkeys/${id}/update-shortcuts`, {
         method: 'PUT',
@@ -348,6 +383,13 @@ function ViewHotkeyGroup() {
     } catch (err) {
       setError('Failed to delete instruction');
     }
+  };
+
+  const handleLocalNameChange = (instructionId, newName) => {
+    setLocalInstructionNames(prev => ({
+      ...prev,
+      [instructionId]: newName
+    }));
   };
 
   if (error) return (
@@ -385,25 +427,46 @@ function ViewHotkeyGroup() {
         <div className="instructions-container">
           <h2>Dictation Instructions</h2>
           <div className="add-instruction">
-            <input
-              type="text"
+            <textarea
               value={newInstruction}
-              onChange={(e) => setNewInstruction(e.target.value)}
+              onChange={(e) => setNewInstruction(e.target.value)} 
               placeholder="Enter new instruction..."
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
-                  handleAddInstruction();
+                  //handleAddInstruction();
                 }
+              }}
+              style={{
+                width: '100%',
+                minHeight: '200px',
+                padding: '12px',
+                fontSize: '16px',
+                lineHeight: '1.5',
+                border: '2px solid #ccc',
+                borderRadius: '4px',
+                resize: 'vertical'
               }}
             />
             <button onClick={handleAddInstruction}>Add</button>
           </div>
           <ul className="instructions-list">
-            {instructions.map((instruction, index) => (
-              <li key={index}>
-                {instruction}
+            {instructions.map((instruction) => (
+              <li key={instruction.id}>
+                <input
+                  type="text"
+                  value={localInstructionNames[instruction.id] ?? instruction.name}
+                  onChange={(e) => handleLocalNameChange(instruction.id, e.target.value)}
+                  onBlur={async () => {
+                    const newName = localInstructionNames[instruction.id];
+                    if (newName !== undefined && newName !== instruction.name) {
+                      await handleInstructionNameChange(instruction.id, newName);
+                    }
+                  }}
+                  className="instruction-name-input"
+                />
+                {instruction.text}
                 <button 
-                  onClick={() => handleDeleteInstruction(index)}
+                  onClick={() => handleDeleteInstruction(instruction.id)}
                   className="delete-button"
                   title="Delete instruction"
                 >

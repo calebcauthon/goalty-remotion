@@ -298,4 +298,20 @@
   border: none;
   cursor: pointer;
   padding: 4px;
+}
+
+.instruction-name-input {
+  margin-right: 10px;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 150px;
+}
+
+.instructions-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
 } 

@@ -100,7 +100,7 @@ export function useHotkeys(hotkeyMode, playerTools, currentFrame, initialHotkeys
       console.log(`Executing action for hotkey ${event.key}`);
       action();
     } else {
-      console.log(`No action for hotkey ${event.key}, key code ${event.code}`);
+      console.log(`No action for hotkey ${event.key}, key code ${event.code}`, { hotkeyMapRef: hotkeyMapRef.current, hotkeyMap: hotkeyMap, unregisteredHotkeysRef: unregisteredHotkeysRef.current, unregisteredHotkeys: unregisteredHotkeys, temporaryHotkeysRef: temporaryHotkeysRef.current, temporaryHotkeys: temporaryHotkeys });
     }
   }, [hotkeyMode]);
 

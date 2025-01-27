@@ -8,12 +8,16 @@ export function DictationDisplay({
   currentFrame, 
   setNotes,
   updateMetadata,
-  instructions = []
+  instructions
 }) {
   const [expanded, setExpanded] = React.useState(false);
   const [myNotes, setMyNotes] = useState('');
   const [jsonError, setJsonError] = useState(null);
   const [parsedAnalysis, setParsedAnalysis] = useState(null);
+
+  useEffect(() => {
+    console.log('inside DictationDisplay instructions', instructions);
+  }, [instructions]);
 
   useEffect(() => {
     console.log(' DictationDisplay 🎤 Notes:', myNotes);
@@ -63,12 +67,13 @@ export function DictationDisplay({
       </div>
       {expanded && (
         <div className="dictation-content">
-          {instructions.length > 0 && (
+          There are {Array.from(instructions).length} instructions to follow:
+          {Array.from(instructions).length > 0 && (
             <div className="dictation-instructions">
               <h4>Instructions:</h4>
               <ul>
-                {instructions.map((instruction, index) => (
-                  <li key={index}>{instruction}</li>
+                {Array.from(instructions).map((instruction, index) => (
+                  <li key={index}>{instruction.name} <br /><pre>{instruction.text}</pre></li>
                 ))}
               </ul>
             </div>

@@ -9,6 +9,8 @@ export function HotkeySection({
   activeGroupId,
   setActiveGroupId,
   setActiveGroupInstructions,
+  setTurnedOnInstructions,
+  turnedOnInstructions,
   buttonOrder,
   setButtonOrder,
   buttonPositions,
@@ -23,6 +25,8 @@ export function HotkeySection({
   setHotkeysExpanded,
   globalData
 }) {
+  const [activeInstructions, setActiveInstructions] = useState(new Set());
+
   useEffect(() => {
     const fetchHotkeys = async () => {
       try {
@@ -39,6 +43,14 @@ export function HotkeySection({
 
     fetchHotkeys();
   }, []);
+
+  useEffect(() => {
+    if (hotkeyGroups.length > 0 && activeGroupId) {
+      const currentGroup = hotkeyGroups.find(g => g.id === activeGroupId);
+      // Instructions are now objects with name and text properties
+      setActiveGroupInstructions(currentGroup?.instructions || []);
+    }
+  }, [activeGroupId, hotkeyGroups]);
 
   const handleDragStop = (key, e, data) => {
     const newPositions = {
@@ -78,7 +90,27 @@ export function HotkeySection({
             <br/>
             <h2>Instructions</h2>
             {Object.entries(currentGroup.shortcuts.instructions).map(([key, instruction]) => (
-              <li key={key}>'{key}': {instruction}</li>
+              <li key={key} className="instruction-item">
+                <input
+                  type="checkbox"
+                  checked={Array.from(turnedOnInstructions).some(i => i.name === instruction.name)}
+                  onChange={() => {
+                    console.log('updating instructions', instruction);
+                    setTurnedOnInstructions(prev => {
+                      const next = new Set(prev);
+                      const existing = Array.from(next).find(i => i.name === instruction.name);
+                      if (existing) {
+                        next.delete(existing);
+                      } else {
+                        next.add(instruction);
+                      }
+                      console.log('next', next);
+                      return next;
+                    });
+                  }}
+                />
+                {instruction.name}
+              </li>
             ))}
           </>
         ) : (

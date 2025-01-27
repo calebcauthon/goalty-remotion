@@ -767,3 +767,14 @@
   background: #ccc;
   cursor: not-allowed;
 }
+
+.instruction-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.instruction-item input[type="checkbox"] {
+  margin-top: 4px;
+}

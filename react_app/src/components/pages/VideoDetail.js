@@ -67,13 +67,14 @@ function VideoDetail() {
   const [activeIncrementButtons, setActiveIncrementButtons] = useState(new Set());
   const [rangesExpanded, setRangesExpanded] = useState(false);
   const { markFrame, breakRange, ranges, enforceRangeById } = useRangeBuilder({ playerRef }, currentFrame);
-  var { 
-    isListening, 
-    transcript, 
-    analysis, 
-    isProcessing, 
-    startListening, 
-    stopListening, 
+  const [turnedOnInstructions, setTurnedOnInstructions] = useState(new Set());
+  const {
+    isListening,
+    transcript,
+    analysis,
+    isProcessing,
+    startListening,
+    stopListening,
     processTranscript,
     setDictationCurrentFrame,
     setNotes
@@ -236,7 +237,7 @@ function VideoDetail() {
     if (!currentGroup || !currentGroup.shortcuts) return {};
 
     const hotkeys = {};
-    Object.entries(currentGroup.shortcuts).forEach(([key, shortcut]) => {
+    Object.entries(currentGroup.shortcuts.shortcuts ? currentGroup.shortcuts.shortcuts : currentGroup.shortcuts).forEach(([key, shortcut]) => {
       hotkeys[key] = () => {
         try {
           // Evaluate the action string in the context of available functions
@@ -444,6 +445,13 @@ function VideoDetail() {
     setCurrentFrame(currentFrame);
   }, [currentFrame, setCurrentFrame]);
 
+  useEffect(() => {
+    setNotes(Array.from(turnedOnInstructions)
+      .map(instruction => typeof instruction === 'object' ? instruction.text : instruction)
+      .join('\n')
+    );
+  }, [turnedOnInstructions, setNotes]);
+
   if (loading) {
     return <Layout><div>Loading...</div></Layout>;
   }
@@ -614,6 +622,8 @@ function VideoDetail() {
           activeGroupId={activeGroupId}
           setActiveGroupId={setActiveGroupId}
           setActiveGroupInstructions={setActiveGroupInstructions}
+          setTurnedOnInstructions={setTurnedOnInstructions}
+          turnedOnInstructions={turnedOnInstructions}
           buttonOrder={buttonOrder}
           setButtonOrder={setButtonOrder}
           buttonPositions={buttonPositions}
@@ -852,7 +862,7 @@ function VideoDetail() {
           currentFrame={currentFrame}
           setNotes={setNotes}
           updateMetadata={updateMetadata}
-          instructions={activeGroupInstructions}
+          instructions={turnedOnInstructions}
         />
 
       </div>

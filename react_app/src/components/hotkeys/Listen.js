@@ -63,7 +63,8 @@ export function useListen(GlobalContext) {
       const response = await axios.post(`${globalData.APIbaseUrl}/api/videos/process-dictation`, {
         dictation: currentTranscript,
         notes: currentNotes,
-        frame: currentFrame
+        frame: currentFrame,
+        instructions: currentNotes.split('\n')
       });
       setAnalysis(response.data.analysis);
     } catch (error) {
