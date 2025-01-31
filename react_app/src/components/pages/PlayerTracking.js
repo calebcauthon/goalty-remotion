@@ -417,7 +417,7 @@ function PlayerTracking() {
   const handlePullBoxes = async () => {
     if (!videoRef || !selectedVideo) return;
     
-    const frameNumber = Math.floor(videoRef.currentTime * (videoInfo?.fps || 30));
+    const frameNumber = Math.floor(videoRef.currentTime * (videoInfo?.fps || 29.97));
     
     try {
       const response = await fetch(`${globalData.APIbaseUrl}/api/videos/get-boxes`, {

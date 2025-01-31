@@ -1,1 +1,2 @@
 export { VideoFirstFiveSeconds, calculateFirstFiveSecondsDuration } from './VideoFirstFiveSeconds';
+export { VideoPlayerTrackingTemplate, calculatePlayerTrackingDuration } from './VideoPlayerTrackingTemplate';

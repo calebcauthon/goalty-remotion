@@ -6,7 +6,9 @@ import './ViewFilm.css';
 import { RenderCommand } from 'components/RenderCommand';
 import { 
   VideoFirstFiveSeconds,
-  calculateFirstFiveSecondsDuration 
+  calculateFirstFiveSecondsDuration,
+  VideoPlayerTrackingTemplate,
+  calculatePlayerTrackingDuration 
 } from 'components/templates';
 import { CloudRenderButton } from 'components/CloudRenderButton';
 import { GlobalContext } from '../../index';
@@ -260,6 +262,8 @@ function ViewFilm() {
     switch (selectedTemplate) {
       case 'VideoFirstFiveSeconds':
         return VideoFirstFiveSeconds;
+      case 'VideoPlayerTracking':
+        return VideoPlayerTrackingTemplate;
       default:
         return VideoFirstFiveSeconds;
     }
@@ -269,6 +273,8 @@ function ViewFilm() {
     switch (selectedTemplate) {
       case 'VideoFirstFiveSeconds':
         return calculateFirstFiveSecondsDuration(selectedTags) || 1;
+      case 'VideoPlayerTracking':
+        return calculatePlayerTrackingDuration(selectedTags) || 1;
       default:
         return calculateFirstFiveSecondsDuration(selectedTags) || 1;
     }
@@ -611,6 +617,7 @@ function ViewFilm() {
             onChange={handleTemplateChange}
           >
             <option value="VideoFirstFiveSeconds">All clips back to back</option>
+            <option value="VideoPlayerTracking">Player Tracking</option>
           </select>
         </div>
 
@@ -657,6 +664,12 @@ function ViewFilm() {
                         const durationInSeconds = (clipDuration / 30).toFixed(1);
                         const durationClass = getClipDurationClass(clipDuration, allDurations);
                         
+                        // Calculate if this clip is currently playing and its current frame
+                        const isCurrentClip = currentFrame >= startFrame && currentFrame < endFrame;
+                        const currentClipFrame = isCurrentClip 
+                          ? clip.startFrame + (currentFrame - startFrame)
+                          : null;
+                        
                         return (
                           <Draggable 
                             key={clip.key} 
@@ -681,7 +694,18 @@ function ViewFilm() {
                                   </a>
                                 </td>
                                 <td>{clip.tagName}</td>
-                                <td>{clip.frame}</td>
+                                <td>
+                                  {isCurrentClip ? (
+                                    <span style={{ 
+                                      color: '#0d6efd',
+                                      fontWeight: 'bold'
+                                    }}>
+                                      {currentClipFrame} / abs: {currentFrame}
+                                    </span>
+                                  ) : (
+                                    clip.frame
+                                  )}
+                                </td>
                                 <td>{`${clip.startFrame}-${clip.endFrame}`}</td>
                                 <td className="duration-cell">
                                   <div className="duration-content">
