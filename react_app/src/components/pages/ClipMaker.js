@@ -14,6 +14,7 @@ import VideoPlayer from 'components/VideoPlayer';
 import FrameRangeSlider from 'components/FrameRangeSlider';
 import { useLocation } from 'react-router-dom';
 import ScoreFinderProcessor from 'components/processing/ScoreFinderProcessor';
+import UserAddsTagsDirectly from 'components/processing/UserAddsTagsDirectly';
 
 function ClipMaker() {
   const globalData = useContext(GlobalContext);
@@ -333,6 +334,12 @@ function ClipMaker() {
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
                 onPreview={handlePreview}
+              />
+
+              <UserAddsTagsDirectly
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+                globalData={globalData}
               />
 
               {/* Move filter section here, just above the table */}

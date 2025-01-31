@@ -38,7 +38,6 @@ function ScoreFinderProcessor({
         <div className="proposed-tags-container">
           <h2>{team} Score Tags</h2>
           <textarea
-            readOnly
             value={JSON.stringify(proposedTags, null, 2)}
             rows={10}
             className="proposed-tags-textarea"
