@@ -23,6 +23,7 @@ import { Stage, Layer, Line, Circle } from 'react-konva';
 import { RangesSection } from '../RangesSection';
 import { DictationDisplay } from '../DictationDisplay';
 import { HotkeySection } from '../HotkeySection';
+import { useAutoListen } from '../hotkeys/AutoListen';
 
 function VideoDetail() {
   const globalData = useContext(GlobalContext);
@@ -166,8 +167,8 @@ function VideoDetail() {
 
   const handleFrameUpdate = useCallback((frame) => {
     setCurrentFrame(frame);
-    console.log('setting dictation current frame to', frame);
     setDictationCurrentFrame(frame);
+    setStartFrameForAuto(frame);
   }, []);
 
   const handleMetadataChange = (e) => {
@@ -229,6 +230,15 @@ function VideoDetail() {
   const addHighlight = useHighlightAdder({ updateMetadata, playerRef }, currentFrame);
   const { slowDown, speedUp, resetSpeed } = useSpeedController({ getPlaybackRate, setPlaybackRate });
   const { togglePlayPause } = usePlayPauseController({ playerRef });
+  const {
+    isAutoListening,
+    autoTranscript,
+    isAutoProcessing,
+    startAutoListening,
+    stopAutoListening,
+    setAutoNotes,
+    setStartFrameForAuto
+  } = useAutoListen({ playerRef, GlobalContext }, currentFrame);
 
   const getCurrentHotkeys = useCallback(() => {
     if (!hotkeyGroups.length || activeGroupId === null) return {};
@@ -446,11 +456,12 @@ function VideoDetail() {
   }, [currentFrame, setCurrentFrame]);
 
   useEffect(() => {
-    setNotes(Array.from(turnedOnInstructions)
+    const notesText = Array.from(turnedOnInstructions)
       .map(instruction => typeof instruction === 'object' ? instruction.text : instruction)
-      .join('\n')
-    );
-  }, [turnedOnInstructions, setNotes]);
+      .join('\n');
+    setNotes(notesText);
+    setAutoNotes(notesText);
+  }, [turnedOnInstructions, setNotes, setAutoNotes]);
 
   if (loading) {
     return <Layout><div>Loading...</div></Layout>;
@@ -863,6 +874,17 @@ function VideoDetail() {
           setNotes={setNotes}
           updateMetadata={updateMetadata}
           instructions={turnedOnInstructions}
+        />
+
+        <DictationDisplay 
+          isListening={isAutoListening} 
+          transcript={autoTranscript} 
+          isProcessing={isAutoProcessing}
+          currentFrame={currentFrame}
+          setNotes={setAutoNotes}
+          updateMetadata={updateMetadata}
+          instructions={turnedOnInstructions}
+          isAuto={true}
         />
 
       </div>
