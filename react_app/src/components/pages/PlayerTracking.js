@@ -525,6 +525,13 @@ function PlayerTracking() {
     }
   };
 
+  const handleSetEndFrame = () => {
+    if (videoRef && videoRef.currentTime) {
+      const frameNumber = Math.floor(videoRef.currentTime * (videoInfo?.fps || 30));
+      setEndFrame(frameNumber);
+    }
+  };
+
   return (
     <Layout>
       <div className="player-tracking">
@@ -686,6 +693,13 @@ function PlayerTracking() {
                     value={endFrame}
                     onChange={(e) => setEndFrame(parseInt(e.target.value))}
                   />
+                  <button 
+                    className="set-current-frame-button"
+                    onClick={handleSetEndFrame}
+                    title="Set to current frame"
+                  >
+                    📍
+                  </button>
                 </div>
               </div>
 
