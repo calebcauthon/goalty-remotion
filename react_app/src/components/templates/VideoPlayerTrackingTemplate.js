@@ -83,6 +83,14 @@ export const VideoPlayerTrackingSettings = {
     max: 100,
     step: 1,
     default: 10  // 10% of screen size
+  },
+  minFrameDistance: {
+    type: 'range',
+    label: 'Min Frames Between Points',
+    min: 1,
+    max: 60,
+    step: 1,
+    default: 30
   }
 };
 
@@ -343,7 +351,7 @@ export const VideoPlayerTrackingTemplate = ({
     return currentSettings.stretchCount ?? VideoPlayerTrackingSettings.stretchCount.default;
   };
 
-  // Update getTrailPositions to use exponential percentage
+  // Update getTrailPositions to only include catches as key points
   const getTrailPositions = (video, currentClipFrame, currentPlayingClipRef) => {
     const playerPaths = {};
     const frameSet = new Set();
@@ -419,17 +427,24 @@ export const VideoPlayerTrackingTemplate = ({
         selectedFrames.add(frames[i].frame);
       }
 
-      // Add key events (catches/throws)
+      // Add only catch events if they're not too close to existing points
       frames.forEach(frameData => {
         const tagsForFrame = getTagsForFrame(video, frameData.frame);
-        const isKeyFrame = tagsForFrame.some(tag => {
+        const isCatch = tagsForFrame.some(tag => {
           const tagName = tag.name?.toLowerCase() || '';
-          return tagName.includes(`${player.toLowerCase()} catch`) || 
-                 tagName.includes(`${player.toLowerCase()} throw`);
+          return tagName.includes(`${player.toLowerCase()} catch`);
         });
 
-        if (isKeyFrame) {
-          selectedFrames.add(frameData.frame);
+        if (isCatch) {
+          const minDistance = currentSettings?.minFrameDistance ?? VideoPlayerTrackingSettings.minFrameDistance.default;
+          // Check if this catch is too close to any existing selected frame
+          const isTooClose = Array.from(selectedFrames).some(existingFrame => 
+            Math.abs(existingFrame - frameData.frame) < minDistance
+          );
+
+          if (!isTooClose) {
+            selectedFrames.add(frameData.frame);
+          }
         }
       });
 
