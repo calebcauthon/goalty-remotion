@@ -6,6 +6,7 @@ const STRETCH_COUNT = 15; // Only draw every Nth circle
 const LINE_THICKNESS = 4; // Width of the tracking line
 const TRAIL_OPACITY = 0.8; // Opacity for trail lines
 const SMOOTHING_WEIGHT = 0.8; // 0 = no smoothing, 1 = maximum smoothing
+const RECEPTION_MARKER_SIZE = 16; // Diameter of the reception marker
 
 // Color palette for different players
 const PLAYER_COLORS = {
@@ -41,6 +42,23 @@ const parseJsonIfNecessary = (data) => {
   }
   return data;
 }
+
+var shownMetadata = false;
+const getTagsForFrame = (video, frame) => {
+  if (!video?.metadata) {
+    if (!shownMetadata) {
+      console.log('🔍 No metadata found for video', { video });
+      shownMetadata = true;
+    }
+    return [];
+  }
+  if (!shownMetadata) {
+    console.log('🔍 Metadata found for video', { video });
+    shownMetadata = true;
+  }
+  const metadata = parseJsonIfNecessary(video.metadata);
+  return metadata.tags?.filter(tag => tag.frame === frame) || [];
+};
 
 const getBoxesForFrame = (video, frame) => {
   if (!video?.metadata) {
@@ -105,22 +123,59 @@ const scaleBox = (box, originalSize, containerSize) => {
   };
 };
 
+const hasReceptionAtFrame = (video, frame, player) => {
+  const tagsForFrame = getTagsForFrame(video, frame);
+  return tagsForFrame.some(tag => 
+    tag.name?.toLowerCase().includes(`${player.toLowerCase()} reception`)
+  );
+};
+
 const getTrailPositions = (video, currentClipFrame) => {
-  // Group positions by player
   const playerPaths = {};
+  const frameSet = new Set(); // Track which frames we've already processed
   
+  // First pass: collect paths at STRETCH_COUNT intervals
   for (let i = 0; i <= currentClipFrame; i += STRETCH_COUNT) {
     const boxes = getBoxesForFrame(video, i);
     boxes.forEach(box => {
       if (!playerPaths[box.player]) {
-        playerPaths[box.player] = [];
+        playerPaths[box.player] = {
+          positions: [],
+          receptionFrames: []
+        };
       }
-      playerPaths[box.player].push({
+      playerPaths[box.player].positions.push({
         frame: i,
         bbox: box.bbox
       });
+      frameSet.add(i);
     });
   }
+
+  // Second pass: find all reception frames and add their positions
+  Object.keys(playerPaths).forEach(player => {
+    for (let i = 0; i <= currentClipFrame; i++) {
+      if (hasReceptionAtFrame(video, i, player)) {
+        playerPaths[player].receptionFrames.push(i);
+        
+        // If we haven't already included this frame's position, add it
+        if (!frameSet.has(i)) {
+          const boxes = getBoxesForFrame(video, i);
+          const playerBox = boxes.find(box => box.player === player);
+          if (playerBox) {
+            playerPaths[player].positions.push({
+              frame: i,
+              bbox: playerBox.bbox
+            });
+          }
+        }
+      }
+    }
+    // Sort positions by frame to maintain proper path order
+    playerPaths[player].positions.sort((a, b) => a.frame - b.frame);
+  });
+
+  console.log('🔍 Player paths with receptions', playerPaths);
   return playerPaths;
 };
 
@@ -189,6 +244,8 @@ export const VideoPlayerTrackingTemplate = ({
         
         // Get boxes for the current frame
         const boxes = getBoxesForFrame(video, currentClipFrame);
+        const tagsForFrame = getTagsForFrame(video, currentClipFrame);
+        console.log('🔍 Tags for frame', { tagsForFrame, currentClipFrame });
         
         // Get original video dimensions from metadata
         let originalSize = { width: 1920, height: 1080 }; // Default fallback
@@ -246,6 +303,7 @@ export const VideoPlayerTrackingTemplate = ({
                 {/* Bounding Boxes */}
                 {boxes.map((box, i) => {
                   const scaledBox = scaleBox(box, originalSize, containerSize);
+                  const hasReception = hasReceptionAtFrame(video, currentClipFrame, box.player);
                   
                   return (
                     <div key={i}>
@@ -259,16 +317,18 @@ export const VideoPlayerTrackingTemplate = ({
                         boxSizing: 'border-box',
                         pointerEvents: 'none'
                       }} />
-                      {/* Red circle at bottom middle */}
+                      {/* Position marker circle */}
                       <div style={{
                         position: 'absolute',
                         left: `${scaledBox.x + scaledBox.width/2 - 4}px`,
                         top: `${scaledBox.y + scaledBox.height - 4}px`,
                         width: '8px',
                         height: '8px',
-                        background: 'red',
+                        background: hasReception ? '#FFFF00' : 'red',
                         borderRadius: '50%',
-                        pointerEvents: 'none'
+                        pointerEvents: 'none',
+                        transform: hasReception ? `scale(2)` : 'none',
+                        boxShadow: hasReception ? '0 0 10px rgba(255, 255, 0, 0.5)' : 'none'
                       }} />
                       <div style={{
                         position: 'absolute',
@@ -283,38 +343,62 @@ export const VideoPlayerTrackingTemplate = ({
                         whiteSpace: 'nowrap'
                       }}>
                         {box.player}
+                        {hasReception ? ' 🏈' : ''}
                       </div>
                     </div>
                   );
                 })}
 
                 {/* Render trail points */}
-                {Object.entries(getTrailPositions(video, currentClipFrame)).map(([player, positions]) => {
-                  const pathPoints = positions.map(pos => {
+                {Object.entries(getTrailPositions(video, currentClipFrame)).map(([player, data]) => {
+                  const pathPoints = data.positions.map(pos => {
                     const scaledPos = scaleBox({ bbox: pos.bbox }, originalSize, containerSize);
                     return `${scaledPos.x + scaledPos.width/2},${scaledPos.y + scaledPos.height}`;
                   }).join(' L ');
 
                   return pathPoints.length > 0 ? (
-                    <svg
-                      key={`trail-${player}`}
-                      style={{
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        width: '100%',
-                        height: '100%',
-                        pointerEvents: 'none'
-                      }}
-                    >
-                      <path
-                        d={smoothPath(pathPoints.split(' L '))}
-                        stroke={getPlayerColor(player)}
-                        strokeWidth={LINE_THICKNESS}
-                        fill="none"
-                        opacity={TRAIL_OPACITY}
-                      />
-                    </svg>
+                    <React.Fragment key={`trail-${player}`}>
+                      <svg
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          width: '100%',
+                          height: '100%',
+                          pointerEvents: 'none'
+                        }}
+                      >
+                        <path
+                          d={smoothPath(pathPoints.split(' L '))}
+                          stroke={getPlayerColor(player)}
+                          strokeWidth={LINE_THICKNESS}
+                          fill="none"
+                          opacity={TRAIL_OPACITY}
+                        />
+                      </svg>
+                      {data.positions.filter(pos => 
+                        data.receptionFrames.includes(pos.frame)
+                      ).map((pos, i) => {
+                        const scaledPos = scaleBox({ bbox: pos.bbox }, originalSize, containerSize);
+                        return (
+                          <div
+                            key={`reception-${player}-${pos.frame}`}
+                            style={{
+                              position: 'absolute',
+                              left: `${scaledPos.x + scaledPos.width/2 - RECEPTION_MARKER_SIZE/2}px`,
+                              top: `${scaledPos.y + scaledPos.height - RECEPTION_MARKER_SIZE/2}px`,
+                              width: `${RECEPTION_MARKER_SIZE}px`,
+                              height: `${RECEPTION_MARKER_SIZE}px`,
+                              background: '#FFFF00',
+                              borderRadius: '50%',
+                              pointerEvents: 'none',
+                              boxShadow: '0 0 10px rgba(255, 255, 0, 0.5)',
+                              opacity: 0.8
+                            }}
+                          />
+                        );
+                      })}
+                    </React.Fragment>
                   ) : null;
                 })}
 
