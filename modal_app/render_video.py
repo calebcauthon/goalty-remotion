@@ -53,6 +53,12 @@ def render_video(render_params: RenderVideoRequest):
           print(f"Writing range to /tmp/range.txt: {props.get('range', '')}")
           f.write(str(props.get('range', '')))
 
+      # Write composition name to a temporary file
+      with open('/tmp/composition.txt', 'w') as f:
+          composition_name = props.get('composition_name', 'VideoFirstFiveSeconds')
+          print(f"Writing composition name to /tmp/composition.txt: {composition_name}")
+          f.write(composition_name)
+
       
       # Check if file exists in B2
       bucket = authenticate_bucket("remotion-videos")

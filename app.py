@@ -89,16 +89,17 @@ def cloud_render():
     data = request.json
     data['chunk_size'] = 1000
     filename = data.get('output_file_name')
+    # Make sure composition_name gets passed through
+    composition_name = data.get('composition_name', 'VideoFirstFiveSeconds')
+    data['composition_name'] = composition_name
+    
     url = "https://calebcauthon-dev--remotion-goalty-render-video-split-ren-7c32e7.modal.run"
 
     try:
-        # Fire and forget - don't wait for response
         requests.post(url, json=data, timeout=1)
     except requests.exceptions.Timeout:
-        # Ignore timeout - request will continue in background
         pass
     except requests.exceptions.RequestException:
-        # Ignore any other request errors
         pass
     
     download_url = bucket.get_download_url(filename)
