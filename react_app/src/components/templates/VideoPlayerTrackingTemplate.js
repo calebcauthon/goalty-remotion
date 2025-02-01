@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { AbsoluteFill, Video, Sequence, useCurrentFrame, staticFile } from 'remotion';
 
 export const calculatePlayerTrackingDuration = (selectedTags) => {
@@ -199,23 +199,44 @@ export const VideoPlayerTrackingTemplate = ({
     [getUniquePlayers]
   );
 
+  const [currentSettings, setCurrentSettings] = useState(null);
+
+  useEffect(() => {
+    if (effectiveCurrentClipRef) {
+      setCurrentSettings(settings[effectiveCurrentClipRef.key] || {});
+    } else {
+      setCurrentSettings({});
+    }
+  }, [effectiveCurrentClipRef, settings]);
+
   // Update getPlayerColor to use ??
   const getPlayerColor = (player) => {
+    if (!currentSettings) return PLAYER_COLORS[player] ?? '#FF0000';
+    
+    const clipSettings = currentSettings.playerSettings?.[player];
     const defaultColor = PLAYER_COLORS[player] ?? '#FF0000';
-    return settings?.playerSettings?.[player]?.pathColor ?? defaultColor;
+    return clipSettings?.pathColor ?? defaultColor;
   };
 
   // Update getPlayerOpacity to handle numeric values properly
   const getPlayerOpacity = (player) => {
-    if (settings?.playerSettings?.[player]?.hidden) return 0;
-    const opacity = settings?.playerSettings?.[player]?.pathOpacity;
+    if (!currentSettings) return TRAIL_OPACITY;
+
+    const clipSettings = currentSettings.playerSettings?.[player];
+    if (clipSettings?.hidden) return 0;
+    
+    const opacity = clipSettings?.pathOpacity;
     return typeof opacity === 'number' ? opacity : TRAIL_OPACITY;
   };
 
   // Add a helper function to get box opacity
   const getPlayerBoxOpacity = (player) => {
-    if (settings?.playerSettings?.[player]?.hidden) return 0;
-    const opacity = settings?.playerSettings?.[player]?.boxOpacity;
+    if (!currentSettings) return 1;
+
+    const clipSettings = currentSettings.playerSettings?.[player];
+    if (clipSettings?.hidden) return 0;
+    
+    const opacity = clipSettings?.boxOpacity;
     return typeof opacity === 'number' ? opacity : 1;
   };
 
@@ -652,6 +673,23 @@ export const VideoPlayerTrackingTemplate = ({
     return groups;
   };
 
+  // Update where we get parabola color/opacity
+  const getParabolaColor = () => {
+    if (!currentSettings) return VideoPlayerTrackingSettings.parabolaColor.default;
+    return currentSettings.parabolaColor ?? VideoPlayerTrackingSettings.parabolaColor.default;
+  };
+
+  const getParabolaOpacity = () => {
+    if (!currentSettings) return VideoPlayerTrackingSettings.parabolaOpacity.default;
+    return currentSettings.parabolaOpacity ?? VideoPlayerTrackingSettings.parabolaOpacity.default;
+  };
+
+  // Update where we get player name color
+  const getPlayerNameColor = () => {
+    if (!currentSettings) return VideoPlayerTrackingSettings.playerNameColor.default;
+    return currentSettings.playerNameColor ?? VideoPlayerTrackingSettings.playerNameColor.default;
+  };
+
   return (
     <AbsoluteFill>
       {tagArray.map((tagInfo, index) => {
@@ -775,7 +813,7 @@ export const VideoPlayerTrackingTemplate = ({
                             left: `${scaledBox.x}px`,
                             top: `${scaledBox.y - 25}px`,
                             background: '#FF6B00',
-                            color: settings.playerNameColor ?? VideoPlayerTrackingSettings.playerNameColor.default,
+                            color: getPlayerNameColor(),
                             padding: '2px 6px',
                             borderRadius: '4px',
                             fontSize: '14px',
@@ -844,7 +882,7 @@ export const VideoPlayerTrackingTemplate = ({
                                 <path
                                   key={`possession-${idx}`}
                                   d={smoothPath(possessionGroup.map(s => s.point))}
-                                  stroke={"white"}
+                                  stroke={getPlayerColor(player)}
                                   strokeWidth={POSSESSION_LINE_THICKNESS}
                                   fill="none"
                                   opacity={getPlayerOpacity(player) * 1.2}
@@ -901,8 +939,8 @@ export const VideoPlayerTrackingTemplate = ({
                         >
                           <polygon 
                             points="0 0, 10 3.5, 0 7" 
-                            fill={settings.parabolaColor ?? VideoPlayerTrackingSettings.parabolaColor.default}
-                            opacity={settings.parabolaOpacity ?? VideoPlayerTrackingSettings.parabolaOpacity.default}
+                            fill={getParabolaColor()}
+                            opacity={getParabolaOpacity()}
                           />
                         </marker>
                       </defs>
@@ -924,9 +962,9 @@ export const VideoPlayerTrackingTemplate = ({
                             d={`M ${current.x + current.width/2} ${current.y + current.height}
                                Q ${midX} ${midY} 
                                ${next.x + next.width/2} ${next.y + next.height}`}
-                            stroke={settings.parabolaColor ?? VideoPlayerTrackingSettings.parabolaColor.default}
+                            stroke={getParabolaColor()}
                             strokeWidth={RECEPTION_LINE_WIDTH}
-                            opacity={settings.parabolaOpacity ?? VideoPlayerTrackingSettings.parabolaOpacity.default}
+                            opacity={getParabolaOpacity()}
                             fill="none"
                             markerEnd="url(#arrowhead)"
                           />
@@ -981,9 +1019,9 @@ export const VideoPlayerTrackingTemplate = ({
                           <path
                             key="active-throw"
                             d={`M ${points.join(' L ')}`}
-                            stroke={settings.parabolaColor ?? VideoPlayerTrackingSettings.parabolaColor.default}
+                            stroke={getParabolaColor()}
                             strokeWidth={RECEPTION_LINE_WIDTH}
-                            opacity={settings.parabolaOpacity ?? VideoPlayerTrackingSettings.parabolaOpacity.default}
+                            opacity={getParabolaOpacity()}
                             fill="none"
                             markerEnd="url(#arrowhead)"
                             strokeDasharray="4 4"

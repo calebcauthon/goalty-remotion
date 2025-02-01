@@ -718,7 +718,7 @@ function ViewFilm() {
                   onFrameUpdate: handleFrameUpdate,
                   width: 1280,
                   height: 720,
-                  settings: clipSettings[currentPlayingClipRef?.key] || {}
+                  settings: clipSettings
                 }}
                 durationInFrames={calculateDuration()}
                 compositionWidth={1280}
