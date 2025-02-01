@@ -111,7 +111,9 @@ export const VideoPlayerTrackingTemplate = ({
   onFrameUpdate=() => {},
   detections=[],
   frameImage=null,
-  hoveredDetectionIndex
+  hoveredDetectionIndex,
+  width=1280,
+  height=720
 }) => {
   const tagArray = useMemo(() => Array.from(selectedTags), []);
   const frame = useCurrentFrame();
@@ -153,7 +155,7 @@ export const VideoPlayerTrackingTemplate = ({
         }
 
         // Container size (Remotion composition size)
-        const containerSize = { width: 1280, height: 720 };
+        const containerSize = { width, height };
 
         const VIDEO_BASE_URL = useStaticFile 
           ? staticFile(`${video.filepath.split('/').pop()}`) 
