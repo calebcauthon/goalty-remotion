@@ -3,15 +3,20 @@ import { useCurrentFrame } from 'remotion';
 import { AbsoluteFill } from 'remotion';
 import { Video } from 'remotion';
 
-const VideoPlayer = ({ src, onFrameUpdate }) => {
+const VideoPlayer = ({ src, onFrameUpdate, onClick }) => {
   const frame = useCurrentFrame();
 
   useEffect(() => {
     onFrameUpdate(frame);
   }, [frame, onFrameUpdate]);
 
+  const handleClick = (e) => {
+    console.log('VideoPlayer click event:', e);
+    onClick?.(e);
+  };
+
   return (
-    <AbsoluteFill>
+    <AbsoluteFill onClick={handleClick}>
       <Video src={src} />
       <div style={{
         position: 'absolute',

@@ -81,6 +81,8 @@ function VideoDetail() {
     setNotes
   } = useListen(GlobalContext);
   const [activeGroupInstructions, setActiveGroupInstructions] = useState([]);
+  const [clickFeedback, setClickFeedback] = useState(null);
+  const [feedbackTimeout, setFeedbackTimeout] = useState(null);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -463,6 +465,124 @@ function VideoDetail() {
     setAutoNotes(notesText);
   }, [turnedOnInstructions, setNotes, setAutoNotes]);
 
+  const handleVideoClick = useCallback((e) => {
+    // Clear any existing feedback timeout
+    if (feedbackTimeout) {
+      clearTimeout(feedbackTimeout);
+    }
+    
+    // Get click coordinates for feedback (these are the raw click coordinates)
+    const clickX = e.clientX - e.target.getBoundingClientRect().left;
+    const clickY = e.clientY - e.target.getBoundingClientRect().top;
+
+    console.log('Video clicked!');
+    
+    // Get click coordinates relative to video player
+    const rect = e.target.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    console.log('Click coordinates (relative):', { x, y });
+
+    // Scale coordinates to match original video dimensions
+    const scaleX = videoMetadata?.width / desiredWidth;
+    const scaleY = videoMetadata?.height / (desiredWidth * (videoMetadata?.height / videoMetadata?.width));
+    const originalX = x * scaleX;
+    const originalY = y * scaleY;
+    console.log('Click coordinates (scaled):', { originalX, originalY });
+    console.log('Scale factors:', { scaleX, scaleY });
+
+    // Check if we have boxes data for current frame
+    const frameBoxes = parsedMetadata?.boxes?.[currentFrame];
+    console.log('Current frame:', currentFrame);
+    console.log('Available boxes for frame:', frameBoxes);
+    if (!frameBoxes) {
+      console.log('No boxes found for current frame');
+      return;
+    }
+
+    // Find box containing click coordinates
+    let clickedPlayer = null;
+    let clickedBox = null;
+
+    Object.entries(frameBoxes).forEach(([playerName, { bbox }]) => {
+      const [x, y, width, height] = bbox;
+      const padding = 20 * scaleX; // Scale padding to match video coordinates
+      const isInBox = (
+        originalX >= x - padding &&
+        originalX <= x + width + padding &&
+        originalY >= y - padding &&
+        originalY <= y + height + padding
+      );
+      console.log('Checking box for player:', playerName, [x,y,width,height], 'Contains click?', isInBox, 'Padding:', padding);
+      
+      if (isInBox) {
+        clickedPlayer = playerName;
+        clickedBox = bbox;
+      }
+    });
+
+    if (clickedPlayer && clickedBox) {
+      console.log('Found clicked box:', clickedBox, 'for player:', clickedPlayer, { parsedMetadataTags: parsedMetadata.tags });
+      
+      // Determine action based on current tags before update
+      const lastAction = getLastAction(parsedMetadata.tags || [], clickedPlayer);
+      const newAction = lastAction === 'catch' ? 'throw' : 'catch';
+      console.log('Determined action:', newAction, 'based on last action:', lastAction);
+
+      // Create new tag
+      updateMetadata(prevMetadata => {
+        const newMetadata = { ...prevMetadata };
+        if (!newMetadata.tags) newMetadata.tags = [];
+        
+        const newTag = {
+          name: `${clickedPlayer} ${newAction}`,
+          frame: currentFrame,
+          x: originalX,
+          y: originalY,
+          box: clickedBox,
+          player: clickedPlayer,
+          action: newAction
+        };
+        console.log('Creating new tag:', newTag);
+        
+        newMetadata.tags.push(newTag);
+        return newMetadata;
+      });
+      
+      // Auto-save metadata
+      handleSaveMetadata();
+      
+      // Show feedback
+      setClickFeedback({
+        x: clickX,
+        y: clickY,
+        hit: true,
+        text: newAction.toUpperCase()
+      });
+    } else {
+      console.log('No box found containing click coordinates');
+      
+      // Show miss feedback
+      setClickFeedback({
+        x: clickX,
+        y: clickY,
+        hit: false,
+        text: 'MISS'
+      });
+    }
+    
+    // Clear feedback after 1 second
+    const timeout = setTimeout(() => {
+      setClickFeedback(null);
+    }, 1000);
+    setFeedbackTimeout(timeout);
+    
+    // Resume playback
+    if (playerRef.current) {
+      playerRef.current.play();
+    }
+  }, [currentFrame, parsedMetadata]);
+
   if (loading) {
     return <Layout><div>Loading...</div></Layout>;
   }
@@ -477,6 +597,77 @@ function VideoDetail() {
     'a': () => seekBackward(),
     'd': () => seekForward(),
     // ... map all your shortcuts to their corresponding functions
+  };
+
+  const ClickFeedback = ({ feedback }) => {
+    if (!feedback) return null;
+    
+    const borderColor = feedback.hit ? '#4CAF50' : '#f44336';
+    
+    return (
+      <div style={{
+        position: 'absolute',
+        left: feedback.x - 30,
+        top: feedback.y - 30,
+        width: '60px',
+        height: '60px',
+        border: `2px solid ${borderColor}`,
+        borderRadius: '2px',
+        pointerEvents: 'none',
+        zIndex: 1000
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: '-20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          color: 'white',
+          fontSize: '12px',
+          padding: '2px 6px',
+          borderRadius: '2px',
+          whiteSpace: 'nowrap'
+        }}>
+          {feedback.text}
+        </div>
+      </div>
+    );
+  };
+
+  // Update the helper function to consider both player-specific and global context
+  const getLastAction = (tags, player) => {
+    // Get all catch/throw tags, sorted by frame
+    const allCatchThrowTags = tags
+      ?.filter(tag => (tag.name.includes('catch') || tag.name.includes('throw')) && (tag.frame || 0) <= currentFrame)
+      .sort((a, b) => (b.frame || 0) - (a.frame || 0));
+
+    console.log('All catch/throw tags:', allCatchThrowTags);
+
+    // Get the most recent tag by any player
+    const mostRecentTag = allCatchThrowTags?.[0];
+    console.log('Most recent tag:', mostRecentTag);
+
+    // If this is a different player than the last action, it must be a catch
+    if (mostRecentTag && mostRecentTag.player !== player) {
+      console.log('Different player from last action, forcing catch');
+      return 'throw'; // Return 'throw' so new action will be 'catch'
+    }
+
+    // Get the most recent tag by this specific player
+    const lastPlayerTag = allCatchThrowTags
+      ?.filter(tag => tag.player === player)[0];
+    console.log('Last tag for player:', player, lastPlayerTag);
+
+    // If no previous tags, start with catch
+    if (!lastPlayerTag) {
+      console.log('No previous tags for player, starting with catch');
+      return 'throw'; // Return 'throw' so new action will be 'catch'
+    }
+
+    // Use the last action to determine next action
+    const lastAction = lastPlayerTag.name.includes('catch') ? 'catch' : 'throw';
+    console.log('Last action was:', lastAction, 'so next action will be:', lastAction === 'catch' ? 'throw' : 'catch');
+    return lastAction;
   };
 
   return (
@@ -533,7 +724,8 @@ function VideoDetail() {
               component={VideoPlayer}
               inputProps={{
                 src: video.filepath,
-                onFrameUpdate: handleFrameUpdate
+                onFrameUpdate: handleFrameUpdate,
+                onClick: handleVideoClick
               }}
               durationInFrames={durationInFrames}
               compositionWidth={desiredWidth}
@@ -543,6 +735,7 @@ function VideoDetail() {
               controls
               renderLoading={() => <div>Loading...</div>}
             />
+            <ClickFeedback feedback={clickFeedback} />
             
             {shapesExpanded && (
               <Stage
