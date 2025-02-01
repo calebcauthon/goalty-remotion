@@ -9,6 +9,17 @@ export const calculatePlayerTrackingDuration = (selectedTags) => {
   }, 0);
 };
 
+const parseJsonIfNecessary = (data) => {
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data);
+    } catch (e) {
+      return data;
+    }
+  }
+  return data;
+}
+
 const getBoxesForFrame = (video, frame) => {
   if (!video?.metadata) {
     console.log('🔍 No metadata found for video', { video });
@@ -16,7 +27,7 @@ const getBoxesForFrame = (video, frame) => {
   }
   
   try {
-    const metadata = JSON.parse(video.metadata);
+    const metadata = parseJsonIfNecessary(video.metadata);
     if (!metadata.boxes) { 
       console.log('📦 No boxes found in metadata', { metadata }); 
       return []; 
@@ -117,7 +128,7 @@ export const VideoPlayerTrackingTemplate = ({
         // Get original video dimensions from metadata
         let originalSize = { width: 1920, height: 1080 }; // Default fallback
         try {
-          const metadata = JSON.parse(video.metadata);
+          const metadata = parseJsonIfNecessary(video.metadata);
           originalSize = {
             width: metadata.width || 1920,
             height: metadata.height || 1080
