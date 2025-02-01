@@ -17,6 +17,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { RenderHistory } from 'components/RenderHistory';
 import { TagsTable } from 'components/TagsTable';
 import { ClipSettings } from 'components/ClipSettings';
+import { filmService } from 'services/filmService';
 
 export const calculateTotalDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
@@ -100,11 +101,7 @@ function ViewFilm() {
 
   const fetchFilm = async () => {
     try {
-      const response = await fetch(`${globalData.APIbaseUrl}/api/films/${id}`);
-      const data = await response.json();
-      if (data.data && typeof data.data === 'string') {
-        data.data = JSON.parse(data.data);
-      }
+      const data = await filmService.fetchFilm(globalData.APIbaseUrl, id);
       setFilm(data);
     } catch (error) {
       console.error('Error fetching film:', error);
@@ -113,8 +110,7 @@ function ViewFilm() {
 
   const fetchVideos = async () => {
     try {
-      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/with-tags`);
-      const data = await response.json();
+      const data = await filmService.fetchVideos(globalData.APIbaseUrl);
       setVideos(data);
     } catch (error) {
       console.error('Error fetching videos:', error);
@@ -123,19 +119,10 @@ function ViewFilm() {
 
   const handleSaveTitle = async () => {
     try {
-      const response = await fetch(`${globalData.APIbaseUrl}/api/films/${id}/name`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name: editedName }),
-      });
-      
-      if (response.ok) {
+      const success = await filmService.updateFilmName(globalData.APIbaseUrl, id, editedName);
+      if (success) {
         setFilm({ ...film, name: editedName });
         setIsEditing(false);
-      } else {
-        console.error('Failed to update film name');
       }
     } catch (error) {
       console.error('Error updating film name:', error);
@@ -185,20 +172,12 @@ function ViewFilm() {
 
   const saveClipsToFilm = async (newClips) => {
     try {
-      const response = await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          data: {
-            ...film.data,
-            clips: newClips
-          }
-        }),
+      const success = await filmService.updateFilmData(globalData.APIbaseUrl, id, {
+        ...film.data,
+        clips: newClips
       });
       
-      if (response.ok) {
+      if (success) {
         setFilm({ 
           ...film, 
           data: {
@@ -206,8 +185,6 @@ function ViewFilm() {
             clips: newClips
           }
         });
-      } else {
-        console.error('Failed to update film clips');
       }
     } catch (error) {
       console.error('Error updating film clips:', error);
@@ -303,16 +280,12 @@ function ViewFilm() {
 
   const checkRenderStatus = async (filename) => {
     try {
-      const response = await fetch(`${globalData.APIbaseUrl}/api/check-render/${filename}`);
-      const data = await response.json();
+      const data = await filmService.checkRenderStatus(globalData.APIbaseUrl, filename);
       
       if (data.status === 'completed') {
         setRenderStatus('completed');
         
-        // Get existing renders or initialize empty array
         const existingRenders = film.data.renders || [];
-        
-        // Add new render to the list
         const newRender = {
           filename: data.filename,
           b2_url: data.b2_url,
@@ -322,21 +295,11 @@ function ViewFilm() {
           status: 'completed'
         };
 
-        // Update film metadata with new render info
-        await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            data: {
-              ...film.data,
-              renders: [...existingRenders, newRender]
-            }
-          }),
+        await filmService.updateFilmData(globalData.APIbaseUrl, id, {
+          ...film.data,
+          renders: [...existingRenders, newRender]
         });
 
-        // Update local film state
         setFilm(prevFilm => ({
           ...prevFilm,
           data: {
@@ -476,47 +439,20 @@ function ViewFilm() {
   const refreshRenderHistory = async () => {
     setIsRefreshing(true);
     try {
-      // Get all filenames from renders
       const filenames = film.data.renders.map(render => render.filename);
-      
-      const response = await fetch(`${globalData.APIbaseUrl}/api/check-b2-files`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ filenames })
-      });
-      
-      const data = await response.json();
+      const data = await filmService.refreshB2Files(globalData.APIbaseUrl, filenames);
       
       if (data.results) {
-        // Update film data with new render info
         const updatedRenders = film.data.renders.map(render => {
           const matchingResult = data.results.find(r => r.filename === render.filename);
-          if (matchingResult) {
-            return {
-              ...render,
-              ...matchingResult
-            };
-          }
-          return render;
+          return matchingResult ? { ...render, ...matchingResult } : render;
         });
         
-        // Update film metadata
-        await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            data: {
-              ...film.data,
-              renders: updatedRenders
-            }
-          }),
+        await filmService.updateFilmData(globalData.APIbaseUrl, id, {
+          ...film.data,
+          renders: updatedRenders
         });
         
-        // Update local state
         setFilm(prevFilm => ({
           ...prevFilm,
           data: {
