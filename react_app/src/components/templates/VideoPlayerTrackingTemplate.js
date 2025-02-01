@@ -296,7 +296,7 @@ export const VideoPlayerTrackingTemplate = ({
   const hasReceptionAtFrame = (video, frame, player) => {
     const tagsForFrame = getTagsForFrame(video, frame);
     return tagsForFrame.some(tag => 
-      tag.name?.toLowerCase().includes(`${player.toLowerCase()} reception`)
+      tag.name?.toLowerCase().includes(`${player.toLowerCase()} catch`)
     );
   };
 
@@ -328,7 +328,7 @@ export const VideoPlayerTrackingTemplate = ({
         const tagsForFrame = getTagsForFrame(video, i);
         const isKeyFrame = tagsForFrame.some(tag => {
           const tagName = tag.name?.toLowerCase() || '';
-          return tagName.includes(`${player.toLowerCase()} reception`) || 
+          return tagName.includes(`${player.toLowerCase()} catch`) || 
                  tagName.includes(`${player.toLowerCase()} throw`);
         });
 
@@ -443,7 +443,7 @@ export const VideoPlayerTrackingTemplate = ({
   const getPlayerPossessionFrames = (video, maxFrame, currentPlayingClipRef) => {
     const possessionRanges = {};
     
-    // Scan through frames to find receptions and throws
+    // Scan through frames to find catches and throws
     for (let frame = currentPlayingClipRef.startFrame; frame <= maxFrame; frame++) {
       const tagsForFrame = getTagsForFrame(video, frame);
       
@@ -451,7 +451,7 @@ export const VideoPlayerTrackingTemplate = ({
       tagsForFrame.sort((a, b) => (a.frame || 0) - (b.frame || 0));
       tagsForFrame.forEach(tag => {
         const tagName = tag.name?.toLowerCase() || '';
-        const playerMatch = tagName.match(/(\w+)\s+(reception|throw)/);
+        const playerMatch = tagName.match(/(\w+)\s+(catch|throw)/);
         
         if (playerMatch) {
           const [_, player, action] = playerMatch;
@@ -459,14 +459,12 @@ export const VideoPlayerTrackingTemplate = ({
             possessionRanges[player] = [];
           }
 
-          if (action === 'reception') {
+          if (action === 'catch') {
             possessionRanges[player].push({ start: frame });
           } else if (action === 'throw') {
             // Find the last incomplete range and complete it
             const lastRange = possessionRanges[player][possessionRanges[player].length - 1];
-            if (lastRange && !lastRange.end) {
-              lastRange.end = frame;
-            }
+            if (lastRange && !lastRange.end) lastRange.end = frame;
           }
         }
       });
@@ -479,11 +477,11 @@ export const VideoPlayerTrackingTemplate = ({
   const getActiveThrow = (video, currentFrame) => {
     const tagsUpToFrame = [];
     
-    // Look ahead an extra 60 frames to find next reception
+    // Look ahead an extra 60 frames to find next catch
     for (let frame = 0; frame <= currentFrame + 60; frame++) {
       const tagsForFrame = getTagsForFrame(video, frame);
       tagsForFrame.forEach(tag => {
-        if (tag.name?.toLowerCase().includes('reception') || 
+        if (tag.name?.toLowerCase().includes('catch') || 
             tag.name?.toLowerCase().includes('throw')) {
           tagsUpToFrame.push({ ...tag, frame });
         }
@@ -511,10 +509,10 @@ export const VideoPlayerTrackingTemplate = ({
                 thrower: playerMatch[1],
                 bbox: throwerBox.bbox
               };
-              // Look ahead for next reception after this throw
+              // Look ahead for next catch after this throw
               for (let j = i + 1; j < tagsUpToFrame.length; j++) {
                 const nextTag = tagsUpToFrame[j];
-                if (nextTag.name?.toLowerCase().includes('reception')) {
+                if (nextTag.name?.toLowerCase().includes('catch')) {
                   const boxes = getBoxesForFrame(video, nextTag.frame);
                   const receiverBox = boxes.find(box => 
                     nextTag.name?.toLowerCase().includes(box.player.toLowerCase())
@@ -560,7 +558,7 @@ export const VideoPlayerTrackingTemplate = ({
     allTags.forEach(tag => {
       const tagName = tag.name?.toLowerCase() || '';
       const throwMatch = tagName.match(/(\w+)\s+throw/);
-      const catchMatch = tagName.match(/(\w+)\s+reception/);
+      const catchMatch = tagName.match(/(\w+)\s+catch/);
       
       if (throwMatch) {
         finalThrower = throwMatch[1];
@@ -581,10 +579,10 @@ export const VideoPlayerTrackingTemplate = ({
       const tags = getTagsForFrame(video, frame);
       tags.forEach(tag => {
         const tagName = tag.name?.toLowerCase() || '';
-        const receptionMatch = tagName.match(/(\w+)\s+reception/);
+        const catchMatch = tagName.match(/(\w+)\s+catch/);
         
-        if (receptionMatch) {
-          const player = receptionMatch[1];
+        if (catchMatch) {
+          const player = catchMatch[1];
           touches[player] = (touches[player] || 0) + 1;
         }
       });
@@ -609,11 +607,11 @@ export const VideoPlayerTrackingTemplate = ({
       const tags = getTagsForFrame(video, frame);
       tags.forEach(tag => {
         const tagName = tag.name?.toLowerCase() || '';
-        const receptionMatch = tagName.match(/(\w+)\s+reception/);
+        const catchMatch = tagName.match(/(\w+)\s+catch/);
         const throwMatch = tagName.match(/(\w+)\s+throw/);
         
-        if (receptionMatch) {
-          const player = receptionMatch[1];
+        if (catchMatch) {
+          const player = catchMatch[1];
           if (!ranges[player]) ranges[player] = [];
           ranges[player].push({ start: frame });
         }
