@@ -21,6 +21,7 @@ class RenderVideoRequest(BaseModel):
     props: dict
     output_file_name: str
     chunk_size: int = 500
+    composition_name: str = 'VideoFirstFiveSeconds'
 
 # Create a volume for video storage
 volume = modal.Volume.from_name("remotion-videos-vol", create_if_missing=True)
@@ -53,13 +54,6 @@ def render_video(render_params: RenderVideoRequest):
           print(f"Writing range to /tmp/range.txt: {props.get('range', '')}")
           f.write(str(props.get('range', '')))
 
-      # Write composition name to a temporary file
-      with open('/tmp/composition.txt', 'w') as f:
-          composition_name = props.get('composition_name', 'VideoFirstFiveSeconds')
-          print(f"Writing composition name to /tmp/composition.txt: {composition_name}")
-          f.write(composition_name)
-
-      
       # Check if file exists in B2
       bucket = authenticate_bucket("remotion-videos")
       files = list_files_matching_pattern(bucket, output_file_name)
@@ -92,6 +86,13 @@ def render_video(render_params: RenderVideoRequest):
 @modal.web_endpoint(method="POST")
 def split_render_request(render_params: RenderVideoRequest):
     import time
+    
+    # Write composition name to a temporary file
+    with open('/tmp/composition.txt', 'w') as f:
+        composition_name = render_params.composition_name
+        print(f"Writing composition name to /tmp/composition.txt: {composition_name}")
+        f.write(composition_name)
+
     # Add this function to download raw videos to the volume
     def download_raw_videos(video_urls: list[str]):
         import requests

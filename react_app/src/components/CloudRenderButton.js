@@ -6,6 +6,7 @@ export const CloudRenderButton = ({
   videos, 
   selectedTags, 
   outputFileName,
+  compositionName,
   onRenderStart,
   renderStatus 
 }) => {
@@ -47,9 +48,11 @@ export const CloudRenderButton = ({
         selectedVideos: Array.from(selectedVideos),
         videos: filteredVideosWithoutMetadata,
         selectedTags: Array.from(selectedTags),
-        useStaticFile: true
+        useStaticFile: true,
+        composition_name: compositionName
       },
       output_file_name: editedFileName,
+      composition_name: compositionName
     };
 
     try {
