@@ -534,3 +534,16 @@
 .setting-item input[type="range"] {
   width: 100px;
 }
+
+.setting-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+/* Move the checkbox label to the right */
+.setting-item input[type="checkbox"] + label {
+  order: 2;
+  margin-left: 4px;
+}

@@ -32,6 +32,11 @@ export const VideoPlayerTrackingSettings = {
     type: 'playerGroup',
     label: 'Player Settings',
     perPlayer: {
+      hidden: {
+        type: 'checkbox',
+        label: 'Hide Player',
+        default: false
+      },
       pathColor: {
         type: 'color',
         label: 'Path Color',
@@ -161,12 +166,14 @@ export const VideoPlayerTrackingTemplate = ({
 
   // Update getPlayerOpacity to handle numeric values properly
   const getPlayerOpacity = (player) => {
+    if (settings?.playerSettings?.[player]?.hidden) return 0;
     const opacity = settings?.playerSettings?.[player]?.pathOpacity;
     return typeof opacity === 'number' ? opacity : TRAIL_OPACITY;
   };
 
   // Add a helper function to get box opacity
   const getPlayerBoxOpacity = (player) => {
+    if (settings?.playerSettings?.[player]?.hidden) return 0;
     const opacity = settings?.playerSettings?.[player]?.boxOpacity;
     return typeof opacity === 'number' ? opacity : 1;
   };
@@ -401,6 +408,7 @@ export const VideoPlayerTrackingTemplate = ({
         }
       });
     }
+    console.log('possessionRanges', possessionRanges);
 
     return possessionRanges;
   };

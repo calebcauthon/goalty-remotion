@@ -815,15 +815,23 @@ function ViewFilm() {
                                               <label>{settingConfig.label}:</label>
                                               <input
                                                 type={settingConfig.type}
-                                                min={settingConfig.min ?? 0}
-                                                max={settingConfig.max ?? 1}
-                                                step={settingConfig.step ?? 0.1}
-                                                value={
-                                                  (clipSettings[clip.key]?.playerSettings?.[player]?.[settingKey] ?? settingConfig.default)
+                                                min={settingConfig.type === 'range' ? (settingConfig.min ?? 0) : undefined}
+                                                max={settingConfig.type === 'range' ? (settingConfig.max ?? 1) : undefined}
+                                                step={settingConfig.type === 'range' ? (settingConfig.step ?? 0.1) : undefined}
+                                                checked={settingConfig.type === 'checkbox' ? 
+                                                  (clipSettings[clip.key]?.playerSettings?.[player]?.[settingKey] ?? settingConfig.default) : 
+                                                  undefined
+                                                }
+                                                value={settingConfig.type !== 'checkbox' ?
+                                                  (clipSettings[clip.key]?.playerSettings?.[player]?.[settingKey] ?? settingConfig.default) :
+                                                  undefined
                                                 }
                                                 onChange={(e) => {
                                                   const value = settingConfig.type === 'range' ? 
-                                                    Number(e.target.value) : e.target.value;
+                                                    Number(e.target.value) : 
+                                                    settingConfig.type === 'checkbox' ?
+                                                      e.target.checked :
+                                                      e.target.value;
                                                   handleSettingChange(
                                                     clip.key, 
                                                     'playerSettings', 
