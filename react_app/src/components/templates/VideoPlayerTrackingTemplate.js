@@ -83,7 +83,7 @@ export const VideoPlayerTrackingTemplate = ({
   const STRETCH_COUNT = 15; // Only draw every Nth circle
   const LINE_THICKNESS = 4; // Width of the tracking line
   const TRAIL_OPACITY = 0.8; // Opacity for trail lines
-  const SMOOTHING_WEIGHT = 0.8; // 0 = no smoothing, 1 = maximum smoothing
+  const SMOOTHING_WEIGHT = .8; // 0 = no smoothing, 1 = maximum smoothing
   const RECEPTION_MARKER_SIZE = 2; // Diameter of the reception marker
 
   const THROW_HEIGHT_FACTOR = 0.3; // Controls how high the parabola goes
@@ -262,7 +262,7 @@ export const VideoPlayerTrackingTemplate = ({
 
     // Second pass: find all reception/throw frames and add their positions
     Object.keys(playerPaths).forEach(player => {
-      for (let i = 0; i <= currentClipFrame; i++) {
+      for (let i = currentPlayingClipRef.startFrame; i <= currentClipFrame; i++) {
         const tagsForFrame = getTagsForFrame(video, i);
         const isKeyFrame = tagsForFrame.some(tag => {
           const tagName = tag.name?.toLowerCase() || '';
@@ -319,6 +319,7 @@ export const VideoPlayerTrackingTemplate = ({
     segments.push(currentSegment);
 
     // Process each continuous segment
+    const smoothing_factor = SMOOTHING_WEIGHT;
     return segments
       .filter(segment => segment.length > 1)
       .map(segment => {
@@ -334,10 +335,10 @@ export const VideoPlayerTrackingTemplate = ({
           const [prevX, prevY] = prev.split(',').map(Number);
           const [nextX, nextY] = next.split(',').map(Number);
           
-          const cp1x = prevX + (x - prevX) * (1 - SMOOTHING_WEIGHT);
-          const cp1y = prevY + (y - prevY) * (1 - SMOOTHING_WEIGHT);
-          const cp2x = x - (nextX - x) * SMOOTHING_WEIGHT;
-          const cp2y = y - (nextY - y) * SMOOTHING_WEIGHT;
+          const cp1x = prevX + (x - prevX) * (1 - smoothing_factor);
+          const cp1y = prevY + (y - prevY) * (1 - smoothing_factor);
+          const cp2x = x - (nextX - x) * smoothing_factor;
+          const cp2y = y - (nextY - y) * smoothing_factor;
           
           pathD += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${x},${y}`;
         }
@@ -377,11 +378,11 @@ export const VideoPlayerTrackingTemplate = ({
     return receptionPoints;
   };
 
-  const getPlayerPossessionFrames = (video, maxFrame) => {
+  const getPlayerPossessionFrames = (video, maxFrame, currentPlayingClipRef) => {
     const possessionRanges = {};
     
     // Scan through frames to find receptions and throws
-    for (let frame = 0; frame <= maxFrame; frame++) {
+    for (let frame = currentPlayingClipRef.startFrame; frame <= maxFrame; frame++) {
       const tagsForFrame = getTagsForFrame(video, frame);
       
       // Sort tags by frame first
@@ -408,7 +409,6 @@ export const VideoPlayerTrackingTemplate = ({
         }
       });
     }
-    console.log('possessionRanges', possessionRanges);
 
     return possessionRanges;
   };
@@ -580,7 +580,6 @@ export const VideoPlayerTrackingTemplate = ({
     return possessionTimes;
   };
 
-  //console.log('width and height', { width, height });
   React.useEffect(() => {
     onFrameUpdate(frame);
   }, [frame, onFrameUpdate]);
@@ -590,6 +589,27 @@ export const VideoPlayerTrackingTemplate = ({
       console.log('Current playing clip in template:', currentPlayingClipRef);
     }
   }, [currentPlayingClipRef]);
+
+  // Split segments into continuous possession groups
+  const splitIntoContinuousGroups = (segments, predicate) => {
+    const groups = [];
+    let currentGroup = [];
+
+    segments.forEach((segment, index) => {
+      if (predicate(segment)) {
+        currentGroup.push(segment);
+        // If this is the last segment or next segment doesn't match predicate
+        if (index === segments.length - 1 || !predicate(segments[index + 1])) {
+          if (currentGroup.length > 0) {
+            groups.push([...currentGroup]);
+            currentGroup = [];
+          }
+        }
+      }
+    });
+
+    return groups;
+  };
 
   return (
     <AbsoluteFill>
@@ -626,7 +646,6 @@ export const VideoPlayerTrackingTemplate = ({
             width: metadata.width || 1920,
             height: metadata.height || 1080
           };
-          //console.log('📏 Original video dimensions', originalSize);
         } catch (error) {
           console.warn('⚠️ Could not parse video metadata, using default dimensions');
         }
@@ -737,7 +756,7 @@ export const VideoPlayerTrackingTemplate = ({
                         return `${scaledPos.x + scaledPos.width/2},${scaledPos.y + scaledPos.height}`;
                       });
 
-                      const possessionRanges = getPlayerPossessionFrames(video, currentClipFrame);
+                      const possessionRanges = getPlayerPossessionFrames(video, currentClipFrame, currentPlayingClipRef);
                       const playerPossessions = possessionRanges[player] || [];
 
                       // Split path into segments based on possession
@@ -747,7 +766,7 @@ export const VideoPlayerTrackingTemplate = ({
                           range.start <= frame && (!range.end || frame <= range.end)
                           && frame >= currentPlayingClipRef.startFrame && frame <= currentPlayingClipRef.endFrame
                         );
-                        return { point, hasPossession };
+                        return { point, hasPossession, frame, player, playerPossessions };
                       });
 
                       return pathPoints.length > 0 ? (
@@ -762,22 +781,35 @@ export const VideoPlayerTrackingTemplate = ({
                               pointerEvents: 'none'
                             }}
                           >
-                            {/* Regular path */}
-                            <path
-                              d={smoothPath(segments.filter(s => !s.hasPossession).map(s => s.point))}
-                              stroke={getPlayerColor(player)}
-                              strokeWidth={LINE_THICKNESS}
-                              fill="none"
-                              opacity={getPlayerOpacity(player)}
-                            />
-                            {/* Possession path */}
-                            <path
-                              d={smoothPath(segments.filter(s => s.hasPossession).map(s => s.point))}
-                              stroke={"white"}
-                              strokeWidth={POSSESSION_LINE_THICKNESS}
-                              fill="none"
-                              opacity={getPlayerOpacity(player) * 1.2}
-                            />
+                            {/* Regular paths - draw each continuous non-possession segment separately */}
+                            {splitIntoContinuousGroups(segments, s => !s.hasPossession)
+                              .filter(group => group.length > 1)
+                              .map((nonPossessionGroup, idx) => (
+                                <path
+                                  key={`regular-${idx}`}
+                                  d={smoothPath(nonPossessionGroup.map(s => s.point))}
+                                  stroke={getPlayerColor(player)}
+                                  strokeWidth={LINE_THICKNESS}
+                                  fill="none"
+                                  opacity={getPlayerOpacity(player)}
+                                />
+                              ))
+                            }
+                            
+                            {/* Possession paths - draw each continuous possession segment separately */}
+                            {splitIntoContinuousGroups(segments, s => s.hasPossession)
+                              .filter(group => group.length > 1)
+                              .map((possessionGroup, idx) => (
+                                <path
+                                  key={`possession-${idx}`}
+                                  d={smoothPath(possessionGroup.map(s => s.point))}
+                                  stroke={"white"}
+                                  strokeWidth={POSSESSION_LINE_THICKNESS}
+                                  fill="none"
+                                  opacity={getPlayerOpacity(player) * 1.2}
+                                />
+                              ))
+                            }
                           </svg>
                           {data.positions.filter(pos => 
                             data.receptionFrames.includes(pos.frame)
