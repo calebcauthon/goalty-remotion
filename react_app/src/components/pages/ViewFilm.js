@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from 'components/pages/Layout';
 import { Player } from '@remotion/player';
@@ -97,7 +97,6 @@ function ViewFilm() {
   const [currentPlayingClip, setCurrentPlayingClip] = useState(null);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [currentPlayingClipRef, setCurrentPlayingClipRef] = useState(null);
-  const [clipSettings, setClipSettings] = useState({});
 
   const fetchFilm = async () => {
     try {
@@ -489,15 +488,44 @@ function ViewFilm() {
     };
   }, [previewPending, previewStartFrame]);
 
-  const handleSettingChange = (clipKey, setting, value) => {
-    setClipSettings(prev => ({
-      ...prev,
-      [clipKey]: {
-        ...(prev[clipKey] || {}),
-        [setting]: value
+  const saveClipSettings = useCallback(async (clipKey, settings) => {
+    try {
+      const updatedData = {
+        ...film.data,
+        clipSettings: {
+          ...(film.data?.clipSettings || {}),
+          [clipKey]: settings
+        }
+      };
+
+      const response = await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ data: updatedData })
+      });
+
+      if (response.ok) {
+        setFilm(prev => ({
+          ...prev,
+          data: updatedData
+        }));
       }
-    }));
-  };
+    } catch (error) {
+      console.error('Failed to save clip settings:', error);
+    }
+  }, [film?.data, globalData.APIbaseUrl, id]);
+
+  const handleSettingChange = useCallback((clipKey, setting, value) => {
+    console.log('handleSettingChange', { clipKey, setting, value });
+    const newSettings = {
+      ...(film.data?.clipSettings?.[clipKey] || {}),
+      [setting]: value
+    };
+    
+    saveClipSettings(clipKey, newSettings);
+  }, [film?.data?.clipSettings, saveClipSettings]);
 
   if (!film) {
     return <Layout>Loading...</Layout>;
@@ -685,7 +713,7 @@ function ViewFilm() {
                             <ClipSettings
                               clip={clip}
                               videos={videos}
-                              clipSettings={clipSettings}
+                              clipSettings={film.data?.clipSettings || {}}
                               onSettingChange={handleSettingChange}
                             />
                           </>
@@ -713,7 +741,7 @@ function ViewFilm() {
                   onFrameUpdate: handleFrameUpdate,
                   width: 1280,
                   height: 720,
-                  settings: clipSettings
+                  settings: film.data?.clipSettings || {}
                 }}
                 durationInFrames={calculateDuration()}
                 compositionWidth={1280}
@@ -733,7 +761,7 @@ function ViewFilm() {
                 selectedTags={selectedTags}
                 outputFileName={`${film.name.replace(/\s+/g, '_')}.mp4`}
                 compositionName={selectedTemplate}
-                settings={clipSettings}
+                settings={film.data?.clipSettings || {}}
                 onRenderStart={(filename) => {
                   setRenderStatus('rendering');
                   setRenderFilename(filename);

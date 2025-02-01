@@ -158,12 +158,13 @@ export const VideoPlayerTrackingTemplate = ({
   hoveredDetectionIndex,
   width=1920,
   height=1080,
-  settings={}
+  settings={},
+  filmId // Add filmId prop
 }) => {
   const tagArray = useMemo(() => Array.from(selectedTags), []);
   const frame = useCurrentFrame();
   // Use provided currentPlayingClipRef or determine it from frame
-  const effectiveCurrentClipRef = getCurrentClipFromFrame(frame, selectedTags);
+  const effectiveCurrentClipRef = useMemo(() => getCurrentClipFromFrame(frame, selectedTags), [frame, selectedTags]);
 
   const TRAIL_LENGTH = 1000; // Number of frames to show in trail
   const STRETCH_COUNT = 15; // Only draw every Nth circle
@@ -248,7 +249,8 @@ export const VideoPlayerTrackingTemplate = ({
 
   useEffect(() => {
     if (effectiveCurrentClipRef) {
-      setCurrentSettings(settings[effectiveCurrentClipRef.key] || {});
+      const newSettings = settings[effectiveCurrentClipRef.key] || {};
+      setCurrentSettings(newSettings);
     } else {
       setCurrentSettings({});
     }
