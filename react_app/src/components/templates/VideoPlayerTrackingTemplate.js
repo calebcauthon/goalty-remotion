@@ -2,7 +2,26 @@ import React, { useMemo, useEffect } from 'react';
 import { AbsoluteFill, Video, Sequence, useCurrentFrame, staticFile } from 'remotion';
 
 const TRAIL_LENGTH = 1000; // Number of frames to show in trail
-const STRETCH_COUNT = 5; // Only draw every Nth circle
+const STRETCH_COUNT = 15; // Only draw every Nth circle
+const LINE_THICKNESS = 4; // Width of the tracking line
+const TRAIL_OPACITY = 0.8; // Opacity for trail lines
+const SMOOTHING_WEIGHT = 0.8; // 0 = no smoothing, 1 = maximum smoothing
+
+// Color palette for different players
+const PLAYER_COLORS = {
+  'christian': '#FF0000', // Red
+  'Player 2': '#00FF00', // Green
+  'Player 3': '#0000FF', // Blue
+  'Player 4': '#FFA500', // Orange
+  'Player 5': '#800080', // Purple
+  'aaron': '#00FFFF', // Cyan
+  'default': '#FF0000'   // Fallback color
+};
+
+// Helper to get color for a player
+const getPlayerColor = (player) => {
+  return PLAYER_COLORS[player] || PLAYER_COLORS.default;
+};
 
 export const calculatePlayerTrackingDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
@@ -87,20 +106,49 @@ const scaleBox = (box, originalSize, containerSize) => {
 };
 
 const getTrailPositions = (video, currentClipFrame) => {
-  const positions = [];
-  for (let i = 0; i < TRAIL_LENGTH; i += STRETCH_COUNT) { // Skip frames based on STRETCH_COUNT
-    const frameToCheck = currentClipFrame - i;
-    const boxes = getBoxesForFrame(video, frameToCheck);
+  // Group positions by player
+  const playerPaths = {};
+  
+  for (let i = 0; i <= currentClipFrame; i += STRETCH_COUNT) {
+    const boxes = getBoxesForFrame(video, i);
     boxes.forEach(box => {
-      positions.push({
-        player: box.player,
-        frame: frameToCheck,
-        bbox: box.bbox,
-        opacity: 1 - (i / TRAIL_LENGTH)
+      if (!playerPaths[box.player]) {
+        playerPaths[box.player] = [];
+      }
+      playerPaths[box.player].push({
+        frame: i,
+        bbox: box.bbox
       });
     });
   }
-  return positions;
+  return playerPaths;
+};
+
+const smoothPath = (points) => {
+  if (points.length < 2) return '';
+  
+  const [first, ...rest] = points;
+  let pathD = `M ${first}`;
+  
+  for (let i = 0; i < rest.length; i++) {
+    const current = rest[i];
+    const prev = i === 0 ? first : rest[i - 1];
+    const next = rest[i + 1] || current;
+    
+    // Calculate control points
+    const [x, y] = current.split(',').map(Number);
+    const [prevX, prevY] = prev.split(',').map(Number);
+    const [nextX, nextY] = next.split(',').map(Number);
+    
+    const cp1x = prevX + (x - prevX) * (1 - SMOOTHING_WEIGHT);
+    const cp1y = prevY + (y - prevY) * (1 - SMOOTHING_WEIGHT);
+    const cp2x = x - (nextX - x) * SMOOTHING_WEIGHT;
+    const cp2y = y - (nextY - y) * SMOOTHING_WEIGHT;
+    
+    pathD += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${x},${y}`;
+  }
+  
+  return pathD;
 };
 
 export const VideoPlayerTrackingTemplate = ({ 
@@ -241,24 +289,33 @@ export const VideoPlayerTrackingTemplate = ({
                 })}
 
                 {/* Render trail points */}
-                {getTrailPositions(video, currentClipFrame).map((pos, i) => {
-                  const scaledPos = scaleBox({ bbox: pos.bbox }, originalSize, containerSize);
-                  return (
-                    <div
-                      key={`trail-${pos.player}-${pos.frame}`}
+                {Object.entries(getTrailPositions(video, currentClipFrame)).map(([player, positions]) => {
+                  const pathPoints = positions.map(pos => {
+                    const scaledPos = scaleBox({ bbox: pos.bbox }, originalSize, containerSize);
+                    return `${scaledPos.x + scaledPos.width/2},${scaledPos.y + scaledPos.height}`;
+                  }).join(' L ');
+
+                  return pathPoints.length > 0 ? (
+                    <svg
+                      key={`trail-${player}`}
                       style={{
                         position: 'absolute',
-                        left: `${scaledPos.x + scaledPos.width/2 - 4}px`,
-                        top: `${scaledPos.y + scaledPos.height - 4}px`,
-                        width: '8px',
-                        height: '8px',
-                        background: 'red',
-                        borderRadius: '50%',
-                        opacity: pos.opacity,
+                        left: 0,
+                        top: 0,
+                        width: '100%',
+                        height: '100%',
                         pointerEvents: 'none'
                       }}
-                    />
-                  );
+                    >
+                      <path
+                        d={smoothPath(pathPoints.split(' L '))}
+                        stroke={getPlayerColor(player)}
+                        strokeWidth={LINE_THICKNESS}
+                        fill="none"
+                        opacity={TRAIL_OPACITY}
+                      />
+                    </svg>
+                  ) : null;
                 })}
 
                 {/* Player Tracking Text */}
