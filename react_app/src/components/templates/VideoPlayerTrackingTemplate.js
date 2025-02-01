@@ -1,5 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { AbsoluteFill, Video, Sequence, useCurrentFrame, staticFile } from 'remotion';
+
+const TRAIL_LENGTH = 1000; // Number of frames to show in trail
+const STRETCH_COUNT = 5; // Only draw every Nth circle
 
 export const calculatePlayerTrackingDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
@@ -83,6 +86,23 @@ const scaleBox = (box, originalSize, containerSize) => {
   };
 };
 
+const getTrailPositions = (video, currentClipFrame) => {
+  const positions = [];
+  for (let i = 0; i < TRAIL_LENGTH; i += STRETCH_COUNT) { // Skip frames based on STRETCH_COUNT
+    const frameToCheck = currentClipFrame - i;
+    const boxes = getBoxesForFrame(video, frameToCheck);
+    boxes.forEach(box => {
+      positions.push({
+        player: box.player,
+        frame: frameToCheck,
+        bbox: box.bbox,
+        opacity: 1 - (i / TRAIL_LENGTH)
+      });
+    });
+  }
+  return positions;
+};
+
 export const VideoPlayerTrackingTemplate = ({ 
   selectedVideos, 
   videos, 
@@ -118,13 +138,7 @@ export const VideoPlayerTrackingTemplate = ({
         
         // Get boxes for the current frame
         const boxes = getBoxesForFrame(video, currentClipFrame);
-
-        console.log('📼 Processing frame', { 
-          currentClipFrame,
-          totalBoxes: boxes.length,
-          videoName: video.name 
-        });
-
+        
         // Get original video dimensions from metadata
         let originalSize = { width: 1920, height: 1080 }; // Default fallback
         try {
@@ -194,6 +208,17 @@ export const VideoPlayerTrackingTemplate = ({
                         boxSizing: 'border-box',
                         pointerEvents: 'none'
                       }} />
+                      {/* Red circle at bottom middle */}
+                      <div style={{
+                        position: 'absolute',
+                        left: `${scaledBox.x + scaledBox.width/2 - 4}px`,
+                        top: `${scaledBox.y + scaledBox.height - 4}px`,
+                        width: '8px',
+                        height: '8px',
+                        background: 'red',
+                        borderRadius: '50%',
+                        pointerEvents: 'none'
+                      }} />
                       <div style={{
                         position: 'absolute',
                         left: `${scaledBox.x}px`,
@@ -209,6 +234,27 @@ export const VideoPlayerTrackingTemplate = ({
                         {box.player}
                       </div>
                     </div>
+                  );
+                })}
+
+                {/* Render trail points */}
+                {getTrailPositions(video, currentClipFrame).map((pos, i) => {
+                  const scaledPos = scaleBox({ bbox: pos.bbox }, originalSize, containerSize);
+                  return (
+                    <div
+                      key={`trail-${pos.player}-${pos.frame}`}
+                      style={{
+                        position: 'absolute',
+                        left: `${scaledPos.x + scaledPos.width/2 - 4}px`,
+                        top: `${scaledPos.y + scaledPos.height - 4}px`,
+                        width: '8px',
+                        height: '8px',
+                        background: 'red',
+                        borderRadius: '50%',
+                        opacity: pos.opacity,
+                        pointerEvents: 'none'
+                      }}
+                    />
                   );
                 })}
 
