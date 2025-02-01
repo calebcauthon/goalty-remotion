@@ -62,11 +62,27 @@ export const VideoPlayerTrackingSettings = {
   },
   stretchCount: {
     type: 'range',
-    label: 'Trail Detail',
+    label: 'Path Detail %',
+    min: 0,
+    max: 100,
+    step: 1,
+    default: 30
+  },
+  smoothingFactor: {
+    type: 'range',
+    label: 'Path Smoothing',
+    min: 0,
+    max: 100,
+    step: 1,
+    default: 70  // Maps to 0.7
+  },
+  distanceThreshold: {
+    type: 'range',
+    label: 'Point Distance %',
     min: 1,
     max: 100,
     step: 1,
-    default: 15
+    default: 10  // 10% of screen size
   }
 };
 
@@ -108,6 +124,19 @@ const getCurrentClipFromFrame = (frame, selectedTags) => {
   }
 
   return null;
+};
+
+// Add this helper function to convert linear slider value to exponential percentage
+const getExponentialPercentage = (linearValue) => {
+  // Convert 0-100 to 0-1
+  const x = linearValue / 100;
+  
+  // Exponential curve: y = (e^(5x) - 1) / (e^5 - 1)
+  // This gives a nice curve that's more granular at lower values
+  const exponentialValue = (Math.exp(5 * x) - 1) / (Math.exp(5) - 1);
+  
+  // Convert back to percentage (1-100)
+  return Math.max(1, Math.min(100, exponentialValue * 100));
 };
 
 export const VideoPlayerTrackingTemplate = ({ 
@@ -314,137 +343,175 @@ export const VideoPlayerTrackingTemplate = ({
     return currentSettings.stretchCount ?? VideoPlayerTrackingSettings.stretchCount.default;
   };
 
-  // Update getTrailPositions to use the dynamic stretch count
+  // Update getTrailPositions to use exponential percentage
   const getTrailPositions = (video, currentClipFrame, currentPlayingClipRef) => {
     const playerPaths = {};
     const frameSet = new Set();
-    const stretchCount = getStretchCount();
     
-    // Helper to add frame data to paths
-    const addFrameData = (frame) => {
-      const boxes = getBoxesForFrame(video, frame);
-      boxes.forEach(box => {
-        if (!playerPaths[box.player]) {
-          playerPaths[box.player] = {
-            positions: [],
-            receptionFrames: []
-          };
-        }
-        playerPaths[box.player].positions.push({
-          frame,
-          bbox: box.bbox
+    // Get the linear value from settings (0-100)
+    const linearValue = currentSettings?.stretchCount ?? VideoPlayerTrackingSettings.stretchCount.default;
+    
+    // Convert to exponential percentage
+    const detailPercentage = getExponentialPercentage(linearValue);
+
+    // Helper to collect all frames for a player
+    const collectAllFrames = (startFrame, endFrame) => {
+      const frames = [];
+      for (let frame = startFrame; frame <= endFrame; frame++) {
+        const boxes = getBoxesForFrame(video, frame);
+        boxes.forEach(box => {
+          if (!playerPaths[box.player]) {
+            playerPaths[box.player] = {
+              positions: [],
+              receptionFrames: []
+            };
+          }
+          frames.push({
+            frame,
+            player: box.player,
+            bbox: box.bbox
+          });
         });
-        frameSet.add(frame);
-      });
+      }
+      return frames;
     };
 
-    // Always add first frame
-    addFrameData(currentPlayingClipRef.startFrame);
-    
-    // Collect paths at stretchCount intervals
-    for (let i = currentPlayingClipRef.startFrame + stretchCount; i <= currentClipFrame; i += stretchCount) {
-      addFrameData(i);
-    }
+    // Collect all frames first
+    const allFrames = collectAllFrames(currentPlayingClipRef.startFrame, currentClipFrame);
 
-    // Always add current frame if not already added
-    if (!frameSet.has(currentClipFrame)) {
-      addFrameData(currentClipFrame);
-    }
+    // Group frames by player
+    const framesByPlayer = {};
+    allFrames.forEach(frame => {
+      if (!framesByPlayer[frame.player]) {
+        framesByPlayer[frame.player] = [];
+      }
+      framesByPlayer[frame.player].push(frame);
+    });
 
-    // Rest of the function remains the same...
-    Object.keys(playerPaths).forEach(player => {
-      for (let i = currentPlayingClipRef.startFrame; i <= currentClipFrame; i++) {
-        const tagsForFrame = getTagsForFrame(video, i);
+    // For each player, select frames based on percentage
+    Object.entries(framesByPlayer).forEach(([player, frames]) => {
+      frames.sort((a, b) => a.frame - b.frame);
+      
+      // Always include start and current frame
+      const mustIncludeFrames = new Set([
+        currentPlayingClipRef.startFrame,
+        currentClipFrame
+      ]);
+
+      // Calculate how many points to keep based on percentage
+      const totalPoints = frames.length;
+      const keepCount = Math.max(2, Math.ceil(totalPoints * (detailPercentage / 100)));
+      const step = Math.max(1, Math.floor(totalPoints / keepCount));
+
+      // Select frames
+      const selectedFrames = new Set();
+      
+      // Add must-include frames
+      mustIncludeFrames.forEach(frame => {
+        const closest = frames.reduce((prev, curr) => 
+          Math.abs(curr.frame - frame) < Math.abs(prev.frame - frame) ? curr : prev
+        );
+        selectedFrames.add(closest.frame);
+      });
+
+      // Add regularly spaced frames
+      for (let i = 0; i < frames.length; i += step) {
+        selectedFrames.add(frames[i].frame);
+      }
+
+      // Add key events (catches/throws)
+      frames.forEach(frameData => {
+        const tagsForFrame = getTagsForFrame(video, frameData.frame);
         const isKeyFrame = tagsForFrame.some(tag => {
           const tagName = tag.name?.toLowerCase() || '';
           return tagName.includes(`${player.toLowerCase()} catch`) || 
                  tagName.includes(`${player.toLowerCase()} throw`);
         });
 
-        if (isKeyFrame && !frameSet.has(i)) {
-          const boxes = getBoxesForFrame(video, i);
-          const playerBox = boxes.find(box => box.player === player);
-          if (playerBox) {
-            playerPaths[player].positions.push({
-              frame: i,
-              bbox: playerBox.bbox
-            });
-            frameSet.add(i);
-          }
+        if (isKeyFrame) {
+          selectedFrames.add(frameData.frame);
         }
+      });
 
-        if (hasReceptionAtFrame(video, i, player)) {
-          playerPaths[player].receptionFrames.push(i);
-        }
-      }
-      playerPaths[player].positions.sort((a, b) => a.frame - b.frame);
+      // Convert selected frames back to positions
+      const selectedPositions = frames
+        .filter(f => selectedFrames.has(f.frame))
+        .sort((a, b) => a.frame - b.frame);
+
+      playerPaths[player] = {
+        positions: selectedPositions.map(f => ({
+          frame: f.frame,
+          bbox: f.bbox
+        })),
+        receptionFrames: frames
+          .filter(f => hasReceptionAtFrame(video, f.frame, player))
+          .map(f => f.frame)
+      };
     });
 
     return playerPaths;
   };
 
+  // Add helper functions to get smoothing settings
+  const getSmoothingFactor = () => {
+    if (!currentSettings) return 0.7;
+    const value = currentSettings.smoothingFactor ?? VideoPlayerTrackingSettings.smoothingFactor.default;
+    return value / 100;
+  };
+
+  const getDistanceThreshold = () => {
+    if (!currentSettings) return 0.1;
+    const value = currentSettings.distanceThreshold ?? VideoPlayerTrackingSettings.distanceThreshold.default;
+    return value / 100;
+  };
+
+  // Update smoothPath to use the new configurable values
   const smoothPath = (points) => {
     if (points.length < 2) return '';
     
-    // Find continuous segments with a more generous distance threshold
-    let segments = [];
-    let currentSegment = [points[0]];
+    // Use configurable distance threshold
+    const threshold = Math.max(width, height) * getDistanceThreshold();
     
+    // Create a single path with distance-based segmentation
+    const filteredPoints = [points[0]];
     for (let i = 1; i < points.length; i++) {
       const current = points[i];
-      const prev = points[i - 1];
+      const prev = filteredPoints[filteredPoints.length - 1];
       
       const [prevX, prevY] = prev.split(',').map(Number);
       const [currX, currY] = current.split(',').map(Number);
       const distance = Math.sqrt(Math.pow(currX - prevX, 2) + Math.pow(currY - prevY, 2));
       
-      // Increase threshold and use relative to screen size
-      const threshold = Math.max(width, height) * 0.2; // 20% of screen size
-      
       if (distance < threshold) {
-        currentSegment.push(current);
-      } else {
-        // Instead of creating a new segment, add interpolated points
-        const steps = Math.ceil(distance / threshold);
-        for (let step = 1; step < steps; step++) {
-          const t = step / steps;
-          const interpX = prevX + (currX - prevX) * t;
-          const interpY = prevY + (currY - prevY) * t;
-          currentSegment.push(`${interpX},${interpY}`);
-        }
-        currentSegment.push(current);
+        filteredPoints.push(current);
       }
     }
-    segments.push(currentSegment);
 
-    // Process each continuous segment
-    const smoothing_factor = SMOOTHING_WEIGHT;
-    return segments
-      .filter(segment => segment.length > 1)
-      .map(segment => {
-        const [first, ...rest] = segment;
-        let pathD = `M ${first}`;
-        
-        for (let i = 0; i < rest.length; i++) {
-          const current = rest[i];
-          const prev = i === 0 ? first : rest[i - 1];
-          const next = rest[i + 1] || current;
-          
-          const [x, y] = current.split(',').map(Number);
-          const [prevX, prevY] = prev.split(',').map(Number);
-          const [nextX, nextY] = next.split(',').map(Number);
-          
-          // Adjust control points to create smoother transitions
-          const cp1x = prevX + (x - prevX) * (1 - smoothing_factor);
-          const cp1y = prevY + (y - prevY) * (1 - smoothing_factor);
-          const cp2x = x - (nextX - x) * smoothing_factor;
-          const cp2y = y - (nextY - y) * smoothing_factor;
-          
-          pathD += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${x},${y}`;
-        }
-        return pathD;
-      })
-      .join(' ');
+    // Use configurable smoothing factor
+    const smoothing_factor = getSmoothingFactor();
+    
+    // Create a single smooth path
+    const [first, ...rest] = filteredPoints;
+    let pathD = `M ${first}`;
+    
+    for (let i = 0; i < rest.length; i++) {
+      const current = rest[i];
+      const prev = i === 0 ? first : rest[i - 1];
+      const next = rest[i + 1] || current;
+      
+      const [x, y] = current.split(',').map(Number);
+      const [prevX, prevY] = prev.split(',').map(Number);
+      const [nextX, nextY] = next.split(',').map(Number);
+      
+      const cp1x = prevX + (x - prevX) * (1 - smoothing_factor);
+      const cp1y = prevY + (y - prevY) * (1 - smoothing_factor);
+      const cp2x = x - (nextX - x) * smoothing_factor;
+      const cp2y = y - (nextY - y) * smoothing_factor;
+      
+      pathD += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${x},${y}`;
+    }
+    
+    return pathD;
   };
 
   // Add new constants
@@ -942,35 +1009,15 @@ export const VideoPlayerTrackingTemplate = ({
                               pointerEvents: 'none'
                             }}
                           >
-                            {/* Regular paths - draw each continuous non-possession segment separately */}
-                            {splitIntoContinuousGroups(segments, s => !s.hasPossession)
-                              .filter(group => group.length > 1)
-                              .map((nonPossessionGroup, idx) => (
-                                <path
-                                  key={`regular-${idx}`}
-                                  d={smoothPath(nonPossessionGroup.map(s => s.point))}
-                                  stroke={getPlayerColor(player)}
-                                  strokeWidth={LINE_THICKNESS}
-                                  fill="none"
-                                  opacity={getPlayerOpacity(player)}
-                                />
-                              ))
-                            }
-                            
-                            {/* Possession paths - draw each continuous possession segment separately */}
-                            {splitIntoContinuousGroups(segments, s => s.hasPossession)
-                              .filter(group => group.length > 1)
-                              .map((possessionGroup, idx) => (
-                                <path
-                                  key={`possession-${idx}`}
-                                  d={smoothPath(possessionGroup.map(s => s.point))}
-                                  stroke={getPlayerColor(player)}
-                                  strokeWidth={POSSESSION_LINE_THICKNESS}
-                                  fill="none"
-                                  opacity={getPlayerOpacity(player) * 1.2}
-                                />
-                              ))
-                            }
+                            {/* Regular paths */}
+                            <path
+                              key={`trail-${player}`}
+                              d={smoothPath(pathPoints)}
+                              stroke={getPlayerColor(player)}
+                              strokeWidth={LINE_THICKNESS}
+                              fill="none"
+                              opacity={getPlayerOpacity(player)}
+                            />
                           </svg>
                           {data.positions.filter(pos => 
                             data.receptionFrames.includes(pos.frame)
