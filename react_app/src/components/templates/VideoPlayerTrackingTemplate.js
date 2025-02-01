@@ -112,8 +112,8 @@ export const VideoPlayerTrackingTemplate = ({
   detections=[],
   frameImage=null,
   hoveredDetectionIndex,
-  width=1280,
-  height=720
+  width=1920,
+  height=1080
 }) => {
   const tagArray = useMemo(() => Array.from(selectedTags), []);
   const frame = useCurrentFrame();

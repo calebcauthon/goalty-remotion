@@ -36,8 +36,8 @@ export const Root: React.FC = () => {
       />
       <Composition
         id="VideoPlayerTracking"
-        width={1980}
-        height={1020}
+        width={1920}
+        height={1080}
         fps={30}
         durationInFrames={30 * 20}
         component={VideoPlayerTrackingTemplate}

@@ -771,7 +771,9 @@ function ViewFilm() {
                   selectedVideos,
                   videos,
                   selectedTags,
-                  onFrameUpdate: handleFrameUpdate
+                  onFrameUpdate: handleFrameUpdate,
+                  width: 1280,
+                  height: 720
                 }}
                 durationInFrames={calculateDuration()}
                 compositionWidth={1280}

@@ -25,6 +25,10 @@ const require = createRequire(import.meta.url);
   console.log(`Bundled!`);
   console.log(`Selecting composition...`);
 
+  inputProps.width = 1920;
+  inputProps.height = 1080;
+  console.log(`Setting width and height to 1920 and 1080`);
+
   const composition = await selectComposition({
     serveUrl: bundled,
     id: compositionName,
