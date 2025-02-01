@@ -442,6 +442,75 @@ export const VideoPlayerTrackingTemplate = ({
     return { finalThrower, finalCatcher };
   };
 
+  // Add this new function near other preprocessing functions
+  const getPlayerTouches = (video, startFrame, endFrame) => {
+    const touches = {};
+    
+    for (let frame = startFrame; frame <= endFrame; frame++) {
+      const tags = getTagsForFrame(video, frame);
+      tags.forEach(tag => {
+        const tagName = tag.name?.toLowerCase() || '';
+        const receptionMatch = tagName.match(/(\w+)\s+reception/);
+        
+        if (receptionMatch) {
+          const player = receptionMatch[1];
+          touches[player] = (touches[player] || 0) + 1;
+        }
+      });
+    }
+
+    // Sort by number of touches descending
+    return Object.entries(touches)
+      .sort(([,a], [,b]) => b - a)
+      .reduce((acc, [player, count]) => ({
+        ...acc,
+        [player]: count
+      }), {});
+  };
+
+  // Add this new function near other preprocessing functions
+  const getPlayerPossessionTimes = (video, startFrame, endFrame) => {
+    const possessionTimes = {};
+    
+    // First pass - collect all possession ranges
+    const ranges = {};
+    for (let frame = startFrame; frame <= endFrame; frame++) {
+      const tags = getTagsForFrame(video, frame);
+      tags.forEach(tag => {
+        const tagName = tag.name?.toLowerCase() || '';
+        const receptionMatch = tagName.match(/(\w+)\s+reception/);
+        const throwMatch = tagName.match(/(\w+)\s+throw/);
+        
+        if (receptionMatch) {
+          const player = receptionMatch[1];
+          if (!ranges[player]) ranges[player] = [];
+          ranges[player].push({ start: frame });
+        }
+        
+        if (throwMatch) {
+          const player = throwMatch[1];
+          if (ranges[player]?.length) {
+            const lastRange = ranges[player][ranges[player].length - 1];
+            if (!lastRange.end) lastRange.end = frame;
+          }
+        }
+      });
+    }
+
+    // Calculate total possession time for each player
+    Object.entries(ranges).forEach(([player, playerRanges]) => {
+      const totalFrames = playerRanges.reduce((total, range) => {
+        // If no throw was found, use the clip end
+        const end = range.end || endFrame;
+        return total + (end - range.start);
+      }, 0);
+      
+      possessionTimes[player] = (totalFrames / 30).toFixed(1); // Convert to seconds
+    });
+
+    return possessionTimes;
+  };
+
   //console.log('width and height', { width, height });
   React.useEffect(() => {
     onFrameUpdate(frame);
@@ -777,21 +846,55 @@ export const VideoPlayerTrackingTemplate = ({
                   flexDirection: 'column',
                   alignItems: 'flex-end'
                 }}>
-                  <div>Player Tracking</div>
+                  <div>Summary</div>
                   {(() => {
                     const { finalThrower, finalCatcher } = getPlaySequence(
                       video, 
                       parseInt(tagInfo.startFrame, 10),
                       parseInt(tagInfo.endFrame, 10)
                     );
-                    if (finalThrower && finalCatcher) {
-                      return (
+
+                    const touches = getPlayerTouches(
+                      video,
+                      parseInt(tagInfo.startFrame, 10),
+                      parseInt(tagInfo.endFrame, 10)
+                    );
+
+                    const clipDuration = ((parseInt(tagInfo.endFrame, 10) - parseInt(tagInfo.startFrame, 10)) / 30).toFixed(1);
+
+                    return (
+                      <>
                         <div style={{ fontSize: '16px', marginTop: '4px' }}>
-                          {finalThrower} ➜ {finalCatcher}
+                          Duration: {clipDuration}s
                         </div>
-                      );
-                    }
-                    return null;
+                        {finalThrower && finalCatcher && (
+                          <div style={{ fontSize: '16px', marginTop: '4px' }}>
+                            {finalThrower} ➜ {finalCatcher}
+                          </div>
+                        )}
+                        <div style={{ 
+                          fontSize: '14px', 
+                          marginTop: '8px',
+                          borderTop: '1px solid rgba(255,255,255,0.3)',
+                          paddingTop: '4px'
+                        }}>
+                          {Object.entries(touches).map(([player, count]) => {
+                            const possessionTime = getPlayerPossessionTimes(
+                              video,
+                              parseInt(tagInfo.startFrame, 10),
+                              parseInt(tagInfo.endFrame, 10)
+                            )[player];
+                            
+                            return (
+                              <div key={player}>
+                                {player}: {count} {count === 1 ? 'touch' : 'touches'}
+                                {possessionTime && ` (${possessionTime}s)`}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    );
                   })()}
                 </div>
               </div>
