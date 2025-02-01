@@ -74,5 +74,41 @@ export const filmService = {
       body: JSON.stringify({ filenames }),
     });
     return response.json();
-  }
+  },
+
+  async saveTemplate(APIbaseUrl, id, film, template) {
+    const success = await this.updateFilmData(APIbaseUrl, id, {
+      ...film.data,
+      template
+    });
+    
+    if (success) {
+      return {
+        ...film,
+        data: {
+          ...film.data,
+          template
+        }
+      };
+    }
+    return null;
+  },
+
+  async saveClips(APIbaseUrl, id, film, newClips) {
+    const success = await this.updateFilmData(APIbaseUrl, id, {
+      ...film.data,
+      clips: newClips
+    });
+    
+    if (success) {
+      return {
+        ...film,
+        data: {
+          ...film.data,
+          clips: newClips
+        }
+      };
+    }
+    return null;
+  },
 }; 

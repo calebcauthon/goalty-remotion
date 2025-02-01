@@ -172,19 +172,9 @@ function ViewFilm() {
 
   const saveClipsToFilm = async (newClips) => {
     try {
-      const success = await filmService.updateFilmData(globalData.APIbaseUrl, id, {
-        ...film.data,
-        clips: newClips
-      });
-      
-      if (success) {
-        setFilm({ 
-          ...film, 
-          data: {
-            ...film.data,
-            clips: newClips
-          }
-        });
+      const updatedFilm = await filmService.saveClips(globalData.APIbaseUrl, id, film, newClips);
+      if (updatedFilm) {
+        setFilm(updatedFilm);
       }
     } catch (error) {
       console.error('Error updating film clips:', error);
@@ -213,41 +203,17 @@ function ViewFilm() {
     saveClipsToFilm(newClips);
   };
 
-  const saveTemplateToFilm = async (template) => {
+  const handleTemplateChange = async (e) => {
+    const newTemplate = e.target.value;
     try {
-      const response = await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          data: {
-            ...film.data,
-            template: template
-          }
-        }),
-      });
-      
-      if (response.ok) {
-        setFilm({ 
-          ...film, 
-          data: {
-            ...film.data,
-            template: template
-          }
-        });
-      } else {
-        console.error('Failed to update film template');
+      const updatedFilm = await filmService.saveTemplate(globalData.APIbaseUrl, id, film, newTemplate);
+      if (updatedFilm) {
+        setFilm(updatedFilm);
+        setSelectedTemplate(newTemplate);
       }
     } catch (error) {
-      console.error('Error updating film template:', error);
+      console.error('Error updating template:', error);
     }
-  };
-
-  const handleTemplateChange = (e) => {
-    const newTemplate = e.target.value;
-    setSelectedTemplate(newTemplate);
-    saveTemplateToFilm(newTemplate);
   };
 
   const handleSeekToFrame = (frameNumber) => {
