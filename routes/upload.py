@@ -82,18 +82,27 @@ def extract_youtube_info():
 @upload_bp.route('/check-render/<filename>', methods=['GET'])
 def check_render_status(filename):
     try:
+        # Get the last render timestamp from the request
+        last_render_time = request.args.get('last_render_time')
+        
         # Check if file exists in B2 and get its URL
         exists, file_info = check_file_exists_in_b2(filename)
         
         if exists:
-            return jsonify({
-                'status': 'completed',
-                'filename': filename,
-                'b2_url': file_info['download_url'],
-                'timestamp': file_info['upload_timestamp'],
-                'file_id': file_info['file_id'],
-                'size': file_info['size']
-            })
+            # Convert timestamps to comparable format
+            file_timestamp = int(file_info['upload_timestamp'])
+            last_render_timestamp = int(last_render_time) if last_render_time else 0
+            
+            # Only return completed if the file is newer than the last render
+            if file_timestamp > last_render_timestamp:
+                return jsonify({
+                    'status': 'completed',
+                    'filename': filename,
+                    'b2_url': file_info['download_url'],
+                    'timestamp': file_timestamp,
+                    'file_id': file_info['file_id'],
+                    'size': file_info['size']
+                })
         
         return jsonify({
             'status': 'rendering',

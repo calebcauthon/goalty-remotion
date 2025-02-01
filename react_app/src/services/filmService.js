@@ -32,11 +32,20 @@ export const filmService = {
   },
 
   async checkRenderStatus(APIbaseUrl, filename, film, onStatusUpdate) {
-    const response = await fetch(`${APIbaseUrl}/api/check-render/${filename}`);
+    // Get the timestamp of the most recent render with this filename
+    const existingRenders = film.data.renders || [];
+    const lastRender = existingRenders
+      .filter(r => r.filename === filename)
+      .sort((a, b) => b.timestamp - a.timestamp)[0];
+    
+    const lastRenderTime = lastRender?.timestamp || 0;
+    
+    const response = await fetch(
+      `${APIbaseUrl}/api/check-render/${filename}?last_render_time=${lastRenderTime}`
+    );
     const data = await response.json();
     
     if (data.status === 'completed') {
-      const existingRenders = film.data.renders || [];
       const newRender = {
         filename: data.filename,
         b2_url: data.b2_url,
