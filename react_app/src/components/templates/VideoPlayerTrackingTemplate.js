@@ -19,7 +19,8 @@ export const VideoPlayerTrackingTemplate = ({
   frameImage=null,
   hoveredDetectionIndex,
   width=1920,
-  height=1080
+  height=1080,
+  currentPlayingClipRef=null
 }) => {
   const tagArray = useMemo(() => Array.from(selectedTags), []);
   const frame = useCurrentFrame();
@@ -168,12 +169,12 @@ export const VideoPlayerTrackingTemplate = ({
     );
   };
 
-  const getTrailPositions = (video, currentClipFrame) => {
+  const getTrailPositions = (video, currentClipFrame, currentPlayingClipRef) => {
     const playerPaths = {};
     const frameSet = new Set(); // Track which frames we've already processed
     
     // First pass: collect paths at STRETCH_COUNT intervals
-    for (let i = 0; i <= currentClipFrame; i += STRETCH_COUNT) {
+    for (let i = currentPlayingClipRef.startFrame; i <= currentClipFrame; i += STRETCH_COUNT) {
       const boxes = getBoxesForFrame(video, i);
       boxes.forEach(box => {
         if (!playerPaths[box.player]) {
@@ -282,11 +283,11 @@ export const VideoPlayerTrackingTemplate = ({
   const RECEPTION_LINE_WIDTH = 3;
 
   // Add this new function near the other preprocessing functions
-  const getReceptionSequence = (video, currentClipFrame) => {
+  const getReceptionSequence = (video, currentClipFrame, currentPlayingClipRef) => {
     const receptionPoints = [];
     
     // Collect all reception points up to current frame
-    for (let frame = 0; frame <= currentClipFrame; frame++) {
+    for (let frame = currentPlayingClipRef.startFrame; frame <= currentClipFrame; frame++) {
       const boxes = getBoxesForFrame(video, frame);
       const tagsForFrame = getTagsForFrame(video, frame);
       
@@ -303,7 +304,6 @@ export const VideoPlayerTrackingTemplate = ({
 
     // Sort by frame
     receptionPoints.sort((a, b) => a.frame - b.frame);
-    console.log('Reception sequence:', receptionPoints);
     
     return receptionPoints;
   };
@@ -339,7 +339,6 @@ export const VideoPlayerTrackingTemplate = ({
         }
       });
     }
-    console.log('Possession ranges:', possessionRanges);
 
     return possessionRanges;
   };
@@ -516,12 +515,24 @@ export const VideoPlayerTrackingTemplate = ({
     onFrameUpdate(frame);
   }, [frame, onFrameUpdate]);
 
+  useEffect(() => {
+    if (currentPlayingClipRef) {
+      console.log('Current playing clip in template:', currentPlayingClipRef);
+    }
+  }, [currentPlayingClipRef]);
+
   return (
     <AbsoluteFill>
       {tagArray.map((tagInfo, index) => {
         const video = videos.find(v => v.id === tagInfo.videoId);
         if (!video) return null;
         if (!video.filepath) return null;
+
+        // Check if this sequence matches the current playing clip
+        const isCurrentClip = currentPlayingClipRef && 
+          currentPlayingClipRef.videoId === tagInfo.videoId &&
+          currentPlayingClipRef.startFrame === parseInt(tagInfo.startFrame, 10) &&
+          currentPlayingClipRef.endFrame === parseInt(tagInfo.endFrame, 10);
 
         const previousClipsDuration = tagArray
           .slice(0, index)
@@ -532,10 +543,11 @@ export const VideoPlayerTrackingTemplate = ({
         const clipDuration = parseInt(tagInfo.endFrame, 10) - parseInt(tagInfo.startFrame, 10);
         const currentClipFrame = frame - previousClipsDuration + parseInt(tagInfo.startFrame, 10);
         
-        // Get boxes for the current frame
-        const boxes = getBoxesForFrame(video, currentClipFrame);
-        const tagsForFrame = getTagsForFrame(video, currentClipFrame);
-        
+        // Only get tracking data if this is the current clip
+        const boxes = isCurrentClip ? getBoxesForFrame(video, currentClipFrame) : [];
+        const tagsForFrame = isCurrentClip ? getTagsForFrame(video, currentClipFrame) : [];
+        const receptionSequence = isCurrentClip ? getReceptionSequence(video, currentClipFrame, currentPlayingClipRef) : [];
+
         // Get original video dimensions from metadata
         let originalSize = { width: 1920, height: 1080 }; // Default fallback
         try {
@@ -556,10 +568,8 @@ export const VideoPlayerTrackingTemplate = ({
           ? staticFile(`${video.filepath.split('/').pop()}`) 
           : video.filepath;
 
-        const receptionSequence = getReceptionSequence(video, currentClipFrame);
-
-        const POSSESSION_LINE_THICKNESS = LINE_THICKNESS * 1.5; // Just slightly thicker
-        const POSSESSION_OPACITY = TRAIL_OPACITY * 1.2; // Just slightly brighter
+        const POSSESSION_LINE_THICKNESS = LINE_THICKNESS * 1.5;
+        const POSSESSION_OPACITY = TRAIL_OPACITY * 1.2;
 
         return (
           <Sequence
@@ -594,309 +604,315 @@ export const VideoPlayerTrackingTemplate = ({
                   }}
                 />
                 
-                {/* Bounding Boxes */}
-                {boxes.map((box, i) => {
-                  const scaledBox = scaleBox(box, originalSize, containerSize);
-                  const hasReception = hasReceptionAtFrame(video, currentClipFrame, box.player);
-                  
-                  return (
-                    <div key={i}>
-                      <div style={{
-                        position: 'absolute',
-                        left: `${scaledBox.x}px`,
-                        top: `${scaledBox.y}px`,
-                        width: `${scaledBox.width}px`,
-                        height: `${scaledBox.height}px`,
-                        border: '2px solid #FF6B00',
-                        boxSizing: 'border-box',
-                        pointerEvents: 'none'
-                      }} />
-                      {/* Position marker circle */}
-                      <div style={{
-                        position: 'absolute',
-                        left: `${scaledBox.x + scaledBox.width/2 - 4}px`,
-                        top: `${scaledBox.y + scaledBox.height - 4}px`,
-                        width: '8px',
-                        height: '8px',
-                        background: hasReception ? '#FFFF00' : 'red',
-                        borderRadius: '50%',
-                        pointerEvents: 'none',
-                        transform: hasReception ? `scale(2)` : 'none',
-                        boxShadow: hasReception ? '0 0 10px rgba(255, 255, 0, 0.5)' : 'none'
-                      }} />
-                      <div style={{
-                        position: 'absolute',
-                        left: `${scaledBox.x}px`,
-                        top: `${scaledBox.y - 25}px`,
-                        background: '#FF6B00',
-                        color: 'white',
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        fontWeight: 'bold',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {box.player}
-                        {hasReception ? ' 🏈' : ''}
-                      </div>
-                    </div>
-                  );
-                })}
+                {/* Only render tracking overlays if this is the current clip */}
+                {isCurrentClip && (
+                  <>
+                    {/* Bounding Boxes */}
+                    {boxes.map((box, i) => {
+                      const scaledBox = scaleBox(box, originalSize, containerSize);
+                      const hasReception = hasReceptionAtFrame(video, currentClipFrame, box.player);
+                      
+                      return (
+                        <div key={i}>
+                          <div style={{
+                            position: 'absolute',
+                            left: `${scaledBox.x}px`,
+                            top: `${scaledBox.y}px`,
+                            width: `${scaledBox.width}px`,
+                            height: `${scaledBox.height}px`,
+                            border: '2px solid #FF6B00',
+                            boxSizing: 'border-box',
+                            pointerEvents: 'none'
+                          }} />
+                          {/* Position marker circle */}
+                          <div style={{
+                            position: 'absolute',
+                            left: `${scaledBox.x + scaledBox.width/2 - 4}px`,
+                            top: `${scaledBox.y + scaledBox.height - 4}px`,
+                            width: '8px',
+                            height: '8px',
+                            background: hasReception ? '#FFFF00' : 'red',
+                            borderRadius: '50%',
+                            pointerEvents: 'none',
+                            transform: hasReception ? `scale(2)` : 'none',
+                            boxShadow: hasReception ? '0 0 10px rgba(255, 255, 0, 0.5)' : 'none'
+                          }} />
+                          <div style={{
+                            position: 'absolute',
+                            left: `${scaledBox.x}px`,
+                            top: `${scaledBox.y - 25}px`,
+                            background: '#FF6B00',
+                            color: 'white',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {box.player}
+                            {hasReception ? ' 🏈' : ''}
+                          </div>
+                        </div>
+                      );
+                    })}
 
-                {/* Render trail points */}
-                {Object.entries(getTrailPositions(video, currentClipFrame)).map(([player, data]) => {
-                  const pathPoints = data.positions.map(pos => {
-                    const scaledPos = scaleBox({ bbox: pos.bbox }, originalSize, containerSize);
-                    return `${scaledPos.x + scaledPos.width/2},${scaledPos.y + scaledPos.height}`;
-                  });
-
-                  const possessionRanges = getPlayerPossessionFrames(video, currentClipFrame);
-                  const playerPossessions = possessionRanges[player] || [];
-
-                  // Split path into segments based on possession
-                  const segments = pathPoints.map((point, idx) => {
-                    const frame = data.positions[idx].frame;
-                    const hasPossession = playerPossessions.some(range => 
-                      range.start <= frame && (!range.end || frame <= range.end)
-                    );
-                    return { point, hasPossession };
-                  });
-
-                  return pathPoints.length > 0 ? (
-                    <React.Fragment key={`trail-${player}`}>
-                      <svg
-                        style={{
-                          position: 'absolute',
-                          left: 0,
-                          top: 0,
-                          width: '100%',
-                          height: '100%',
-                          pointerEvents: 'none'
-                        }}
-                      >
-                        {/* Regular path */}
-                        <path
-                          d={smoothPath(segments.filter(s => !s.hasPossession).map(s => s.point))}
-                          stroke={getPlayerColor(player)}
-                          strokeWidth={LINE_THICKNESS}
-                          fill="none"
-                          opacity={TRAIL_OPACITY}
-                        />
-                        {/* Possession path */}
-                        <path
-                          d={smoothPath(segments.filter(s => s.hasPossession).map(s => s.point))}
-                          stroke={"white"}
-                          strokeWidth={POSSESSION_LINE_THICKNESS}
-                          fill="none"
-                          opacity={POSSESSION_OPACITY}
-                        />
-                      </svg>
-                      {data.positions.filter(pos => 
-                        data.receptionFrames.includes(pos.frame)
-                      ).map((pos, i) => {
+                    {/* Render trail points */}
+                    {Object.entries(getTrailPositions(video, currentClipFrame, currentPlayingClipRef)).map(([player, data]) => {
+                      const pathPoints = data.positions.map(pos => {
                         const scaledPos = scaleBox({ bbox: pos.bbox }, originalSize, containerSize);
-                        return (
-                          <div
-                            key={`reception-${player}-${pos.frame}`}
+                        return `${scaledPos.x + scaledPos.width/2},${scaledPos.y + scaledPos.height}`;
+                      });
+
+                      const possessionRanges = getPlayerPossessionFrames(video, currentClipFrame);
+                      const playerPossessions = possessionRanges[player] || [];
+
+                      // Split path into segments based on possession
+                      const segments = pathPoints.map((point, idx) => {
+                        const frame = data.positions[idx].frame;
+                        const hasPossession = playerPossessions.some(range => 
+                          range.start <= frame && (!range.end || frame <= range.end)
+                          && frame >= currentPlayingClipRef.startFrame && frame <= currentPlayingClipRef.endFrame
+                        );
+                        return { point, hasPossession };
+                      });
+
+                      return pathPoints.length > 0 ? (
+                        <React.Fragment key={`trail-${player}`}>
+                          <svg
                             style={{
                               position: 'absolute',
-                              left: `${scaledPos.x + scaledPos.width/2 - RECEPTION_MARKER_SIZE/2}px`,
-                              top: `${scaledPos.y + scaledPos.height - RECEPTION_MARKER_SIZE/2}px`,
-                              width: `${RECEPTION_MARKER_SIZE}px`,
-                              height: `${RECEPTION_MARKER_SIZE}px`,
-                              background: '#FFFF00',
-                              borderRadius: '50%',
-                              pointerEvents: 'none',
-                              boxShadow: '0 0 10px rgba(255, 255, 0, 0.5)',
-                              opacity: 0.8
+                              left: 0,
+                              top: 0,
+                              width: '100%',
+                              height: '100%',
+                              pointerEvents: 'none'
                             }}
+                          >
+                            {/* Regular path */}
+                            <path
+                              d={smoothPath(segments.filter(s => !s.hasPossession).map(s => s.point))}
+                              stroke={getPlayerColor(player)}
+                              strokeWidth={LINE_THICKNESS}
+                              fill="none"
+                              opacity={TRAIL_OPACITY}
+                            />
+                            {/* Possession path */}
+                            <path
+                              d={smoothPath(segments.filter(s => s.hasPossession).map(s => s.point))}
+                              stroke={"white"}
+                              strokeWidth={POSSESSION_LINE_THICKNESS}
+                              fill="none"
+                              opacity={POSSESSION_OPACITY}
+                            />
+                          </svg>
+                          {data.positions.filter(pos => 
+                            data.receptionFrames.includes(pos.frame)
+                          ).map((pos, i) => {
+                            const scaledPos = scaleBox({ bbox: pos.bbox }, originalSize, containerSize);
+                            return (
+                              <div
+                                key={`reception-${player}-${pos.frame}`}
+                                style={{
+                                  position: 'absolute',
+                                  left: `${scaledPos.x + scaledPos.width/2 - RECEPTION_MARKER_SIZE/2}px`,
+                                  top: `${scaledPos.y + scaledPos.height - RECEPTION_MARKER_SIZE/2}px`,
+                                  width: `${RECEPTION_MARKER_SIZE}px`,
+                                  height: `${RECEPTION_MARKER_SIZE}px`,
+                                  background: '#FFFF00',
+                                  borderRadius: '50%',
+                                  pointerEvents: 'none',
+                                  boxShadow: '0 0 10px rgba(255, 255, 0, 0.5)',
+                                  opacity: 0.8
+                                }}
+                              />
+                            );
+                          })}
+                        </React.Fragment>
+                      ) : null;
+                    })}
+
+                    {/* Add reception connection lines */}
+                    <svg
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        width: '100%',
+                        height: '100%',
+                        pointerEvents: 'none'
+                      }}
+                    >
+                      {/* Add defs for the arrow marker */}
+                      <defs>
+                        <marker
+                          id="arrowhead"
+                          markerWidth="10"
+                          markerHeight="7"
+                          refX="9"
+                          refY="3.5"
+                          orient="auto"
+                        >
+                          <polygon 
+                            points="0 0, 10 3.5, 0 7" 
+                            fill={RECEPTION_LINE_COLOR}
+                            opacity={RECEPTION_LINE_OPACITY}
+                          />
+                        </marker>
+                      </defs>
+                      
+                      {/* Completed throws */}
+                      {receptionSequence.slice(0, -1).map((reception, i) => {
+                        const current = scaleBox({ bbox: reception.bbox }, originalSize, containerSize);
+                        const next = scaleBox({ bbox: receptionSequence[i + 1].bbox }, originalSize, containerSize);
+                        
+                        // Calculate control point for the parabola
+                        const midX = (current.x + next.x + current.width/2 + next.width/2) / 2;
+                        const midY = Math.min(current.y, next.y) - 
+                          Math.abs(next.x - current.x) * THROW_HEIGHT_FACTOR - 
+                          Math.abs(next.y - current.y) * THROW_HEIGHT_FACTOR;
+                        
+                        return (
+                          <path
+                            key={`reception-line-${i}`}
+                            d={`M ${current.x + current.width/2} ${current.y + current.height}
+                               Q ${midX} ${midY} 
+                               ${next.x + next.width/2} ${next.y + next.height}`}
+                            stroke={RECEPTION_LINE_COLOR}
+                            strokeWidth={RECEPTION_LINE_WIDTH}
+                            opacity={RECEPTION_LINE_OPACITY}
+                            fill="none"
+                            markerEnd="url(#arrowhead)"
                           />
                         );
                       })}
-                    </React.Fragment>
-                  ) : null;
-                })}
 
-                {/* Add reception connection lines */}
-                <svg
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    width: '100%',
-                    height: '100%',
-                    pointerEvents: 'none'
-                  }}
-                >
-                  {/* Add defs for the arrow marker */}
-                  <defs>
-                    <marker
-                      id="arrowhead"
-                      markerWidth="10"
-                      markerHeight="7"
-                      refX="9"
-                      refY="3.5"
-                      orient="auto"
-                    >
-                      <polygon 
-                        points="0 0, 10 3.5, 0 7" 
-                        fill={RECEPTION_LINE_COLOR}
-                        opacity={RECEPTION_LINE_OPACITY}
-                      />
-                    </marker>
-                  </defs>
-                  
-                  {/* Completed throws */}
-                  {receptionSequence.slice(0, -1).map((reception, i) => {
-                    const current = scaleBox({ bbox: reception.bbox }, originalSize, containerSize);
-                    const next = scaleBox({ bbox: receptionSequence[i + 1].bbox }, originalSize, containerSize);
-                    
-                    // Calculate control point for the parabola
-                    const midX = (current.x + next.x + current.width/2 + next.width/2) / 2;
-                    const midY = Math.min(current.y, next.y) - 
-                      Math.abs(next.x - current.x) * THROW_HEIGHT_FACTOR - 
-                      Math.abs(next.y - current.y) * THROW_HEIGHT_FACTOR;
-                    
-                    return (
-                      <path
-                        key={`reception-line-${i}`}
-                        d={`M ${current.x + current.width/2} ${current.y + current.height}
-                           Q ${midX} ${midY} 
-                           ${next.x + next.width/2} ${next.y + next.height}`}
-                        stroke={RECEPTION_LINE_COLOR}
-                        strokeWidth={RECEPTION_LINE_WIDTH}
-                        opacity={RECEPTION_LINE_OPACITY}
-                        fill="none"
-                        markerEnd="url(#arrowhead)"
-                      />
-                    );
-                  })}
+                      {/* Active throw */}
+                      {(() => {
+                        const activeThrow = getActiveThrow(video, currentClipFrame);
+                        if (!activeThrow) return null;
 
-                  {/* Active throw */}
-                  {(() => {
-                    const activeThrow = getActiveThrow(video, currentClipFrame);
-                    if (!activeThrow) return null;
+                        const start = scaleBox({ bbox: activeThrow.bbox }, originalSize, containerSize);
+                        
+                        // Use next reception position if available, otherwise estimate
+                        let endX, endY;
+                        if (activeThrow.nextReception) {
+                          const end = scaleBox({ bbox: activeThrow.nextReception.bbox }, originalSize, containerSize);
+                          endX = end.x + end.width/2;
+                          endY = end.y + end.height;
+                        } else {
+                          endX = start.x + 300;
+                          endY = start.y + start.height;
+                        }
+                        
+                        // Calculate control point for the parabola
+                        const midX = (start.x + endX) / 2;
+                        const midY = Math.min(start.y + start.height, endY) - 
+                          Math.abs(endX - (start.x + start.width/2)) * THROW_HEIGHT_FACTOR - 
+                          Math.abs(endY - (start.y + start.height)) * THROW_HEIGHT_FACTOR;
+                        
+                        // Calculate how much of the path to show based on frame progress
+                        const throwDuration = activeThrow.nextReception ? 
+                          (activeThrow.nextReception.frame - activeThrow.startFrame) : 30;
+                        const frameProgress = (currentClipFrame - activeThrow.startFrame) / throwDuration;
+                        const progress = Math.min(frameProgress, 1);
+                        
+                        // Generate points along the full parabola
+                        const numPoints = 100;
+                        const points = [];
+                        for (let i = 0; i <= numPoints * progress; i++) {
+                          const t = i / numPoints;
+                          const x = (1-t)*(1-t)*(start.x + start.width/2) + 
+                                    2*(1-t)*t*midX + 
+                                    t*t*endX;
+                          const y = (1-t)*(1-t)*(start.y + start.height) + 
+                                    2*(1-t)*t*midY + 
+                                    t*t*endY;
+                          points.push(`${x} ${y}`);
+                        }
+                        
+                        return (
+                          <path
+                            key="active-throw"
+                            d={`M ${points.join(' L ')}`}
+                            stroke={RECEPTION_LINE_COLOR}
+                            strokeWidth={RECEPTION_LINE_WIDTH}
+                            opacity={RECEPTION_LINE_OPACITY * 0.9}
+                            fill="none"
+                            markerEnd="url(#arrowhead)"
+                            strokeDasharray="4 4"
+                          />
+                        );
+                      })()}
+                    </svg>
 
-                    const start = scaleBox({ bbox: activeThrow.bbox }, originalSize, containerSize);
-                    
-                    // Use next reception position if available, otherwise estimate
-                    let endX, endY;
-                    if (activeThrow.nextReception) {
-                      const end = scaleBox({ bbox: activeThrow.nextReception.bbox }, originalSize, containerSize);
-                      endX = end.x + end.width/2;
-                      endY = end.y + end.height;
-                    } else {
-                      endX = start.x + 300;
-                      endY = start.y + start.height;
-                    }
-                    
-                    // Calculate control point for the parabola
-                    const midX = (start.x + endX) / 2;
-                    const midY = Math.min(start.y + start.height, endY) - 
-                      Math.abs(endX - (start.x + start.width/2)) * THROW_HEIGHT_FACTOR - 
-                      Math.abs(endY - (start.y + start.height)) * THROW_HEIGHT_FACTOR;
-                    
-                    // Calculate how much of the path to show based on frame progress
-                    const throwDuration = activeThrow.nextReception ? 
-                      (activeThrow.nextReception.frame - activeThrow.startFrame) : 30;
-                    const frameProgress = (currentClipFrame - activeThrow.startFrame) / throwDuration;
-                    const progress = Math.min(frameProgress, 1);
-                    
-                    // Generate points along the full parabola
-                    const numPoints = 100;
-                    const points = [];
-                    for (let i = 0; i <= numPoints * progress; i++) {
-                      const t = i / numPoints;
-                      const x = (1-t)*(1-t)*(start.x + start.width/2) + 
-                                2*(1-t)*t*midX + 
-                                t*t*endX;
-                      const y = (1-t)*(1-t)*(start.y + start.height) + 
-                                2*(1-t)*t*midY + 
-                                t*t*endY;
-                      points.push(`${x} ${y}`);
-                    }
-                    
-                    return (
-                      <path
-                        key="active-throw"
-                        d={`M ${points.join(' L ')}`}
-                        stroke={RECEPTION_LINE_COLOR}
-                        strokeWidth={RECEPTION_LINE_WIDTH}
-                        opacity={RECEPTION_LINE_OPACITY * 0.9}
-                        fill="none"
-                        markerEnd="url(#arrowhead)"
-                        strokeDasharray="4 4"
-                      />
-                    );
-                  })()}
-                </svg>
+                    {/* Player Tracking Text */}
+                    <div style={{
+                      position: 'absolute',
+                      top: 20,
+                      right: 20,
+                      background: 'rgba(0, 0, 0, 0.7)',
+                      color: 'white',
+                      padding: '8px 16px',
+                      borderRadius: '4px',
+                      fontSize: '18px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-end'
+                    }}>
+                      <div>Summary</div>
+                      {(() => {
+                        const { finalThrower, finalCatcher } = getPlaySequence(
+                          video, 
+                          parseInt(tagInfo.startFrame, 10),
+                          parseInt(tagInfo.endFrame, 10)
+                        );
 
-                {/* Player Tracking Text */}
-                <div style={{
-                  position: 'absolute',
-                  top: 20,
-                  right: 20,
-                  background: 'rgba(0, 0, 0, 0.7)',
-                  color: 'white',
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  fontSize: '18px',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-end'
-                }}>
-                  <div>Summary</div>
-                  {(() => {
-                    const { finalThrower, finalCatcher } = getPlaySequence(
-                      video, 
-                      parseInt(tagInfo.startFrame, 10),
-                      parseInt(tagInfo.endFrame, 10)
-                    );
+                        const touches = getPlayerTouches(
+                          video,
+                          parseInt(tagInfo.startFrame, 10),
+                          parseInt(tagInfo.endFrame, 10)
+                        );
 
-                    const touches = getPlayerTouches(
-                      video,
-                      parseInt(tagInfo.startFrame, 10),
-                      parseInt(tagInfo.endFrame, 10)
-                    );
+                        const clipDuration = ((parseInt(tagInfo.endFrame, 10) - parseInt(tagInfo.startFrame, 10)) / 30).toFixed(1);
 
-                    const clipDuration = ((parseInt(tagInfo.endFrame, 10) - parseInt(tagInfo.startFrame, 10)) / 30).toFixed(1);
-
-                    return (
-                      <>
-                        <div style={{ fontSize: '16px', marginTop: '4px' }}>
-                          Duration: {clipDuration}s
-                        </div>
-                        {finalThrower && finalCatcher && (
-                          <div style={{ fontSize: '16px', marginTop: '4px' }}>
-                            {finalThrower} ➜ {finalCatcher}
-                          </div>
-                        )}
-                        <div style={{ 
-                          fontSize: '14px', 
-                          marginTop: '8px',
-                          borderTop: '1px solid rgba(255,255,255,0.3)',
-                          paddingTop: '4px'
-                        }}>
-                          {Object.entries(touches).map(([player, count]) => {
-                            const possessionTime = getPlayerPossessionTimes(
-                              video,
-                              parseInt(tagInfo.startFrame, 10),
-                              parseInt(tagInfo.endFrame, 10)
-                            )[player];
-                            
-                            return (
-                              <div key={player}>
-                                {player}: {count} {count === 1 ? 'touch' : 'touches'}
-                                {possessionTime && ` (${possessionTime}s)`}
+                        return (
+                          <>
+                            <div style={{ fontSize: '16px', marginTop: '4px' }}>
+                              Duration: {clipDuration}s
+                            </div>
+                            {finalThrower && finalCatcher && (
+                              <div style={{ fontSize: '16px', marginTop: '4px' }}>
+                                {finalThrower} ➜ {finalCatcher}
                               </div>
-                            );
-                          })}
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
+                            )}
+                            <div style={{ 
+                              fontSize: '14px', 
+                              marginTop: '8px',
+                              borderTop: '1px solid rgba(255,255,255,0.3)',
+                              paddingTop: '4px'
+                            }}>
+                              {Object.entries(touches).map(([player, count]) => {
+                                const possessionTime = getPlayerPossessionTimes(
+                                  video,
+                                  parseInt(tagInfo.startFrame, 10),
+                                  parseInt(tagInfo.endFrame, 10)
+                                )[player];
+                                
+                                return (
+                                  <div key={player}>
+                                    {player}: {count} {count === 1 ? 'touch' : 'touches'}
+                                    {possessionTime && ` (${possessionTime}s)`}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </>
+                )}
               </div>
             </AbsoluteFill>
           </Sequence>

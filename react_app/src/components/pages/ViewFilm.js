@@ -76,6 +76,7 @@ function ViewFilm() {
   const [previewPending, setPreviewPending] = useState(false);
   const [currentPlayingClip, setCurrentPlayingClip] = useState(null);
   const [currentFrame, setCurrentFrame] = useState(0);
+  const [currentPlayingClipRef, setCurrentPlayingClipRef] = useState(null);
 
   const fetchFilm = async () => {
     try {
@@ -514,6 +515,28 @@ function ViewFilm() {
   const handleFrameUpdate = (frame) => {
     setCurrentFrame(frame);
     
+    // Calculate which clip we're currently playing
+    let accumulatedFrames = 0;
+    const currentClip = includedClips.find((clip, index) => {
+      const clipDuration = clip.endFrame - clip.startFrame;
+      if (frame >= accumulatedFrames && frame < accumulatedFrames + clipDuration) {
+        return true;
+      }
+      accumulatedFrames += clipDuration;
+      return false;
+    });
+
+    // Update currentPlayingClipRef if we found a clip and it's different from current
+    if (currentClip) {
+      setCurrentPlayingClipRef(prev => {
+        if (!prev || prev.key !== currentClip.key) {
+          return currentClip;
+        }
+        return prev;
+      });
+      setCurrentPlayingClip(currentClip.key);
+    }
+    
     if (previewEndFrame) {
       // Handle slow preview loops
       if (previewLoopCount < 5 && slowPreviewEndFrame && frame >= slowPreviewEndFrame) {
@@ -536,6 +559,7 @@ function ViewFilm() {
         setPreviewLoopCount(0);
         setPreviewStartFrame(null);
         setCurrentPlayingClip(null);
+        setCurrentPlayingClipRef(null);
       }
     }
   };
@@ -548,6 +572,7 @@ function ViewFilm() {
       setPreviewStartFrame(clip.startFrame);
       setPreviewEndFrame(clip.endFrame);
       setCurrentPlayingClip(clip.key);
+      setCurrentPlayingClipRef(clip);
     }
   };
 
@@ -773,7 +798,8 @@ function ViewFilm() {
                   selectedTags,
                   onFrameUpdate: handleFrameUpdate,
                   width: 1280,
-                  height: 720
+                  height: 720,
+                  currentPlayingClipRef: currentPlayingClipRef
                 }}
                 durationInFrames={calculateDuration()}
                 compositionWidth={1280}
