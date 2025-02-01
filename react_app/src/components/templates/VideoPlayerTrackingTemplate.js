@@ -1,209 +1,12 @@
 import React, { useMemo, useEffect } from 'react';
 import { AbsoluteFill, Video, Sequence, useCurrentFrame, staticFile } from 'remotion';
 
-const TRAIL_LENGTH = 1000; // Number of frames to show in trail
-const STRETCH_COUNT = 15; // Only draw every Nth circle
-const LINE_THICKNESS = 4; // Width of the tracking line
-const TRAIL_OPACITY = 0.8; // Opacity for trail lines
-const SMOOTHING_WEIGHT = 0.8; // 0 = no smoothing, 1 = maximum smoothing
-const RECEPTION_MARKER_SIZE = 16; // Diameter of the reception marker
-
-// Color palette for different players
-const PLAYER_COLORS = {
-  'christian': '#FF0000', // Red
-  'Player 2': '#00FF00', // Green
-  'Player 3': '#0000FF', // Blue
-  'Player 4': '#FFA500', // Orange
-  'Player 5': '#800080', // Purple
-  'aaron': '#00FFFF', // Cyan
-  'default': '#FF0000'   // Fallback color
-};
-
-// Helper to get color for a player
-const getPlayerColor = (player) => {
-  return PLAYER_COLORS[player] || PLAYER_COLORS.default;
-};
-
 export const calculatePlayerTrackingDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
   return tagArray.reduce((total, tag) => {
     const clipDuration = parseInt(tag.endFrame, 10) - parseInt(tag.startFrame, 10);
     return total + clipDuration;
   }, 0);
-};
-
-const parseJsonIfNecessary = (data) => {
-  if (typeof data === 'string') {
-    try {
-      return JSON.parse(data);
-    } catch (e) {
-      return data;
-    }
-  }
-  return data;
-}
-
-var shownMetadata = false;
-const getTagsForFrame = (video, frame) => {
-  if (!video?.metadata) {
-    if (!shownMetadata) {
-      console.log('🔍 No metadata found for video', { video });
-      shownMetadata = true;
-    }
-    return [];
-  }
-  if (!shownMetadata) {
-    console.log('🔍 Metadata found for video', { video });
-    shownMetadata = true;
-  }
-  const metadata = parseJsonIfNecessary(video.metadata);
-  return metadata.tags?.filter(tag => tag.frame === frame) || [];
-};
-
-const getBoxesForFrame = (video, frame) => {
-  if (!video?.metadata) {
-    //console.log('🔍 No metadata found for video', { video });
-    return [];
-  }
-  
-  try {
-    const metadata = parseJsonIfNecessary(video.metadata);
-    if (!metadata.boxes) { 
-      //console.log('📦 No boxes found in metadata', { metadata }); 
-      return []; 
-    }
-
-    // Convert frame number from 30fps to 29.97fps
-    //console.log('⏱️ Converting frame from 30fps to 29.97fps', { before: frame, after: Math.round(frame * (29.97 / 30)) });
-    frame = Math.round(frame * (29.97 / 30));
-    //console.log('🎯 Looking for boxes at frame', frame);
-
-    // Find boxes for this frame
-    const targetFrameData = metadata.boxes.find(box => {
-      if (!box) return false;
-      const players = Object.keys(box);
-      return players.some(player => box[player].frame === frame);
-    });
-
-    if (!targetFrameData) { 
-      //console.log('🚫 No boxes found for frame', frame); 
-      return []; 
-    }
-
-    //console.log('✅ Found boxes for frame', { frame, targetFrameData });
-
-    // Convert the frame's boxes into an array of {player, bbox} objects
-    return Object.entries(targetFrameData).map(([player, data]) => ({
-      player,
-      bbox: data.bbox
-    }));
-
-  } catch (error) {
-    console.error('💥 Error parsing boxes metadata:', error);
-    return [];
-  }
-};
-
-const scaleBox = (box, originalSize, containerSize) => {
-  const scaleX = containerSize.width / originalSize.width;
-  const scaleY = containerSize.height / originalSize.height;
-
-  //console.log('📐 Scaling box', {
-  //  original: box,
-  //  originalSize,
-  //  containerSize,
-  //  scales: { x: scaleX, y: scaleY }
-  //});
-
-  return {
-    x: box.bbox[0] * scaleX,
-    y: box.bbox[1] * scaleY,
-    width: box.bbox[2] * scaleX,
-    height: box.bbox[3] * scaleY
-  };
-};
-
-const hasReceptionAtFrame = (video, frame, player) => {
-  const tagsForFrame = getTagsForFrame(video, frame);
-  return tagsForFrame.some(tag => 
-    tag.name?.toLowerCase().includes(`${player.toLowerCase()} reception`)
-  );
-};
-
-const getTrailPositions = (video, currentClipFrame) => {
-  const playerPaths = {};
-  const frameSet = new Set(); // Track which frames we've already processed
-  
-  // First pass: collect paths at STRETCH_COUNT intervals
-  for (let i = 0; i <= currentClipFrame; i += STRETCH_COUNT) {
-    const boxes = getBoxesForFrame(video, i);
-    boxes.forEach(box => {
-      if (!playerPaths[box.player]) {
-        playerPaths[box.player] = {
-          positions: [],
-          receptionFrames: []
-        };
-      }
-      playerPaths[box.player].positions.push({
-        frame: i,
-        bbox: box.bbox
-      });
-      frameSet.add(i);
-    });
-  }
-
-  // Second pass: find all reception frames and add their positions
-  Object.keys(playerPaths).forEach(player => {
-    for (let i = 0; i <= currentClipFrame; i++) {
-      if (hasReceptionAtFrame(video, i, player)) {
-        playerPaths[player].receptionFrames.push(i);
-        
-        // If we haven't already included this frame's position, add it
-        if (!frameSet.has(i)) {
-          const boxes = getBoxesForFrame(video, i);
-          const playerBox = boxes.find(box => box.player === player);
-          if (playerBox) {
-            playerPaths[player].positions.push({
-              frame: i,
-              bbox: playerBox.bbox
-            });
-          }
-        }
-      }
-    }
-    // Sort positions by frame to maintain proper path order
-    playerPaths[player].positions.sort((a, b) => a.frame - b.frame);
-  });
-
-  console.log('🔍 Player paths with receptions', playerPaths);
-  return playerPaths;
-};
-
-const smoothPath = (points) => {
-  if (points.length < 2) return '';
-  
-  const [first, ...rest] = points;
-  let pathD = `M ${first}`;
-  
-  for (let i = 0; i < rest.length; i++) {
-    const current = rest[i];
-    const prev = i === 0 ? first : rest[i - 1];
-    const next = rest[i + 1] || current;
-    
-    // Calculate control points
-    const [x, y] = current.split(',').map(Number);
-    const [prevX, prevY] = prev.split(',').map(Number);
-    const [nextX, nextY] = next.split(',').map(Number);
-    
-    const cp1x = prevX + (x - prevX) * (1 - SMOOTHING_WEIGHT);
-    const cp1y = prevY + (y - prevY) * (1 - SMOOTHING_WEIGHT);
-    const cp2x = x - (nextX - x) * SMOOTHING_WEIGHT;
-    const cp2y = y - (nextY - y) * SMOOTHING_WEIGHT;
-    
-    pathD += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${x},${y}`;
-  }
-  
-  return pathD;
 };
 
 export const VideoPlayerTrackingTemplate = ({ 
@@ -220,6 +23,187 @@ export const VideoPlayerTrackingTemplate = ({
 }) => {
   const tagArray = useMemo(() => Array.from(selectedTags), []);
   const frame = useCurrentFrame();
+
+  const TRAIL_LENGTH = 1000; // Number of frames to show in trail
+  const STRETCH_COUNT = 15; // Only draw every Nth circle
+  const LINE_THICKNESS = 4; // Width of the tracking line
+  const TRAIL_OPACITY = 0.8; // Opacity for trail lines
+  const SMOOTHING_WEIGHT = 0.8; // 0 = no smoothing, 1 = maximum smoothing
+  const RECEPTION_MARKER_SIZE = 16; // Diameter of the reception marker
+
+  // Color palette for different players
+  const PLAYER_COLORS = {
+    'christian': '#FF0000', // Red
+    'Player 2': '#00FF00', // Green
+    'Player 3': '#0000FF', // Blue
+    'Player 4': '#FFA500', // Orange
+    'Player 5': '#800080', // Purple
+    'aaron': '#00FFFF', // Cyan
+    'default': '#FF0000'   // Fallback color
+  };
+
+  // Helper to get color for a player
+  const getPlayerColor = (player) => {
+    return PLAYER_COLORS[player] || PLAYER_COLORS.default;
+  };
+
+  const parseJsonIfNecessary = (data) => {
+    if (typeof data === 'string') {
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        return data;
+      }
+    }
+    return data;
+  }
+
+  var shownMetadata = false;
+
+  // Add memoized metadata parser
+  const getVideoMetadata = useMemo(() => {
+    const cache = new Map();
+    
+    return (video) => {
+      if (!video?.metadata) return null;
+      if (cache.has(video.id)) return cache.get(video.id);
+      
+      const metadata = parseJsonIfNecessary(video.metadata);
+      cache.set(video.id, metadata);
+      console.log('🔍 Metadata for video', { id: video.id, metadata });
+      return metadata;
+    };
+  }, []);
+
+  // Update getTagsForFrame to use memoized metadata
+  const getTagsForFrame = (video, frame) => {
+    const metadata = getVideoMetadata(video);
+    if (!metadata) return [];
+    return metadata.tags?.filter(tag => tag.frame === frame) || [];
+  };
+
+  // Update getBoxesForFrame to use memoized metadata
+  const getBoxesForFrame = (video, frame) => {
+    const metadata = getVideoMetadata(video);
+    if (!metadata) return [];
+    
+    try {
+      if (!metadata.boxes) return [];
+
+      frame = Math.round(frame * (29.97 / 30));
+
+      const targetFrameData = metadata.boxes.find(box => {
+        if (!box) return false;
+        const players = Object.keys(box);
+        return players.some(player => box[player].frame === frame);
+      });
+
+      if (!targetFrameData) return [];
+
+      return Object.entries(targetFrameData).map(([player, data]) => ({
+        player,
+        bbox: data.bbox
+      }));
+
+    } catch (error) {
+      console.error('💥 Error parsing boxes metadata:', error);
+      return [];
+    }
+  };
+
+  const scaleBox = (box, originalSize, containerSize) => {
+    const scaleX = containerSize.width / originalSize.width;
+    const scaleY = containerSize.height / originalSize.height;
+
+    return {
+      x: box.bbox[0] * scaleX,
+      y: box.bbox[1] * scaleY,
+      width: box.bbox[2] * scaleX,
+      height: box.bbox[3] * scaleY
+    };
+  };
+
+  const hasReceptionAtFrame = (video, frame, player) => {
+    const tagsForFrame = getTagsForFrame(video, frame);
+    return tagsForFrame.some(tag => 
+      tag.name?.toLowerCase().includes(`${player.toLowerCase()} reception`)
+    );
+  };
+
+  const getTrailPositions = (video, currentClipFrame) => {
+    const playerPaths = {};
+    const frameSet = new Set(); // Track which frames we've already processed
+    
+    // First pass: collect paths at STRETCH_COUNT intervals
+    for (let i = 0; i <= currentClipFrame; i += STRETCH_COUNT) {
+      const boxes = getBoxesForFrame(video, i);
+      boxes.forEach(box => {
+        if (!playerPaths[box.player]) {
+          playerPaths[box.player] = {
+            positions: [],
+            receptionFrames: []
+          };
+        }
+        playerPaths[box.player].positions.push({
+          frame: i,
+          bbox: box.bbox
+        });
+        frameSet.add(i);
+      });
+    }
+
+    // Second pass: find all reception frames and add their positions
+    Object.keys(playerPaths).forEach(player => {
+      for (let i = 0; i <= currentClipFrame; i++) {
+        if (hasReceptionAtFrame(video, i, player)) {
+          playerPaths[player].receptionFrames.push(i);
+          
+          // If we haven't already included this frame's position, add it
+          if (!frameSet.has(i)) {
+            const boxes = getBoxesForFrame(video, i);
+            const playerBox = boxes.find(box => box.player === player);
+            if (playerBox) {
+              playerPaths[player].positions.push({
+                frame: i,
+                bbox: playerBox.bbox
+              });
+            }
+          }
+        }
+      }
+      // Sort positions by frame to maintain proper path order
+      playerPaths[player].positions.sort((a, b) => a.frame - b.frame);
+    });
+
+    return playerPaths;
+  };
+
+  const smoothPath = (points) => {
+    if (points.length < 2) return '';
+    
+    const [first, ...rest] = points;
+    let pathD = `M ${first}`;
+    
+    for (let i = 0; i < rest.length; i++) {
+      const current = rest[i];
+      const prev = i === 0 ? first : rest[i - 1];
+      const next = rest[i + 1] || current;
+      
+      // Calculate control points
+      const [x, y] = current.split(',').map(Number);
+      const [prevX, prevY] = prev.split(',').map(Number);
+      const [nextX, nextY] = next.split(',').map(Number);
+      
+      const cp1x = prevX + (x - prevX) * (1 - SMOOTHING_WEIGHT);
+      const cp1y = prevY + (y - prevY) * (1 - SMOOTHING_WEIGHT);
+      const cp2x = x - (nextX - x) * SMOOTHING_WEIGHT;
+      const cp2y = y - (nextY - y) * SMOOTHING_WEIGHT;
+      
+      pathD += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${x},${y}`;
+    }
+    
+    return pathD;
+  };
 
   //console.log('width and height', { width, height });
   React.useEffect(() => {
@@ -245,12 +229,11 @@ export const VideoPlayerTrackingTemplate = ({
         // Get boxes for the current frame
         const boxes = getBoxesForFrame(video, currentClipFrame);
         const tagsForFrame = getTagsForFrame(video, currentClipFrame);
-        console.log('🔍 Tags for frame', { tagsForFrame, currentClipFrame });
         
         // Get original video dimensions from metadata
         let originalSize = { width: 1920, height: 1080 }; // Default fallback
         try {
-          const metadata = parseJsonIfNecessary(video.metadata);
+          const metadata = getVideoMetadata(video);
           originalSize = {
             width: metadata.width || 1920,
             height: metadata.height || 1080
