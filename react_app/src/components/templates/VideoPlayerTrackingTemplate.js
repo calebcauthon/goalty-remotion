@@ -452,30 +452,76 @@ export const VideoPlayerTrackingTemplate = ({
   const RECEPTION_LINE_OPACITY = 0.6;
   const RECEPTION_LINE_WIDTH = 3;
 
-  // Add this new function near the other preprocessing functions
+  // Add this helper function to find throw events
+  const getThrowEvents = (video, startFrame, endFrame) => {
+    const throwEvents = [];
+    
+    for (let frame = startFrame; frame <= endFrame; frame++) {
+      const tagsForFrame = getTagsForFrame(video, frame);
+      const boxes = getBoxesForFrame(video, frame);
+      
+      tagsForFrame.forEach(tag => {
+        const tagName = tag.name?.toLowerCase() || '';
+        const throwMatch = tagName.match(/(\w+)\s+throw/);
+        
+        if (throwMatch) {
+          const thrower = throwMatch[1];
+          const throwerBox = boxes.find(box => box.player === thrower);
+          if (throwerBox) {
+            throwEvents.push({
+              frame,
+              thrower,
+              bbox: throwerBox.bbox
+            });
+          }
+        }
+      });
+    }
+    
+    return throwEvents;
+  };
+
+  // Update the reception sequence code to include throw positions
   const getReceptionSequence = (video, currentClipFrame, currentPlayingClipRef) => {
-    const receptionPoints = [];
+    const sequence = [];
+    const throwEvents = getThrowEvents(video, currentPlayingClipRef.startFrame, currentClipFrame);
     
     // Collect all reception points up to current frame
     for (let frame = currentPlayingClipRef.startFrame; frame <= currentClipFrame; frame++) {
       const boxes = getBoxesForFrame(video, frame);
       const tagsForFrame = getTagsForFrame(video, frame);
       
-      boxes.forEach(box => {
-        if (hasReceptionAtFrame(video, frame, box.player)) {
-          receptionPoints.push({
-            frame,
-            player: box.player,
-            bbox: box.bbox
-          });
+      tagsForFrame.forEach(tag => {
+        const tagName = tag.name?.toLowerCase() || '';
+        const catchMatch = tagName.match(/(\w+)\s+catch/);
+        
+        if (catchMatch) {
+          const receiver = catchMatch[1];
+          const receiverBox = boxes.find(box => box.player === receiver);
+          if (receiverBox) {
+            // Find the most recent throw event before this catch
+            const throwEvent = throwEvents
+              .filter(t => t.frame < frame)
+              .sort((a, b) => b.frame - a.frame)[0]; // Get most recent throw
+
+            if (throwEvent) {
+              sequence.push({
+                throwFrame: throwEvent.frame,
+                throwBbox: throwEvent.bbox,
+                catchFrame: frame,
+                catchBbox: receiverBox.bbox,
+                thrower: throwEvent.thrower,
+                receiver
+              });
+            }
+          }
         }
       });
     }
 
-    // Sort by frame
-    receptionPoints.sort((a, b) => a.frame - b.frame);
-    
-    return receptionPoints;
+    // Sort by catch frame
+    sequence.sort((a, b) => a.catchFrame - b.catchFrame);
+    return sequence;
   };
 
   const getPlayerPossessionFrames = (video, maxFrame, currentPlayingClipRef) => {
@@ -982,22 +1028,22 @@ export const VideoPlayerTrackingTemplate = ({
                       </defs>
                       
                       {/* Completed throws */}
-                      {receptionSequence.slice(0, -1).map((reception, i) => {
-                        const current = scaleBox({ bbox: reception.bbox }, originalSize, containerSize);
-                        const next = scaleBox({ bbox: receptionSequence[i + 1].bbox }, originalSize, containerSize);
+                      {receptionSequence.map((reception, i) => {
+                        const throwPos = scaleBox({ bbox: reception.throwBbox }, originalSize, containerSize);
+                        const catchPos = scaleBox({ bbox: reception.catchBbox }, originalSize, containerSize);
                         
                         // Calculate control point for the parabola
-                        const midX = (current.x + next.x + current.width/2 + next.width/2) / 2;
-                        const midY = Math.min(current.y, next.y) - 
-                          Math.abs(next.x - current.x) * THROW_HEIGHT_FACTOR - 
-                          Math.abs(next.y - current.y) * THROW_HEIGHT_FACTOR;
+                        const midX = (throwPos.x + catchPos.x + throwPos.width/2 + catchPos.width/2) / 2;
+                        const midY = Math.min(throwPos.y, catchPos.y) - 
+                          Math.abs(catchPos.x - throwPos.x) * THROW_HEIGHT_FACTOR - 
+                          Math.abs(catchPos.y - throwPos.y) * THROW_HEIGHT_FACTOR;
                         
                         return (
                           <path
                             key={`reception-line-${i}`}
-                            d={`M ${current.x + current.width/2} ${current.y + current.height}
+                            d={`M ${throwPos.x + throwPos.width/2} ${throwPos.y + throwPos.height}
                                Q ${midX} ${midY} 
-                               ${next.x + next.width/2} ${next.y + next.height}`}
+                               ${catchPos.x + catchPos.width/2} ${catchPos.y + catchPos.height}`}
                             stroke={getParabolaColor()}
                             strokeWidth={RECEPTION_LINE_WIDTH}
                             opacity={getParabolaOpacity()}
