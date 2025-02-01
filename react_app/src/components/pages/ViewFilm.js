@@ -16,6 +16,7 @@ import { GlobalContext } from '../../index';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { RenderHistory } from 'components/RenderHistory';
 import { TagsTable } from 'components/TagsTable';
+import { ClipSettings } from 'components/ClipSettings';
 
 export const calculateTotalDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
@@ -805,90 +806,12 @@ function ViewFilm() {
                                 </tr>
                               )}
                             </Draggable>
-                            
-                            <tr className="settings-row">
-                              <td colSpan="8">
-                                <div className="clip-settings">
-                                  {Object.entries(VideoPlayerTrackingSettings).map(([key, setting]) => {
-                                    if (setting.type === 'playerGroup') {
-                                      // Get players for this clip
-                                      const video = videos.find(v => v.id === clip.videoId);
-                                      const metadata = video?.metadata ? 
-                                        (typeof video.metadata === 'string' ? JSON.parse(video.metadata) : video.metadata) 
-                                        : null;
-                                      
-                                      // Only get players that appear in the frame range
-                                      const players = getPlayersInFrameRange(metadata, clip.startFrame, clip.endFrame);
-
-                                      return Array.from(players).map(player => (
-                                        <div key={`${player}-settings`} className="player-settings-group">
-                                          <h4>{player}</h4>
-                                          {Object.entries(setting.perPlayer).map(([settingKey, settingConfig]) => (
-                                            <div key={`${player}-${settingKey}`} className="setting-item">
-                                              <label>{settingConfig.label}:</label>
-                                              <input
-                                                type={settingConfig.type}
-                                                min={settingConfig.type === 'range' ? (settingConfig.min ?? 0) : undefined}
-                                                max={settingConfig.type === 'range' ? (settingConfig.max ?? 1) : undefined}
-                                                step={settingConfig.type === 'range' ? (settingConfig.step ?? 0.1) : undefined}
-                                                checked={settingConfig.type === 'checkbox' ? 
-                                                  (clipSettings[clip.key]?.playerSettings?.[player]?.[settingKey] ?? settingConfig.default) : 
-                                                  undefined
-                                                }
-                                                value={settingConfig.type !== 'checkbox' ?
-                                                  (clipSettings[clip.key]?.playerSettings?.[player]?.[settingKey] ?? settingConfig.default) :
-                                                  undefined
-                                                }
-                                                onChange={(e) => {
-                                                  const value = settingConfig.type === 'range' ? 
-                                                    Number(e.target.value) : 
-                                                    settingConfig.type === 'checkbox' ?
-                                                      e.target.checked :
-                                                      e.target.value;
-                                                  handleSettingChange(
-                                                    clip.key, 
-                                                    'playerSettings', 
-                                                    {
-                                                      ...clipSettings[clip.key]?.playerSettings,
-                                                      [player]: {
-                                                        ...clipSettings[clip.key]?.playerSettings?.[player],
-                                                        [settingKey]: value
-                                                      }
-                                                    }
-                                                  );
-                                                }}
-                                              />
-                                            </div>
-                                          ))}
-                                        </div>
-                                      ));
-                                    }
-                                    
-                                    // Regular settings
-                                    return (
-                                      <div key={key} className="setting-item">
-                                        <label>{setting.label}:</label>
-                                        <input
-                                          type={setting.type}
-                                          min={setting.min ?? 0}
-                                          max={setting.max ?? 1}
-                                          step={setting.step ?? 0.1}
-                                          value={
-                                            (clipSettings[clip.key]?.[key] ?? setting.default)
-                                          }
-                                          onChange={(e) => {
-                                            const value = setting.type === 'range' ? 
-                                              Number(e.target.value) : 
-                                              e.target.value;
-                                            handleSettingChange(clip.key, key, value);
-                                          }}
-                                        />
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </td>
-                            </tr>
+                            <ClipSettings
+                              clip={clip}
+                              videos={videos}
+                              clipSettings={clipSettings}
+                              onSettingChange={handleSettingChange}
+                            />
                           </>
                         );
                       });

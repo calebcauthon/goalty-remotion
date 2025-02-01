@@ -1,0 +1,44 @@
+.settings-row {
+  background-color: #f8f9fa;
+}
+
+.clip-settings {
+  padding: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.player-settings-group {
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 4px;
+  background: white;
+}
+
+.player-settings-group h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.setting-item label {
+  min-width: 120px;
+  color: #666;
+}
+
+.setting-item input {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.setting-item input[type="range"] {
+  flex: 1;
+} 
