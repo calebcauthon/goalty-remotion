@@ -182,8 +182,9 @@ function ViewFilm() {
   };
 
   const handleAddClip = (videoId, tagName, frame, videoName, videoFilepath, startFrame, endFrame) => {
+    const timestamp = Date.now(); // Add timestamp to make each key unique
     const newClip = {
-      key: `${videoId}-${tagName}-${frame}-${startFrame}-${endFrame}`,
+      key: `${videoId}-${tagName}-${frame}-${startFrame}-${endFrame}-${timestamp}`,
       videoId,
       videoName,
       videoFilepath,
@@ -283,14 +284,8 @@ function ViewFilm() {
   }, [film]);
 
   const handleAddManyClips = async (newClipsArray) => {
-    // Filter out any clips that are already included
-    const uniqueNewClips = newClipsArray.filter(newClip => 
-      !includedClips.some(clip => clip.key === newClip.key)
-    );
-
-    if (uniqueNewClips.length === 0) return;
-
-    const updatedClips = [...includedClips, ...uniqueNewClips];
+    // Remove the duplicate filtering
+    const updatedClips = [...includedClips, ...newClipsArray];
 
     try {
       const response = await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
@@ -335,7 +330,7 @@ function ViewFilm() {
             video.name.toLowerCase().includes(tagFilter.toLowerCase())
           )
           .map(tag => ({
-            key: `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}`,
+            key: `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}-${Date.now()}-${Math.random()}`,
             videoId: video.id,
             videoName: video.name,
             videoFilepath: video.filepath,
@@ -356,7 +351,7 @@ function ViewFilm() {
         video.tags
           .filter(tag => tag.startFrame && tag.endFrame)
           .map(tag => ({
-            key: `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}`,
+            key: `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}-${Date.now()}-${Math.random()}`,
             videoId: video.id,
             videoName: video.name,
             videoFilepath: video.filepath,

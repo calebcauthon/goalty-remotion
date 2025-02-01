@@ -56,27 +56,24 @@ export const TagsTable = ({
                 )
                 .map((tag, index) => {
                   const tagKey = `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}`;
-                  const isIncluded = includedClips.some(clip => clip.key === tagKey);
                   
                   return (
                     <tr key={`${video.id}-${index}`}>
                       <td>
-                        {!isIncluded && (
-                          <button
-                            onClick={() => onAddClip(
-                              video.id,
-                              tag.name,
-                              tag.frame,
-                              video.name,
-                              video.filepath,
-                              tag.startFrame,
-                              tag.endFrame
-                            )}
-                            className="add-clip-button"
-                          >
-                            Add
-                          </button>
-                        )}
+                        <button
+                          onClick={() => onAddClip(
+                            video.id,
+                            tag.name,
+                            tag.frame,
+                            video.name,
+                            video.filepath,
+                            tag.startFrame,
+                            tag.endFrame
+                          )}
+                          className="add-clip-button"
+                        >
+                          Add
+                        </button>
                       </td>
                       <td>{video.name}</td>
                       <td>{tag.name}</td>
