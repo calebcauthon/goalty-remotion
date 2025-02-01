@@ -23,7 +23,8 @@ export function HotkeySection({
   setHotkeyButtonsExpanded,
   hotkeysExpanded,
   setHotkeysExpanded,
-  globalData
+  globalData,
+  shortcutActions,
 }) {
   const [activeInstructions, setActiveInstructions] = useState(new Set());
 
@@ -167,8 +168,9 @@ export function HotkeySection({
                   <button
                     onClick={() => {
                       if (!dragMode) {
-                        try {
-                          eval(shortcut.action);
+                        const action = shortcutActions[key];
+                        if (action) {
+                          action();
                           
                           if (isIncrementButton && incrementKey) {
                             setActiveIncrementButtons(prev => {
@@ -186,8 +188,6 @@ export function HotkeySection({
                               });
                             }
                           }
-                        } catch (error) {
-                          console.error('Error executing hotkey action:', error);
                         }
                       }
                     }}

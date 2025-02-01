@@ -473,6 +473,12 @@ function VideoDetail() {
 
   const desiredWidth = 800;
 
+  const shortcutActions = {
+    'a': () => seekBackward(),
+    'd': () => seekForward(),
+    // ... map all your shortcuts to their corresponding functions
+  };
+
   return (
     <Layout>
       <div className="video-detail-container">
@@ -648,6 +654,7 @@ function VideoDetail() {
           hotkeysExpanded={hotkeysExpanded}
           setHotkeysExpanded={setHotkeysExpanded}
           globalData={globalData}
+          shortcutActions={getCurrentHotkeys()}
         />
 
         <div className="metadata-container" style={{ border: 'none' }}>
