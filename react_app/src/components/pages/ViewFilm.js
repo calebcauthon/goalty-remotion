@@ -51,6 +51,22 @@ const getClipDurationClass = (duration, allDurations) => {
   return '';
 };
 
+const getPlayersInFrameRange = (metadata, startFrame, endFrame) => {
+  if (!metadata?.boxes) return new Set();
+  
+  const players = new Set();
+  metadata.boxes.forEach(box => {
+    if (!box) return;
+    Object.entries(box).forEach(([player, data]) => {
+      const frame = data.frame;
+      if (frame >= startFrame && frame <= endFrame) {
+        players.add(player);
+      }
+    });
+  });
+  return players;
+};
+
 function ViewFilm() {
   const globalData = useContext(GlobalContext);
   const [film, setFilm] = useState(null);
@@ -800,12 +816,8 @@ function ViewFilm() {
                                         (typeof video.metadata === 'string' ? JSON.parse(video.metadata) : video.metadata) 
                                         : null;
                                       
-                                      const players = new Set();
-                                      metadata?.boxes?.forEach(box => {
-                                        if (box) {
-                                          Object.keys(box).forEach(player => players.add(player));
-                                        }
-                                      });
+                                      // Only get players that appear in the frame range
+                                      const players = getPlayersInFrameRange(metadata, clip.startFrame, clip.endFrame);
 
                                       return Array.from(players).map(player => (
                                         <div key={`${player}-settings`} className="player-settings-group">
