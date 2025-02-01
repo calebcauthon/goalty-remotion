@@ -8,7 +8,8 @@ import {
   VideoFirstFiveSeconds,
   calculateFirstFiveSecondsDuration,
   VideoPlayerTrackingTemplate,
-  calculatePlayerTrackingDuration 
+  calculatePlayerTrackingDuration,
+  VideoPlayerTrackingSettings
 } from 'components/templates';
 import { CloudRenderButton } from 'components/CloudRenderButton';
 import { GlobalContext } from '../../index';
@@ -77,6 +78,7 @@ function ViewFilm() {
   const [currentPlayingClip, setCurrentPlayingClip] = useState(null);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [currentPlayingClipRef, setCurrentPlayingClipRef] = useState(null);
+  const [clipSettings, setClipSettings] = useState({});
 
   const fetchFilm = async () => {
     try {
@@ -593,6 +595,16 @@ function ViewFilm() {
     };
   }, [previewPending, previewStartFrame]);
 
+  const handleSettingChange = (clipKey, setting, value) => {
+    setClipSettings(prev => ({
+      ...prev,
+      [clipKey]: {
+        ...(prev[clipKey] || {}),
+        [setting]: value
+      }
+    }));
+  };
+
   if (!film) {
     return <Layout>Loading...</Layout>;
   }
@@ -696,85 +708,167 @@ function ViewFilm() {
                           : null;
                         
                         return (
-                          <Draggable 
-                            key={clip.key} 
-                            draggableId={clip.key} 
-                            index={index}
-                          >
-                            {(provided, snapshot) => (
-                              <tr
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={`${snapshot.isDragging ? 'dragging' : ''} ${durationClass}`}
-                              >
-                                <td {...provided.dragHandleProps} className="drag-handle">
-                                  ⋮⋮
-                                </td>
-                                <td>
-                                  <a 
-                                    href={`/videos/${clip.videoId}?startFrame=${clip.startFrame}&endFrame=${clip.endFrame}`} 
-                                    className="video-link"
-                                  >
-                                    {clip.videoName} ({clip.startFrame}-{clip.endFrame})
-                                  </a>
-                                </td>
-                                <td>{clip.tagName}</td>
-                                <td>
-                                  {isCurrentClip ? (
-                                    <span style={{ 
-                                      color: '#0d6efd',
-                                      fontWeight: 'bold'
-                                    }}>
-                                      {currentClipFrame} / abs: {currentFrame}
+                          <>
+                            <Draggable 
+                              key={clip.key} 
+                              draggableId={clip.key} 
+                              index={index}
+                            >
+                              {(provided, snapshot) => (
+                                <tr
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={`${snapshot.isDragging ? 'dragging' : ''} ${durationClass}`}
+                                >
+                                  <td {...provided.dragHandleProps} className="drag-handle">
+                                    ⋮⋮
+                                  </td>
+                                  <td>
+                                    <a 
+                                      href={`/videos/${clip.videoId}?startFrame=${clip.startFrame}&endFrame=${clip.endFrame}`} 
+                                      className="video-link"
+                                    >
+                                      {clip.videoName} ({clip.startFrame}-{clip.endFrame})
+                                    </a>
+                                  </td>
+                                  <td>{clip.tagName}</td>
+                                  <td>
+                                    {isCurrentClip ? (
+                                      <span style={{ 
+                                        color: '#0d6efd',
+                                        fontWeight: 'bold'
+                                      }}>
+                                        {currentClipFrame} / abs: {currentFrame}
+                                      </span>
+                                    ) : (
+                                      clip.frame
+                                    )}
+                                  </td>
+                                  <td>{`${clip.startFrame}-${clip.endFrame}`}</td>
+                                  <td className="duration-cell">
+                                    <div className="duration-content">
+                                      <span>{durationInSeconds}s</span>
+                                      {currentPlayingClip === clip.key && (
+                                        <div className="clip-progress">
+                                          <div 
+                                            className="progress-bar"
+                                            style={{
+                                              width: `${Math.round(((currentFrame - clip.startFrame) / (clip.endFrame - clip.startFrame)) * 100)}%`
+                                            }}
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <span 
+                                      className="clickable-frame-range"
+                                      onClick={() => handleSeekToFrame(startFrame)}
+                                    >
+                                      {`${startFrame}-${endFrame}`}
                                     </span>
-                                  ) : (
-                                    clip.frame
-                                  )}
-                                </td>
-                                <td>{`${clip.startFrame}-${clip.endFrame}`}</td>
-                                <td className="duration-cell">
-                                  <div className="duration-content">
-                                    <span>{durationInSeconds}s</span>
-                                    {currentPlayingClip === clip.key && (
-                                      <div className="clip-progress">
-                                        <div 
-                                          className="progress-bar"
-                                          style={{
-                                            width: `${Math.round(((currentFrame - clip.startFrame) / (clip.endFrame - clip.startFrame)) * 100)}%`
+                                  </td>
+                                  <td>
+                                    <div className="clip-actions">
+                                      <button 
+                                        onClick={() => handlePreviewClip(clip)}
+                                        className={`preview-clip-button ${currentPlayingClip === clip.key ? 'playing' : ''}`}
+                                        title="Preview this clip"
+                                      >
+                                        {currentPlayingClip === clip.key ? '⏸️' : '▶️'}
+                                      </button>
+                                      <button 
+                                        onClick={() => handleRemoveClip(clip.key)}
+                                        className="remove-clip-button"
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </Draggable>
+                            
+                            <tr className="settings-row">
+                              <td colSpan="8">
+                                <div className="clip-settings">
+                                  {Object.entries(VideoPlayerTrackingSettings).map(([key, setting]) => {
+                                    if (setting.type === 'playerGroup') {
+                                      // Get players for this clip
+                                      const video = videos.find(v => v.id === clip.videoId);
+                                      const metadata = video?.metadata ? 
+                                        (typeof video.metadata === 'string' ? JSON.parse(video.metadata) : video.metadata) 
+                                        : null;
+                                      
+                                      const players = new Set();
+                                      metadata?.boxes?.forEach(box => {
+                                        if (box) {
+                                          Object.keys(box).forEach(player => players.add(player));
+                                        }
+                                      });
+
+                                      return Array.from(players).map(player => (
+                                        <div key={`${player}-settings`} className="player-settings-group">
+                                          <h4>{player}</h4>
+                                          {Object.entries(setting.perPlayer).map(([settingKey, settingConfig]) => (
+                                            <div key={`${player}-${settingKey}`} className="setting-item">
+                                              <label>{settingConfig.label}:</label>
+                                              <input
+                                                type={settingConfig.type}
+                                                min={settingConfig.min ?? 0}
+                                                max={settingConfig.max ?? 1}
+                                                step={settingConfig.step ?? 0.1}
+                                                value={
+                                                  (clipSettings[clip.key]?.playerSettings?.[player]?.[settingKey] ?? settingConfig.default)
+                                                }
+                                                onChange={(e) => {
+                                                  const value = settingConfig.type === 'range' ? 
+                                                    Number(e.target.value) : e.target.value;
+                                                  handleSettingChange(
+                                                    clip.key, 
+                                                    'playerSettings', 
+                                                    {
+                                                      ...clipSettings[clip.key]?.playerSettings,
+                                                      [player]: {
+                                                        ...clipSettings[clip.key]?.playerSettings?.[player],
+                                                        [settingKey]: value
+                                                      }
+                                                    }
+                                                  );
+                                                }}
+                                              />
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ));
+                                    }
+                                    
+                                    // Regular settings
+                                    return (
+                                      <div key={key} className="setting-item">
+                                        <label>{setting.label}:</label>
+                                        <input
+                                          type={setting.type}
+                                          min={setting.min ?? 0}
+                                          max={setting.max ?? 1}
+                                          step={setting.step ?? 0.1}
+                                          value={
+                                            (clipSettings[clip.key]?.[key] ?? setting.default)
+                                          }
+                                          onChange={(e) => {
+                                            const value = setting.type === 'range' ? 
+                                              Number(e.target.value) : 
+                                              e.target.value;
+                                            handleSettingChange(clip.key, key, value);
                                           }}
                                         />
                                       </div>
-                                    )}
-                                  </div>
-                                </td>
-                                <td>
-                                  <span 
-                                    className="clickable-frame-range"
-                                    onClick={() => handleSeekToFrame(startFrame)}
-                                  >
-                                    {`${startFrame}-${endFrame}`}
-                                  </span>
-                                </td>
-                                <td>
-                                  <div className="clip-actions">
-                                    <button 
-                                      onClick={() => handlePreviewClip(clip)}
-                                      className={`preview-clip-button ${currentPlayingClip === clip.key ? 'playing' : ''}`}
-                                      title="Preview this clip"
-                                    >
-                                      {currentPlayingClip === clip.key ? '⏸️' : '▶️'}
-                                    </button>
-                                    <button 
-                                      onClick={() => handleRemoveClip(clip.key)}
-                                      className="remove-clip-button"
-                                    >
-                                      Remove
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </Draggable>
+                                    );
+                                  })}
+                                </div>
+                              </td>
+                            </tr>
+                          </>
                         );
                       });
                     })()}
@@ -799,7 +893,8 @@ function ViewFilm() {
                   onFrameUpdate: handleFrameUpdate,
                   width: 1280,
                   height: 720,
-                  currentPlayingClipRef: currentPlayingClipRef
+                  currentPlayingClipRef: currentPlayingClipRef,
+                  settings: clipSettings[currentPlayingClipRef?.key] || {}
                 }}
                 durationInFrames={calculateDuration()}
                 compositionWidth={1280}

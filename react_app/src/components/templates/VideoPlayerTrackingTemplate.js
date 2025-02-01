@@ -9,6 +9,54 @@ export const calculatePlayerTrackingDuration = (selectedTags) => {
   }, 0);
 };
 
+export const VideoPlayerTrackingSettings = {
+  playerNameColor: {
+    type: 'color',
+    label: 'Player Name Color',
+    default: '#FF6B00'
+  },
+  parabolaColor: {
+    type: 'color',
+    label: 'Throw Line Color',
+    default: '#0000FF'  // Default blue color
+  },
+  parabolaOpacity: {
+    type: 'range',
+    label: 'Throw Line Opacity',
+    min: -0.1,
+    max: 1,
+    step: 0.1,
+    default: 0.6
+  },
+  playerSettings: {
+    type: 'playerGroup',
+    label: 'Player Settings',
+    perPlayer: {
+      pathColor: {
+        type: 'color',
+        label: 'Path Color',
+        default: '#FF0000'
+      },
+      pathOpacity: {
+        type: 'range',
+        label: 'Path Opacity',
+        min: 0,
+        max: 1,
+        step: 0.1,
+        default: 0.8
+      },
+      boxOpacity: {
+        type: 'range',
+        label: 'Box Opacity',
+        min: 0,
+        max: 1,
+        step: 0.1,
+        default: 1
+      }
+    }
+  }
+};
+
 export const VideoPlayerTrackingTemplate = ({ 
   selectedVideos, 
   videos, 
@@ -20,7 +68,8 @@ export const VideoPlayerTrackingTemplate = ({
   hoveredDetectionIndex,
   width=1920,
   height=1080,
-  currentPlayingClipRef=null
+  currentPlayingClipRef=null,
+  settings={}
 }) => {
   const tagArray = useMemo(() => Array.from(selectedTags), []);
   const frame = useCurrentFrame();
@@ -104,9 +153,22 @@ export const VideoPlayerTrackingTemplate = ({
     [getUniquePlayers]
   );
 
-  // Update getPlayerColor to use a default color for unknown players
+  // Update getPlayerColor to use ??
   const getPlayerColor = (player) => {
-    return PLAYER_COLORS[player] || '#FF0000';
+    const defaultColor = PLAYER_COLORS[player] ?? '#FF0000';
+    return settings?.playerSettings?.[player]?.pathColor ?? defaultColor;
+  };
+
+  // Update getPlayerOpacity to handle numeric values properly
+  const getPlayerOpacity = (player) => {
+    const opacity = settings?.playerSettings?.[player]?.pathOpacity;
+    return typeof opacity === 'number' ? opacity : TRAIL_OPACITY;
+  };
+
+  // Add a helper function to get box opacity
+  const getPlayerBoxOpacity = (player) => {
+    const opacity = settings?.playerSettings?.[player]?.boxOpacity;
+    return typeof opacity === 'number' ? opacity : 1;
   };
 
   var shownMetadata = false;
@@ -611,6 +673,7 @@ export const VideoPlayerTrackingTemplate = ({
                     {boxes.map((box, i) => {
                       const scaledBox = scaleBox(box, originalSize, containerSize);
                       const hasReception = hasReceptionAtFrame(video, currentClipFrame, box.player);
+                      const boxOpacity = getPlayerBoxOpacity(box.player);
                       
                       return (
                         <div key={i}>
@@ -622,7 +685,8 @@ export const VideoPlayerTrackingTemplate = ({
                             height: `${scaledBox.height}px`,
                             border: '2px solid #FF6B00',
                             boxSizing: 'border-box',
-                            pointerEvents: 'none'
+                            pointerEvents: 'none',
+                            opacity: boxOpacity
                           }} />
                           {/* Position marker circle */}
                           <div style={{
@@ -635,19 +699,21 @@ export const VideoPlayerTrackingTemplate = ({
                             borderRadius: '50%',
                             pointerEvents: 'none',
                             transform: hasReception ? `scale(2)` : 'none',
-                            boxShadow: hasReception ? '0 0 10px rgba(255, 255, 0, 0.5)' : 'none'
+                            boxShadow: hasReception ? '0 0 10px rgba(255, 255, 0, 0.5)' : 'none',
+                            opacity: boxOpacity
                           }} />
                           <div style={{
                             position: 'absolute',
                             left: `${scaledBox.x}px`,
                             top: `${scaledBox.y - 25}px`,
                             background: '#FF6B00',
-                            color: 'white',
+                            color: settings.playerNameColor ?? VideoPlayerTrackingSettings.playerNameColor.default,
                             padding: '2px 6px',
                             borderRadius: '4px',
                             fontSize: '14px',
                             fontWeight: 'bold',
-                            whiteSpace: 'nowrap'
+                            whiteSpace: 'nowrap',
+                            opacity: boxOpacity
                           }}>
                             {box.player}
                             {hasReception ? ' 🏈' : ''}
@@ -694,7 +760,7 @@ export const VideoPlayerTrackingTemplate = ({
                               stroke={getPlayerColor(player)}
                               strokeWidth={LINE_THICKNESS}
                               fill="none"
-                              opacity={TRAIL_OPACITY}
+                              opacity={getPlayerOpacity(player)}
                             />
                             {/* Possession path */}
                             <path
@@ -702,7 +768,7 @@ export const VideoPlayerTrackingTemplate = ({
                               stroke={"white"}
                               strokeWidth={POSSESSION_LINE_THICKNESS}
                               fill="none"
-                              opacity={POSSESSION_OPACITY}
+                              opacity={getPlayerOpacity(player) * 1.2}
                             />
                           </svg>
                           {data.positions.filter(pos => 
@@ -754,8 +820,8 @@ export const VideoPlayerTrackingTemplate = ({
                         >
                           <polygon 
                             points="0 0, 10 3.5, 0 7" 
-                            fill={RECEPTION_LINE_COLOR}
-                            opacity={RECEPTION_LINE_OPACITY}
+                            fill={settings.parabolaColor ?? VideoPlayerTrackingSettings.parabolaColor.default}
+                            opacity={settings.parabolaOpacity ?? VideoPlayerTrackingSettings.parabolaOpacity.default}
                           />
                         </marker>
                       </defs>
@@ -777,9 +843,9 @@ export const VideoPlayerTrackingTemplate = ({
                             d={`M ${current.x + current.width/2} ${current.y + current.height}
                                Q ${midX} ${midY} 
                                ${next.x + next.width/2} ${next.y + next.height}`}
-                            stroke={RECEPTION_LINE_COLOR}
+                            stroke={settings.parabolaColor ?? VideoPlayerTrackingSettings.parabolaColor.default}
                             strokeWidth={RECEPTION_LINE_WIDTH}
-                            opacity={RECEPTION_LINE_OPACITY}
+                            opacity={settings.parabolaOpacity ?? VideoPlayerTrackingSettings.parabolaOpacity.default}
                             fill="none"
                             markerEnd="url(#arrowhead)"
                           />
@@ -834,9 +900,9 @@ export const VideoPlayerTrackingTemplate = ({
                           <path
                             key="active-throw"
                             d={`M ${points.join(' L ')}`}
-                            stroke={RECEPTION_LINE_COLOR}
+                            stroke={settings.parabolaColor ?? VideoPlayerTrackingSettings.parabolaColor.default}
                             strokeWidth={RECEPTION_LINE_WIDTH}
-                            opacity={RECEPTION_LINE_OPACITY * 0.9}
+                            opacity={settings.parabolaOpacity ?? VideoPlayerTrackingSettings.parabolaOpacity.default}
                             fill="none"
                             markerEnd="url(#arrowhead)"
                             strokeDasharray="4 4"

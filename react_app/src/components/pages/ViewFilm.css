@@ -483,3 +483,54 @@
   background-color: rgba(76, 175, 80, 0.2);
   transition: width 0.1s linear;
 }
+
+.settings-row {
+  background: #f8f9fa;
+}
+
+.clip-settings {
+  padding: 8px;
+  display: flex;
+  gap: 16px;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.setting-item label {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.setting-item input {
+  padding: 4px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.player-settings-group {
+  border: 1px solid #eee;
+  padding: 8px;
+  border-radius: 4px;
+  margin: 4px 0;
+}
+
+.player-settings-group h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.clip-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px;
+}
+
+.setting-item input[type="range"] {
+  width: 100px;
+}
