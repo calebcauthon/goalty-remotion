@@ -59,6 +59,14 @@ export const VideoPlayerTrackingSettings = {
         default: 1
       }
     }
+  },
+  stretchCount: {
+    type: 'range',
+    label: 'Trail Detail',
+    min: 1,
+    max: 100,
+    step: 1,
+    default: 15
   }
 };
 
@@ -300,13 +308,21 @@ export const VideoPlayerTrackingTemplate = ({
     );
   };
 
+  // Replace the hardcoded STRETCH_COUNT with a function
+  const getStretchCount = () => {
+    if (!currentSettings) return VideoPlayerTrackingSettings.stretchCount.default;
+    return currentSettings.stretchCount ?? VideoPlayerTrackingSettings.stretchCount.default;
+  };
+
+  // Update getTrailPositions to use the dynamic stretch count
   const getTrailPositions = (video, currentClipFrame, currentPlayingClipRef) => {
     const playerPaths = {};
-    const frameSet = new Set(); // Track which frames we've already processed
+    const frameSet = new Set();
+    const stretchCount = getStretchCount();
     
-    // First pass: collect paths at STRETCH_COUNT intervals
-    for (let i = currentPlayingClipRef.startFrame; i <= currentClipFrame; i += STRETCH_COUNT) {
-      const boxes = getBoxesForFrame(video, i);
+    // Helper to add frame data to paths
+    const addFrameData = (frame) => {
+      const boxes = getBoxesForFrame(video, frame);
       boxes.forEach(box => {
         if (!playerPaths[box.player]) {
           playerPaths[box.player] = {
@@ -315,14 +331,27 @@ export const VideoPlayerTrackingTemplate = ({
           };
         }
         playerPaths[box.player].positions.push({
-          frame: i,
+          frame,
           bbox: box.bbox
         });
-        frameSet.add(i);
+        frameSet.add(frame);
       });
+    };
+
+    // Always add first frame
+    addFrameData(currentPlayingClipRef.startFrame);
+    
+    // Collect paths at stretchCount intervals
+    for (let i = currentPlayingClipRef.startFrame + stretchCount; i <= currentClipFrame; i += stretchCount) {
+      addFrameData(i);
     }
 
-    // Second pass: find all reception/throw frames and add their positions
+    // Always add current frame if not already added
+    if (!frameSet.has(currentClipFrame)) {
+      addFrameData(currentClipFrame);
+    }
+
+    // Rest of the function remains the same...
     Object.keys(playerPaths).forEach(player => {
       for (let i = currentPlayingClipRef.startFrame; i <= currentClipFrame; i++) {
         const tagsForFrame = getTagsForFrame(video, i);
@@ -348,7 +377,6 @@ export const VideoPlayerTrackingTemplate = ({
           playerPaths[player].receptionFrames.push(i);
         }
       }
-      // Sort positions by frame to maintain proper path order
       playerPaths[player].positions.sort((a, b) => a.frame - b.frame);
     });
 
@@ -358,7 +386,7 @@ export const VideoPlayerTrackingTemplate = ({
   const smoothPath = (points) => {
     if (points.length < 2) return '';
     
-    // Find continuous segments
+    // Find continuous segments with a more generous distance threshold
     let segments = [];
     let currentSegment = [points[0]];
     
@@ -366,16 +394,25 @@ export const VideoPlayerTrackingTemplate = ({
       const current = points[i];
       const prev = points[i - 1];
       
-      // Check if points are adjacent in the original data
       const [prevX, prevY] = prev.split(',').map(Number);
       const [currX, currY] = current.split(',').map(Number);
       const distance = Math.sqrt(Math.pow(currX - prevX, 2) + Math.pow(currY - prevY, 2));
       
-      if (distance < 100) { // Adjust threshold as needed
+      // Increase threshold and use relative to screen size
+      const threshold = Math.max(width, height) * 0.2; // 20% of screen size
+      
+      if (distance < threshold) {
         currentSegment.push(current);
       } else {
-        segments.push(currentSegment);
-        currentSegment = [current];
+        // Instead of creating a new segment, add interpolated points
+        const steps = Math.ceil(distance / threshold);
+        for (let step = 1; step < steps; step++) {
+          const t = step / steps;
+          const interpX = prevX + (currX - prevX) * t;
+          const interpY = prevY + (currY - prevY) * t;
+          currentSegment.push(`${interpX},${interpY}`);
+        }
+        currentSegment.push(current);
       }
     }
     segments.push(currentSegment);
@@ -397,6 +434,7 @@ export const VideoPlayerTrackingTemplate = ({
           const [prevX, prevY] = prev.split(',').map(Number);
           const [nextX, nextY] = next.split(',').map(Number);
           
+          // Adjust control points to create smoother transitions
           const cp1x = prevX + (x - prevX) * (1 - smoothing_factor);
           const cp1y = prevY + (y - prevY) * (1 - smoothing_factor);
           const cp2x = x - (nextX - x) * smoothing_factor;
