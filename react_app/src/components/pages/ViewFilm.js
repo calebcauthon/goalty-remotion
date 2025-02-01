@@ -280,37 +280,16 @@ function ViewFilm() {
 
   const checkRenderStatus = async (filename) => {
     try {
-      const data = await filmService.checkRenderStatus(globalData.APIbaseUrl, filename);
-      
-      if (data.status === 'completed') {
-        setRenderStatus('completed');
-        
-        const existingRenders = film.data.renders || [];
-        const newRender = {
-          filename: data.filename,
-          b2_url: data.b2_url,
-          timestamp: data.timestamp,
-          file_id: data.file_id,
-          size: data.size,
-          status: 'completed'
-        };
-
-        await filmService.updateFilmData(globalData.APIbaseUrl, id, {
-          ...film.data,
-          renders: [...existingRenders, newRender]
-        });
-
-        setFilm(prevFilm => ({
-          ...prevFilm,
-          data: {
-            ...prevFilm.data,
-            renders: [...existingRenders, newRender]
-          }
-        }));
-
-        return true;
-      }
-      return false;
+      const isComplete = await filmService.checkRenderStatus(
+        globalData.APIbaseUrl, 
+        filename,
+        film,
+        ({ status, film: updatedFilm }) => {
+          setRenderStatus(status);
+          setFilm(updatedFilm);
+        }
+      );
+      return isComplete;
     } catch (error) {
       console.error('Error checking render status:', error);
       return false;

@@ -31,9 +31,40 @@ export const filmService = {
     return response.json();
   },
 
-  async checkRenderStatus(APIbaseUrl, filename) {
+  async checkRenderStatus(APIbaseUrl, filename, film, onStatusUpdate) {
     const response = await fetch(`${APIbaseUrl}/api/check-render/${filename}`);
-    return response.json();
+    const data = await response.json();
+    
+    if (data.status === 'completed') {
+      const existingRenders = film.data.renders || [];
+      const newRender = {
+        filename: data.filename,
+        b2_url: data.b2_url,
+        timestamp: data.timestamp,
+        file_id: data.file_id,
+        size: data.size,
+        status: 'completed'
+      };
+
+      await this.updateFilmData(APIbaseUrl, film.id, {
+        ...film.data,
+        renders: [...existingRenders, newRender]
+      });
+
+      onStatusUpdate({
+        status: 'completed',
+        film: {
+          ...film,
+          data: {
+            ...film.data,
+            renders: [...existingRenders, newRender]
+          }
+        }
+      });
+
+      return true;
+    }
+    return false;
   },
 
   async refreshB2Files(APIbaseUrl, filenames) {
