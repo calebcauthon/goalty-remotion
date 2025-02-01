@@ -38,7 +38,11 @@ def render_video(render_params: RenderVideoRequest):
     import json
     from b2sdk.v2 import B2Api, InMemoryAccountInfo
 
-    def render_mp4(props, output_file_name):
+    def render_mp4(props, output_file_name, composition_name):
+      with open('/tmp/composition.txt', 'w') as f:
+          print(f"Writing composition name to /tmp/composition.txt: {composition_name}")
+          f.write(composition_name)
+
       # Write output filename to a temporary file
       with open('/tmp/filename.txt', 'w') as f:
           print(f"Writing output filename to /tmp/filename.txt: {output_file_name}")
@@ -71,7 +75,7 @@ def render_video(render_params: RenderVideoRequest):
       return False
 
 
-    already_exists = render_mp4(render_params.props, render_params.output_file_name)
+    already_exists = render_mp4(render_params.props, render_params.output_file_name, render_params.composition_name)
     upload_video(f"out/{render_params.output_file_name}", render_params.output_file_name) if not already_exists else None
 
     return render_params.output_file_name
@@ -85,13 +89,7 @@ def render_video(render_params: RenderVideoRequest):
 )
 @modal.web_endpoint(method="POST")
 def split_render_request(render_params: RenderVideoRequest):
-    import time
-    
-    # Write composition name to a temporary file
-    with open('/tmp/composition.txt', 'w') as f:
-        composition_name = render_params.composition_name
-        print(f"Writing composition name to /tmp/composition.txt: {composition_name}")
-        f.write(composition_name)
+    import time 
 
     # Add this function to download raw videos to the volume
     def download_raw_videos(video_urls: list[str]):
