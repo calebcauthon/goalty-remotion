@@ -95,7 +95,7 @@ export const VideoPlayerTrackingSettings = {
       customNameBgColor: {
         type: 'color',
         label: 'Name Background',
-        default: '#FF6B00'
+        default: '' // Remove default so it uses path color
       },
       // Custom opacity overrides
       customBoxOpacity: {
@@ -147,7 +147,12 @@ export const VideoPlayerTrackingSettings = {
     max: 60,
     step: 1,
     default: 30
-  }
+  },
+  showEntireClip: {
+    type: 'checkbox',
+    label: 'Show Entire Clip',
+    default: false
+  },
 };
 
 // Add this helper function near the top of the file
@@ -958,11 +963,16 @@ export const VideoPlayerTrackingTemplate = ({
   };
 
   const getPlayerNameBackgroundColor = (player) => {
-    if (!currentSettings) return getPlayerNameBgColor();
+    if (!currentSettings) return getPlayerColor(player); // Default to path color
 
     const clipSettings = currentSettings.playerSettings?.[player];
     if (clipSettings?.useCustomSettings) {
-      return clipSettings?.customNameBgColor ?? VideoPlayerTrackingSettings.playerSettings.perPlayer.customNameBgColor.default;
+      // If they have a custom background color set, use that
+      if (clipSettings.customNameBgColor) {
+        return clipSettings.customNameBgColor;
+      }
+      // Otherwise default to their path color
+      return clipSettings.pathColor ?? getPlayerColor(player);
     }
     
     return getPlayerNameBgColor();
@@ -995,6 +1005,12 @@ export const VideoPlayerTrackingTemplate = ({
     return getPlayerNameOpacity();
   };
 
+  // In the template component, add this after other settings getters
+  const getShowEntireClip = () => {
+    if (!currentSettings) return VideoPlayerTrackingSettings.showEntireClip.default;
+    return currentSettings.showEntireClip ?? VideoPlayerTrackingSettings.showEntireClip.default;
+  };
+
   return (
     <AbsoluteFill>
       {tagArray.map((tagInfo, index) => {
@@ -1017,10 +1033,15 @@ export const VideoPlayerTrackingTemplate = ({
         const clipDuration = parseInt(tagInfo.endFrame, 10) - parseInt(tagInfo.startFrame, 10);
         const currentClipFrame = frame - previousClipsDuration + parseInt(tagInfo.startFrame, 10);
         
-        // Update all other instances of currentPlayingClipRef to effectiveCurrentClipRef
+        // Add this to override the frame when showEntireClip is enabled
+        const effectiveClipFrame = getShowEntireClip() ? 
+          parseInt(tagInfo.endFrame, 10) : 
+          currentClipFrame;
+        
+        // Use currentClipFrame for boxes and tags, effectiveClipFrame for paths and throws
         const boxes = isCurrentClip ? getBoxesForFrame(video, currentClipFrame) : [];
         const tagsForFrame = isCurrentClip ? getTagsForFrame(video, currentClipFrame) : [];
-        const receptionSequence = isCurrentClip ? getReceptionSequence(video, currentClipFrame, effectiveCurrentClipRef) : [];
+        const receptionSequence = isCurrentClip ? getReceptionSequence(video, effectiveClipFrame, effectiveCurrentClipRef) : [];
 
         // Get original video dimensions from metadata
         let originalSize = { width: 1920, height: 1080 }; // Default fallback
@@ -1135,13 +1156,13 @@ export const VideoPlayerTrackingTemplate = ({
                     })}
 
                     {/* Render trail points */}
-                    {Object.entries(getTrailPositions(video, currentClipFrame, effectiveCurrentClipRef)).map(([player, data]) => {
+                    {Object.entries(getTrailPositions(video, effectiveClipFrame, effectiveCurrentClipRef)).map(([player, data]) => {
                       const pathPoints = data.positions.map(pos => {
                         const scaledPos = scaleBox({ bbox: pos.bbox }, originalSize, containerSize);
                         return `${scaledPos.x + scaledPos.width/2},${scaledPos.y + scaledPos.height}`;
                       });
 
-                      const possessionRanges = getPlayerPossessionFrames(video, currentClipFrame, effectiveCurrentClipRef);
+                      const possessionRanges = getPlayerPossessionFrames(video, effectiveClipFrame, effectiveCurrentClipRef);
                       const playerPossessions = possessionRanges[player] || [];
 
                       // Split path into segments based on possession
@@ -1259,7 +1280,7 @@ export const VideoPlayerTrackingTemplate = ({
 
                       {/* Active throw */}
                       {(() => {
-                        const activeThrow = getActiveThrow(video, currentClipFrame);
+                        const activeThrow = getActiveThrow(video, effectiveClipFrame);
                         if (!activeThrow) return null;
 
                         const start = scaleBox({ bbox: activeThrow.bbox }, originalSize, containerSize);
@@ -1284,7 +1305,7 @@ export const VideoPlayerTrackingTemplate = ({
                         // Calculate how much of the path to show based on frame progress
                         const throwDuration = activeThrow.nextReception ? 
                           (activeThrow.nextReception.frame - activeThrow.startFrame) : 30;
-                        const frameProgress = (currentClipFrame - activeThrow.startFrame) / throwDuration;
+                        const frameProgress = (effectiveClipFrame - activeThrow.startFrame) / throwDuration;
                         const progress = Math.min(frameProgress, 1);
                         
                         // Generate points along the full parabola
