@@ -62,6 +62,46 @@ export const VideoPlayerTrackingSettings = {
   }
 };
 
+// Add this helper function near the top of the file
+const getCurrentClipFromFrame = (frame, selectedTags) => {
+  const tagArray = Array.from(selectedTags);
+  let accumulatedFrames = 0;
+
+  for (const tag of tagArray) {
+    const clipDuration = parseInt(tag.endFrame, 10) - parseInt(tag.startFrame, 10);
+    if (frame >= accumulatedFrames && frame < accumulatedFrames + clipDuration) {
+      return {
+        videoId: tag.videoId,
+        videoName: tag.videoName,
+        videoFilepath: tag.videoFilepath,
+        tagName: tag.tagName,
+        frame: tag.frame,
+        startFrame: parseInt(tag.startFrame, 10),
+        endFrame: parseInt(tag.endFrame, 10),
+        key: tag.key
+      };
+    }
+    accumulatedFrames += clipDuration;
+  }
+  
+  // If we're at the end, return the last clip
+  if (tagArray.length > 0 && frame >= accumulatedFrames) {
+    const lastTag = tagArray[tagArray.length - 1];
+    return {
+      videoId: lastTag.videoId,
+      videoName: lastTag.videoName,
+      videoFilepath: lastTag.videoFilepath,
+      tagName: lastTag.tagName,
+      frame: lastTag.frame,
+      startFrame: parseInt(lastTag.startFrame, 10),
+      endFrame: parseInt(lastTag.endFrame, 10),
+      key: lastTag.key
+    };
+  }
+
+  return null;
+};
+
 export const VideoPlayerTrackingTemplate = ({ 
   selectedVideos, 
   videos, 
@@ -73,11 +113,12 @@ export const VideoPlayerTrackingTemplate = ({
   hoveredDetectionIndex,
   width=1920,
   height=1080,
-  currentPlayingClipRef=null,
   settings={}
 }) => {
   const tagArray = useMemo(() => Array.from(selectedTags), []);
   const frame = useCurrentFrame();
+  // Use provided currentPlayingClipRef or determine it from frame
+  const effectiveCurrentClipRef = getCurrentClipFromFrame(frame, selectedTags);
 
   const TRAIL_LENGTH = 1000; // Number of frames to show in trail
   const STRETCH_COUNT = 15; // Only draw every Nth circle
@@ -585,10 +626,10 @@ export const VideoPlayerTrackingTemplate = ({
   }, [frame, onFrameUpdate]);
 
   useEffect(() => {
-    if (currentPlayingClipRef) {
-      console.log('Current playing clip in template:', currentPlayingClipRef);
+    if (effectiveCurrentClipRef) {
+      console.log('Current playing clip in template:', effectiveCurrentClipRef);
     }
-  }, [currentPlayingClipRef]);
+  }, [effectiveCurrentClipRef]);
 
   // Split segments into continuous possession groups
   const splitIntoContinuousGroups = (segments, predicate) => {
@@ -618,11 +659,11 @@ export const VideoPlayerTrackingTemplate = ({
         if (!video) return null;
         if (!video.filepath) return null;
 
-        // Check if this sequence matches the current playing clip
-        const isCurrentClip = currentPlayingClipRef && 
-          currentPlayingClipRef.videoId === tagInfo.videoId &&
-          currentPlayingClipRef.startFrame === parseInt(tagInfo.startFrame, 10) &&
-          currentPlayingClipRef.endFrame === parseInt(tagInfo.endFrame, 10);
+        // Update this check to use effectiveCurrentClipRef
+        const isCurrentClip = effectiveCurrentClipRef && 
+          effectiveCurrentClipRef.videoId === tagInfo.videoId &&
+          effectiveCurrentClipRef.startFrame === parseInt(tagInfo.startFrame, 10) &&
+          effectiveCurrentClipRef.endFrame === parseInt(tagInfo.endFrame, 10);
 
         const previousClipsDuration = tagArray
           .slice(0, index)
@@ -633,10 +674,10 @@ export const VideoPlayerTrackingTemplate = ({
         const clipDuration = parseInt(tagInfo.endFrame, 10) - parseInt(tagInfo.startFrame, 10);
         const currentClipFrame = frame - previousClipsDuration + parseInt(tagInfo.startFrame, 10);
         
-        // Only get tracking data if this is the current clip
+        // Update all other instances of currentPlayingClipRef to effectiveCurrentClipRef
         const boxes = isCurrentClip ? getBoxesForFrame(video, currentClipFrame) : [];
         const tagsForFrame = isCurrentClip ? getTagsForFrame(video, currentClipFrame) : [];
-        const receptionSequence = isCurrentClip ? getReceptionSequence(video, currentClipFrame, currentPlayingClipRef) : [];
+        const receptionSequence = isCurrentClip ? getReceptionSequence(video, currentClipFrame, effectiveCurrentClipRef) : [];
 
         // Get original video dimensions from metadata
         let originalSize = { width: 1920, height: 1080 }; // Default fallback
@@ -750,13 +791,13 @@ export const VideoPlayerTrackingTemplate = ({
                     })}
 
                     {/* Render trail points */}
-                    {Object.entries(getTrailPositions(video, currentClipFrame, currentPlayingClipRef)).map(([player, data]) => {
+                    {Object.entries(getTrailPositions(video, currentClipFrame, effectiveCurrentClipRef)).map(([player, data]) => {
                       const pathPoints = data.positions.map(pos => {
                         const scaledPos = scaleBox({ bbox: pos.bbox }, originalSize, containerSize);
                         return `${scaledPos.x + scaledPos.width/2},${scaledPos.y + scaledPos.height}`;
                       });
 
-                      const possessionRanges = getPlayerPossessionFrames(video, currentClipFrame, currentPlayingClipRef);
+                      const possessionRanges = getPlayerPossessionFrames(video, currentClipFrame, effectiveCurrentClipRef);
                       const playerPossessions = possessionRanges[player] || [];
 
                       // Split path into segments based on possession
@@ -764,7 +805,7 @@ export const VideoPlayerTrackingTemplate = ({
                         const frame = data.positions[idx].frame;
                         const hasPossession = playerPossessions.some(range => 
                           range.start <= frame && (!range.end || frame <= range.end)
-                          && frame >= currentPlayingClipRef.startFrame && frame <= currentPlayingClipRef.endFrame
+                          && frame >= effectiveCurrentClipRef.startFrame && frame <= effectiveCurrentClipRef.endFrame
                         );
                         return { point, hasPossession, frame, player, playerPossessions };
                       });

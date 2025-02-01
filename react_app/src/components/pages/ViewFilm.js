@@ -718,7 +718,6 @@ function ViewFilm() {
                   onFrameUpdate: handleFrameUpdate,
                   width: 1280,
                   height: 720,
-                  currentPlayingClipRef: currentPlayingClipRef,
                   settings: clipSettings[currentPlayingClipRef?.key] || {}
                 }}
                 durationInFrames={calculateDuration()}
