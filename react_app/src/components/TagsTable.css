@@ -1,0 +1,42 @@
+.tags-table-container {
+  margin: 20px 0;
+}
+
+.tags-filter-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.tags-filter-controls input {
+  padding: 0.5rem;
+  flex-grow: 1;
+}
+
+.tags-filter-controls button {
+  padding: 0.5rem 1rem;
+}
+
+.tags-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tags-table th,
+.tags-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.add-clip-button {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+}
+
+.add-clip-button:hover {
+  background: #f5f5f5;
+} 

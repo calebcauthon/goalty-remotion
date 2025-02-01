@@ -15,6 +15,7 @@ import { CloudRenderButton } from 'components/CloudRenderButton';
 import { GlobalContext } from '../../index';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { RenderHistory } from 'components/RenderHistory';
+import { TagsTable } from 'components/TagsTable';
 
 export const calculateTotalDuration = (selectedTags) => {
   const tagArray = Array.from(selectedTags);
@@ -973,114 +974,16 @@ function ViewFilm() {
           />
         )}
 
-        <div className="video-table-container">
-          <h2>Videos</h2>
-          <table className="film-table">
-            <thead>
-              <tr>
-                <th>Show</th>
-                <th>Video Name</th>
-                <th>Number of Tags</th>
-              </tr>
-            </thead>
-            <tbody>
-              {videos.map((video) => (
-                <tr key={video.id}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selectedVideos.has(video.id)}
-                      onChange={() => handleVideoToggle(video.id)}
-                    />
-                  </td>
-                  <td>{video.name}</td>
-                  <td>{video.tags.length}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="tags-table-container">
-          <h2>All Tags</h2>
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-            <input
-              type="text"
-              placeholder="Filter tags..."
-              value={tagFilter}
-              onChange={(e) => setTagFilter(e.target.value)}
-              style={{ padding: '0.5rem', flexGrow: 1 }}
-            />
-            <button 
-              onClick={handleAddAllVisibleTags}
-              className="add-clip-button"
-              style={{ padding: '0.5rem 1rem' }}
-            >
-              Add Filtered Tags
-            </button>
-            <button 
-              onClick={handleAddAllClips}
-              className="add-clip-button"
-              style={{ padding: '0.5rem 1rem' }}
-            >
-              Add All Tags
-            </button>
-          </div>
-          <table className="tags-table">
-            <thead>
-              <tr>
-                <th>Actions</th>
-                <th>Video Name</th>
-                <th>Tag Name</th>
-                <th>Frame</th>
-                <th>Frame Range</th>
-              </tr>
-            </thead>
-            <tbody>
-              {videos
-                .filter(video => selectedVideos.has(video.id))
-                .flatMap((video) =>
-                  video.tags
-                    .filter(tag => tag.startFrame && tag.endFrame)
-                    .filter(tag => 
-                      tag.name.toLowerCase().includes(tagFilter.toLowerCase()) ||
-                      video.name.toLowerCase().includes(tagFilter.toLowerCase())
-                    )
-                    .map((tag, index) => {
-                      const tagKey = `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}`;
-                      const isIncluded = includedClips.some(clip => clip.key === tagKey);
-                      
-                      return (
-                        <tr key={`${video.id}-${index}`}>
-                          <td>
-                            {!isIncluded && (
-                              <button
-                                onClick={() => handleAddClip(
-                                  video.id,
-                                  tag.name,
-                                  tag.frame,
-                                  video.name,
-                                  video.filepath,
-                                  tag.startFrame,
-                                  tag.endFrame
-                                )}
-                                className="add-clip-button"
-                              >
-                                Add
-                              </button>
-                            )}
-                          </td>
-                          <td>{video.name}</td>
-                          <td>{tag.name}</td>
-                          <td>{tag.frame}</td>
-                          <td>{`${tag.startFrame}-${tag.endFrame}`}</td>
-                        </tr>
-                      );
-                    })
-                )}
-            </tbody>
-          </table>
-        </div>
+        <TagsTable 
+          videos={videos}
+          selectedVideos={selectedVideos}
+          tagFilter={tagFilter}
+          setTagFilter={setTagFilter}
+          onAddClip={handleAddClip}
+          onAddAllVisibleTags={handleAddAllVisibleTags}
+          onAddAllClips={handleAddAllClips}
+          includedClips={includedClips}
+        />
       </div>
     </Layout>
   );
