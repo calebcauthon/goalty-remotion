@@ -37,6 +37,7 @@ function Videos() {
       const response = await axios.get(`${globalData.APIbaseUrl}/api/videos`);
       
       const videos = response.data;
+      console.log(videos);
       videos.forEach(video => {
         video.metadata = JSON.parse(video.metadata);
       });

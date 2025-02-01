@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import Layout from './Layout';
 import { GlobalContext } from '../../index';
 import './PlayerTracking.css';
+import { handleTagManagement } from '../stats/tagManager';
 
 function PlayerTracking() {
   const globalData = useContext(GlobalContext);
@@ -52,14 +53,16 @@ function PlayerTracking() {
 
   const fetchVideos = async () => {
     try {
-      const response = await fetch(`${globalData.APIbaseUrl}/api/list-b2-videos`);
+      const response = await fetch(`${globalData.APIbaseUrl}/api/videos`);
       const data = await response.json();
       
-      if (data.error) {
-        setError(data.error);
-      } else {
-        setVideos(data.files);
-      }
+      // Parse metadata for each video
+      const videosWithParsedMetadata = data.map(video => ({
+        ...video,
+        metadata: JSON.parse(video.metadata)
+      }));
+      
+      setVideos(videosWithParsedMetadata);
     } catch (error) {
       setError('Failed to fetch videos');
     } finally {
@@ -129,7 +132,21 @@ function PlayerTracking() {
   };
 
   const handleVideoSelect = (video) => {
-    setSelectedVideo(video);
+    if (!video) return;
+    
+    // Update selected video with the new structure
+    const selectedVideoData = {
+      id: video.id,
+      url: video.filepath,
+      name: video.title,
+      title: video.title,
+      size: video.size,
+      filepath: video.filepath,
+      metadata: video.metadata,
+      uploadTimestamp: video.uploadTimestamp
+    };
+    
+    setSelectedVideo(selectedVideoData);
     setRectangles([]);
     setCurrentRect(null);
     setClipBoxes([]);
@@ -514,6 +531,50 @@ function PlayerTracking() {
     }
   };
 
+  const handleAddTrackingTag = async () => {
+    if (!selectedVideo || !outputFilename) return;
+    
+    const tag = {
+      name: 'score tracking',
+      startFrame: startFrame,
+      endFrame: endFrame,
+      type: 'tracking'
+    };
+console.log({selectedVideo, tag})
+
+    const success = await handleTagManagement(
+      selectedVideo.id, 
+      tag,
+      globalData.APIbaseUrl
+    );
+
+    if (success) {
+      alert('Tracking tag added successfully!');
+    } else {
+      alert('Failed to add tracking tag');
+    }
+  };
+
+  const renderStatusJsx = (
+    <div className="render-status">
+      {error && <div className="error-message">{error}</div>}
+      <button
+        className="cloud-render-button"
+        onClick={handleCloudRender}
+        disabled={!outputFilename || rectangles.length === 0}
+      >
+        Cloud Render
+      </button>
+      <button
+        className="add-tracking-tag-button"
+        onClick={handleAddTrackingTag}
+        disabled={!outputFilename}
+      >
+        Add Tracking Tag
+      </button>
+    </div>
+  );
+
   return (
     <Layout>
       <div className="player-tracking">
@@ -522,17 +583,26 @@ function PlayerTracking() {
         <div className="video-selector">
           <h2>Select a Video</h2>
           <select 
-            onChange={(e) => handleVideoSelect(videos.find(v => v.id === e.target.value))}
+            onChange={(e) => {
+              if (e.target.value) {
+                const selectedVideo = videos.find(v => v.id === parseInt(e.target.value));
+                handleVideoSelect(selectedVideo);
+              } else {
+                setSelectedVideo(null);
+              }
+            }}
             value={selectedVideo?.id || ''}
             disabled={loading}
+            className="video-dropdown"
           >
             <option value="">Choose a video...</option>
             {videos.map(video => (
               <option key={video.id} value={video.id}>
-                {video.name} ({(video.size / 1024 / 1024).toFixed(2)} MB)
+                {video.title} ({(video.size / 1024 / 1024).toFixed(2)} MB)
               </option>
             ))}
           </select>
+
           {loading && <div className="status-message">Loading videos...</div>}
         </div>
 
@@ -685,16 +755,7 @@ function PlayerTracking() {
                 </div>
               </div>
 
-              <div className="render-status">
-                {error && <div className="error-message">{error}</div>}
-                <button
-                  className="cloud-render-button"
-                  onClick={handleCloudRender}
-                  disabled={!outputFilename || rectangles.length === 0}
-                >
-                  Cloud Render
-                </button>
-              </div>
+              {renderStatusJsx}
             </div>
           </div>
         )}
