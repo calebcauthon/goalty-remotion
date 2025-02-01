@@ -25,21 +25,21 @@ const parseJsonIfNecessary = (data) => {
 
 const getBoxesForFrame = (video, frame) => {
   if (!video?.metadata) {
-    console.log('🔍 No metadata found for video', { video });
+    //console.log('🔍 No metadata found for video', { video });
     return [];
   }
   
   try {
     const metadata = parseJsonIfNecessary(video.metadata);
     if (!metadata.boxes) { 
-      console.log('📦 No boxes found in metadata', { metadata }); 
+      //console.log('📦 No boxes found in metadata', { metadata }); 
       return []; 
     }
 
     // Convert frame number from 30fps to 29.97fps
-    console.log('⏱️ Converting frame from 30fps to 29.97fps', { before: frame, after: Math.round(frame * (29.97 / 30)) });
+    //console.log('⏱️ Converting frame from 30fps to 29.97fps', { before: frame, after: Math.round(frame * (29.97 / 30)) });
     frame = Math.round(frame * (29.97 / 30));
-    console.log('🎯 Looking for boxes at frame', frame);
+    //console.log('🎯 Looking for boxes at frame', frame);
 
     // Find boxes for this frame
     const targetFrameData = metadata.boxes.find(box => {
@@ -49,11 +49,11 @@ const getBoxesForFrame = (video, frame) => {
     });
 
     if (!targetFrameData) { 
-      console.log('🚫 No boxes found for frame', frame); 
+      //console.log('🚫 No boxes found for frame', frame); 
       return []; 
     }
 
-    console.log('✅ Found boxes for frame', { frame, targetFrameData });
+    //console.log('✅ Found boxes for frame', { frame, targetFrameData });
 
     // Convert the frame's boxes into an array of {player, bbox} objects
     return Object.entries(targetFrameData).map(([player, data]) => ({
@@ -71,12 +71,12 @@ const scaleBox = (box, originalSize, containerSize) => {
   const scaleX = containerSize.width / originalSize.width;
   const scaleY = containerSize.height / originalSize.height;
 
-  console.log('📐 Scaling box', {
-    original: box,
-    originalSize,
-    containerSize,
-    scales: { x: scaleX, y: scaleY }
-  });
+  //console.log('📐 Scaling box', {
+  //  original: box,
+  //  originalSize,
+  //  containerSize,
+  //  scales: { x: scaleX, y: scaleY }
+  //});
 
   return {
     x: box.bbox[0] * scaleX,
@@ -118,6 +118,7 @@ export const VideoPlayerTrackingTemplate = ({
   const tagArray = useMemo(() => Array.from(selectedTags), []);
   const frame = useCurrentFrame();
 
+  //console.log('width and height', { width, height });
   React.useEffect(() => {
     onFrameUpdate(frame);
   }, [frame, onFrameUpdate]);
@@ -149,7 +150,7 @@ export const VideoPlayerTrackingTemplate = ({
             width: metadata.width || 1920,
             height: metadata.height || 1080
           };
-          console.log('📏 Original video dimensions', originalSize);
+          //console.log('📏 Original video dimensions', originalSize);
         } catch (error) {
           console.warn('⚠️ Could not parse video metadata, using default dimensions');
         }
