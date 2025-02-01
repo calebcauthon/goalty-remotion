@@ -29,23 +29,10 @@ export const VideoPlayerTrackingTemplate = ({
   const LINE_THICKNESS = 4; // Width of the tracking line
   const TRAIL_OPACITY = 0.8; // Opacity for trail lines
   const SMOOTHING_WEIGHT = 0.8; // 0 = no smoothing, 1 = maximum smoothing
-  const RECEPTION_MARKER_SIZE = 16; // Diameter of the reception marker
+  const RECEPTION_MARKER_SIZE = 2; // Diameter of the reception marker
 
-  // Color palette for different players
-  const PLAYER_COLORS = {
-    'christian': '#FF0000', // Red
-    'Player 2': '#00FF00', // Green
-    'Player 3': '#0000FF', // Blue
-    'Player 4': '#FFA500', // Orange
-    'Player 5': '#800080', // Purple
-    'aaron': '#00FFFF', // Cyan
-    'default': '#FF0000'   // Fallback color
-  };
-
-  // Helper to get color for a player
-  const getPlayerColor = (player) => {
-    return PLAYER_COLORS[player] || PLAYER_COLORS.default;
-  };
+  const THROW_HEIGHT_FACTOR = 0.3; // Controls how high the parabola goes
+  const ARROW_SIZE = 15; // Size of the arrow head
 
   const parseJsonIfNecessary = (data) => {
     if (typeof data === 'string') {
@@ -57,10 +44,6 @@ export const VideoPlayerTrackingTemplate = ({
     }
     return data;
   }
-
-  var shownMetadata = false;
-
-  // Add memoized metadata parser
   const getVideoMetadata = useMemo(() => {
     const cache = new Map();
     
@@ -74,6 +57,61 @@ export const VideoPlayerTrackingTemplate = ({
       return metadata;
     };
   }, []);
+
+  // Replace the hardcoded PLAYER_COLORS with this
+  const generatePlayerColors = (players) => {
+    const colors = [
+      '#FF0000', // Red
+      '#00FF00', // Green 
+      '#0000FF', // Blue
+      '#FFA500', // Orange
+      '#800080', // Purple
+      '#00FFFF', // Cyan
+      '#FFD700', // Gold
+      '#FF69B4', // Hot Pink
+      '#4B0082', // Indigo
+      '#32CD32'  // Lime Green
+    ];
+
+    const playerColors = {};
+    players.forEach((player, index) => {
+      playerColors[player] = colors[index % colors.length];
+    });
+    return playerColors;
+  };
+
+  // Get unique players from the metadata
+  const getUniquePlayers = useMemo(() => {
+    const players = new Set();
+    selectedVideos.forEach(videoId => {
+      const video = videos.find(v => v.id === videoId);
+      const metadata = getVideoMetadata(video);
+      if (metadata?.boxes) {
+        metadata.boxes.forEach(box => {
+          if (box) {
+            Object.keys(box).forEach(player => players.add(player));
+          }
+        });
+      }
+    });
+    return Array.from(players);
+  }, [selectedVideos, videos, getVideoMetadata]);
+
+  // Generate colors for all players
+  const PLAYER_COLORS = useMemo(() => 
+    generatePlayerColors(getUniquePlayers), 
+    [getUniquePlayers]
+  );
+
+  // Update getPlayerColor to use a default color for unknown players
+  const getPlayerColor = (player) => {
+    return PLAYER_COLORS[player] || '#FF0000';
+  };
+
+  var shownMetadata = false;
+
+  // Add memoized metadata parser
+  
 
   // Update getTagsForFrame to use memoized metadata
   const getTagsForFrame = (video, frame) => {
@@ -152,23 +190,30 @@ export const VideoPlayerTrackingTemplate = ({
       });
     }
 
-    // Second pass: find all reception frames and add their positions
+    // Second pass: find all reception/throw frames and add their positions
     Object.keys(playerPaths).forEach(player => {
       for (let i = 0; i <= currentClipFrame; i++) {
+        const tagsForFrame = getTagsForFrame(video, i);
+        const isKeyFrame = tagsForFrame.some(tag => {
+          const tagName = tag.name?.toLowerCase() || '';
+          return tagName.includes(`${player.toLowerCase()} reception`) || 
+                 tagName.includes(`${player.toLowerCase()} throw`);
+        });
+
+        if (isKeyFrame && !frameSet.has(i)) {
+          const boxes = getBoxesForFrame(video, i);
+          const playerBox = boxes.find(box => box.player === player);
+          if (playerBox) {
+            playerPaths[player].positions.push({
+              frame: i,
+              bbox: playerBox.bbox
+            });
+            frameSet.add(i);
+          }
+        }
+
         if (hasReceptionAtFrame(video, i, player)) {
           playerPaths[player].receptionFrames.push(i);
-          
-          // If we haven't already included this frame's position, add it
-          if (!frameSet.has(i)) {
-            const boxes = getBoxesForFrame(video, i);
-            const playerBox = boxes.find(box => box.player === player);
-            if (playerBox) {
-              playerPaths[player].positions.push({
-                frame: i,
-                bbox: playerBox.bbox
-              });
-            }
-          }
         }
       }
       // Sort positions by frame to maintain proper path order
@@ -181,28 +226,220 @@ export const VideoPlayerTrackingTemplate = ({
   const smoothPath = (points) => {
     if (points.length < 2) return '';
     
-    const [first, ...rest] = points;
-    let pathD = `M ${first}`;
+    // Find continuous segments
+    let segments = [];
+    let currentSegment = [points[0]];
     
-    for (let i = 0; i < rest.length; i++) {
-      const current = rest[i];
-      const prev = i === 0 ? first : rest[i - 1];
-      const next = rest[i + 1] || current;
+    for (let i = 1; i < points.length; i++) {
+      const current = points[i];
+      const prev = points[i - 1];
       
-      // Calculate control points
-      const [x, y] = current.split(',').map(Number);
+      // Check if points are adjacent in the original data
       const [prevX, prevY] = prev.split(',').map(Number);
-      const [nextX, nextY] = next.split(',').map(Number);
+      const [currX, currY] = current.split(',').map(Number);
+      const distance = Math.sqrt(Math.pow(currX - prevX, 2) + Math.pow(currY - prevY, 2));
       
-      const cp1x = prevX + (x - prevX) * (1 - SMOOTHING_WEIGHT);
-      const cp1y = prevY + (y - prevY) * (1 - SMOOTHING_WEIGHT);
-      const cp2x = x - (nextX - x) * SMOOTHING_WEIGHT;
-      const cp2y = y - (nextY - y) * SMOOTHING_WEIGHT;
+      if (distance < 100) { // Adjust threshold as needed
+        currentSegment.push(current);
+      } else {
+        segments.push(currentSegment);
+        currentSegment = [current];
+      }
+    }
+    segments.push(currentSegment);
+
+    // Process each continuous segment
+    return segments
+      .filter(segment => segment.length > 1)
+      .map(segment => {
+        const [first, ...rest] = segment;
+        let pathD = `M ${first}`;
+        
+        for (let i = 0; i < rest.length; i++) {
+          const current = rest[i];
+          const prev = i === 0 ? first : rest[i - 1];
+          const next = rest[i + 1] || current;
+          
+          const [x, y] = current.split(',').map(Number);
+          const [prevX, prevY] = prev.split(',').map(Number);
+          const [nextX, nextY] = next.split(',').map(Number);
+          
+          const cp1x = prevX + (x - prevX) * (1 - SMOOTHING_WEIGHT);
+          const cp1y = prevY + (y - prevY) * (1 - SMOOTHING_WEIGHT);
+          const cp2x = x - (nextX - x) * SMOOTHING_WEIGHT;
+          const cp2y = y - (nextY - y) * SMOOTHING_WEIGHT;
+          
+          pathD += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${x},${y}`;
+        }
+        return pathD;
+      })
+      .join(' ');
+  };
+
+  // Add new constants
+  const RECEPTION_LINE_COLOR = '#0000FF';
+  const RECEPTION_LINE_OPACITY = 0.6;
+  const RECEPTION_LINE_WIDTH = 3;
+
+  // Add this new function near the other preprocessing functions
+  const getReceptionSequence = (video, currentClipFrame) => {
+    const receptionPoints = [];
+    
+    // Collect all reception points up to current frame
+    for (let frame = 0; frame <= currentClipFrame; frame++) {
+      const boxes = getBoxesForFrame(video, frame);
+      const tagsForFrame = getTagsForFrame(video, frame);
       
-      pathD += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${x},${y}`;
+      boxes.forEach(box => {
+        if (hasReceptionAtFrame(video, frame, box.player)) {
+          receptionPoints.push({
+            frame,
+            player: box.player,
+            bbox: box.bbox
+          });
+        }
+      });
+    }
+
+    // Sort by frame
+    receptionPoints.sort((a, b) => a.frame - b.frame);
+    console.log('Reception sequence:', receptionPoints);
+    
+    return receptionPoints;
+  };
+
+  const getPlayerPossessionFrames = (video, maxFrame) => {
+    const possessionRanges = {};
+    
+    // Scan through frames to find receptions and throws
+    for (let frame = 0; frame <= maxFrame; frame++) {
+      const tagsForFrame = getTagsForFrame(video, frame);
+      
+      // Sort tags by frame first
+      tagsForFrame.sort((a, b) => (a.frame || 0) - (b.frame || 0));
+      tagsForFrame.forEach(tag => {
+        const tagName = tag.name?.toLowerCase() || '';
+        const playerMatch = tagName.match(/(\w+)\s+(reception|throw)/);
+        
+        if (playerMatch) {
+          const [_, player, action] = playerMatch;
+          if (!possessionRanges[player]) {
+            possessionRanges[player] = [];
+          }
+
+          if (action === 'reception') {
+            possessionRanges[player].push({ start: frame });
+          } else if (action === 'throw') {
+            // Find the last incomplete range and complete it
+            const lastRange = possessionRanges[player][possessionRanges[player].length - 1];
+            if (lastRange && !lastRange.end) {
+              lastRange.end = frame;
+            }
+          }
+        }
+      });
+    }
+    console.log('Possession ranges:', possessionRanges);
+
+    return possessionRanges;
+  };
+
+  // Update getActiveThrow to also find the next reception
+  const getActiveThrow = (video, currentFrame) => {
+    const tagsUpToFrame = [];
+    
+    // Look ahead an extra 60 frames to find next reception
+    for (let frame = 0; frame <= currentFrame + 60; frame++) {
+      const tagsForFrame = getTagsForFrame(video, frame);
+      tagsForFrame.forEach(tag => {
+        if (tag.name?.toLowerCase().includes('reception') || 
+            tag.name?.toLowerCase().includes('throw')) {
+          tagsUpToFrame.push({ ...tag, frame });
+        }
+      });
     }
     
-    return pathD;
+    tagsUpToFrame.sort((a, b) => a.frame - b.frame);
+    
+    let activeThrow = null;
+    let nextReception = null;
+
+    for (let i = tagsUpToFrame.length - 1; i >= 0; i--) {
+      const tag = tagsUpToFrame[i];
+      const tagName = tag.name?.toLowerCase() || '';
+      
+      if (tag.frame <= currentFrame) {
+        if (tagName.includes('throw')) {
+          const playerMatch = tagName.match(/(\w+)\s+throw/);
+          if (playerMatch) {
+            const boxes = getBoxesForFrame(video, tag.frame);
+            const throwerBox = boxes.find(box => box.player === playerMatch[1]);
+            if (throwerBox) {
+              activeThrow = {
+                startFrame: tag.frame,
+                thrower: playerMatch[1],
+                bbox: throwerBox.bbox
+              };
+              // Look ahead for next reception after this throw
+              for (let j = i + 1; j < tagsUpToFrame.length; j++) {
+                const nextTag = tagsUpToFrame[j];
+                if (nextTag.name?.toLowerCase().includes('reception')) {
+                  const boxes = getBoxesForFrame(video, nextTag.frame);
+                  const receiverBox = boxes.find(box => 
+                    nextTag.name?.toLowerCase().includes(box.player.toLowerCase())
+                  );
+                  if (receiverBox) {
+                    nextReception = {
+                      frame: nextTag.frame,
+                      bbox: receiverBox.bbox
+                    };
+                    break;
+                  }
+                }
+              }
+              break;
+            }
+          }
+        }
+        break;
+      }
+    }
+    
+    return activeThrow ? { ...activeThrow, nextReception } : null;
+  };
+
+  // Add this function near the other preprocessing functions
+  const getPlaySequence = (video, clipStartFrame, clipEndFrame) => {
+    let finalThrower = null;
+    let finalCatcher = null;
+    
+    // Collect all relevant tags first
+    const allTags = [];
+    for (let frame = clipStartFrame; frame <= clipEndFrame; frame++) {
+      const tags = getTagsForFrame(video, frame);
+      tags.forEach(tag => {
+        allTags.push({ ...tag, frame });
+      });
+    }
+
+    // Sort by frame number
+    allTags.sort((a, b) => a.frame - b.frame);
+    
+    // Process in chronological order to find last throw and catch
+    allTags.forEach(tag => {
+      const tagName = tag.name?.toLowerCase() || '';
+      const throwMatch = tagName.match(/(\w+)\s+throw/);
+      const catchMatch = tagName.match(/(\w+)\s+reception/);
+      
+      if (throwMatch) {
+        finalThrower = throwMatch[1];
+      }
+      if (catchMatch) {
+        finalCatcher = catchMatch[1];
+      }
+    });
+
+    return { finalThrower, finalCatcher };
   };
 
   //console.log('width and height', { width, height });
@@ -249,6 +486,11 @@ export const VideoPlayerTrackingTemplate = ({
         const VIDEO_BASE_URL = useStaticFile 
           ? staticFile(`${video.filepath.split('/').pop()}`) 
           : video.filepath;
+
+        const receptionSequence = getReceptionSequence(video, currentClipFrame);
+
+        const POSSESSION_LINE_THICKNESS = LINE_THICKNESS * 1.5; // Just slightly thicker
+        const POSSESSION_OPACITY = TRAIL_OPACITY * 1.2; // Just slightly brighter
 
         return (
           <Sequence
@@ -337,7 +579,19 @@ export const VideoPlayerTrackingTemplate = ({
                   const pathPoints = data.positions.map(pos => {
                     const scaledPos = scaleBox({ bbox: pos.bbox }, originalSize, containerSize);
                     return `${scaledPos.x + scaledPos.width/2},${scaledPos.y + scaledPos.height}`;
-                  }).join(' L ');
+                  });
+
+                  const possessionRanges = getPlayerPossessionFrames(video, currentClipFrame);
+                  const playerPossessions = possessionRanges[player] || [];
+
+                  // Split path into segments based on possession
+                  const segments = pathPoints.map((point, idx) => {
+                    const frame = data.positions[idx].frame;
+                    const hasPossession = playerPossessions.some(range => 
+                      range.start <= frame && (!range.end || frame <= range.end)
+                    );
+                    return { point, hasPossession };
+                  });
 
                   return pathPoints.length > 0 ? (
                     <React.Fragment key={`trail-${player}`}>
@@ -351,12 +605,21 @@ export const VideoPlayerTrackingTemplate = ({
                           pointerEvents: 'none'
                         }}
                       >
+                        {/* Regular path */}
                         <path
-                          d={smoothPath(pathPoints.split(' L '))}
+                          d={smoothPath(segments.filter(s => !s.hasPossession).map(s => s.point))}
                           stroke={getPlayerColor(player)}
                           strokeWidth={LINE_THICKNESS}
                           fill="none"
                           opacity={TRAIL_OPACITY}
+                        />
+                        {/* Possession path */}
+                        <path
+                          d={smoothPath(segments.filter(s => s.hasPossession).map(s => s.point))}
+                          stroke={"white"}
+                          strokeWidth={POSSESSION_LINE_THICKNESS}
+                          fill="none"
+                          opacity={POSSESSION_OPACITY}
                         />
                       </svg>
                       {data.positions.filter(pos => 
@@ -385,6 +648,120 @@ export const VideoPlayerTrackingTemplate = ({
                   ) : null;
                 })}
 
+                {/* Add reception connection lines */}
+                <svg
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none'
+                  }}
+                >
+                  {/* Add defs for the arrow marker */}
+                  <defs>
+                    <marker
+                      id="arrowhead"
+                      markerWidth="10"
+                      markerHeight="7"
+                      refX="9"
+                      refY="3.5"
+                      orient="auto"
+                    >
+                      <polygon 
+                        points="0 0, 10 3.5, 0 7" 
+                        fill={RECEPTION_LINE_COLOR}
+                        opacity={RECEPTION_LINE_OPACITY}
+                      />
+                    </marker>
+                  </defs>
+                  
+                  {/* Completed throws */}
+                  {receptionSequence.slice(0, -1).map((reception, i) => {
+                    const current = scaleBox({ bbox: reception.bbox }, originalSize, containerSize);
+                    const next = scaleBox({ bbox: receptionSequence[i + 1].bbox }, originalSize, containerSize);
+                    
+                    // Calculate control point for the parabola
+                    const midX = (current.x + next.x + current.width/2 + next.width/2) / 2;
+                    const midY = Math.min(current.y, next.y) - 
+                      Math.abs(next.x - current.x) * THROW_HEIGHT_FACTOR - 
+                      Math.abs(next.y - current.y) * THROW_HEIGHT_FACTOR;
+                    
+                    return (
+                      <path
+                        key={`reception-line-${i}`}
+                        d={`M ${current.x + current.width/2} ${current.y + current.height}
+                           Q ${midX} ${midY} 
+                           ${next.x + next.width/2} ${next.y + next.height}`}
+                        stroke={RECEPTION_LINE_COLOR}
+                        strokeWidth={RECEPTION_LINE_WIDTH}
+                        opacity={RECEPTION_LINE_OPACITY}
+                        fill="none"
+                        markerEnd="url(#arrowhead)"
+                      />
+                    );
+                  })}
+
+                  {/* Active throw */}
+                  {(() => {
+                    const activeThrow = getActiveThrow(video, currentClipFrame);
+                    if (!activeThrow) return null;
+
+                    const start = scaleBox({ bbox: activeThrow.bbox }, originalSize, containerSize);
+                    
+                    // Use next reception position if available, otherwise estimate
+                    let endX, endY;
+                    if (activeThrow.nextReception) {
+                      const end = scaleBox({ bbox: activeThrow.nextReception.bbox }, originalSize, containerSize);
+                      endX = end.x + end.width/2;
+                      endY = end.y + end.height;
+                    } else {
+                      endX = start.x + 300;
+                      endY = start.y + start.height;
+                    }
+                    
+                    // Calculate control point for the parabola
+                    const midX = (start.x + endX) / 2;
+                    const midY = Math.min(start.y + start.height, endY) - 
+                      Math.abs(endX - (start.x + start.width/2)) * THROW_HEIGHT_FACTOR - 
+                      Math.abs(endY - (start.y + start.height)) * THROW_HEIGHT_FACTOR;
+                    
+                    // Calculate how much of the path to show based on frame progress
+                    const throwDuration = activeThrow.nextReception ? 
+                      (activeThrow.nextReception.frame - activeThrow.startFrame) : 30;
+                    const frameProgress = (currentClipFrame - activeThrow.startFrame) / throwDuration;
+                    const progress = Math.min(frameProgress, 1);
+                    
+                    // Generate points along the full parabola
+                    const numPoints = 100;
+                    const points = [];
+                    for (let i = 0; i <= numPoints * progress; i++) {
+                      const t = i / numPoints;
+                      const x = (1-t)*(1-t)*(start.x + start.width/2) + 
+                                2*(1-t)*t*midX + 
+                                t*t*endX;
+                      const y = (1-t)*(1-t)*(start.y + start.height) + 
+                                2*(1-t)*t*midY + 
+                                t*t*endY;
+                      points.push(`${x} ${y}`);
+                    }
+                    
+                    return (
+                      <path
+                        key="active-throw"
+                        d={`M ${points.join(' L ')}`}
+                        stroke={RECEPTION_LINE_COLOR}
+                        strokeWidth={RECEPTION_LINE_WIDTH}
+                        opacity={RECEPTION_LINE_OPACITY * 0.9}
+                        fill="none"
+                        markerEnd="url(#arrowhead)"
+                        strokeDasharray="4 4"
+                      />
+                    );
+                  })()}
+                </svg>
+
                 {/* Player Tracking Text */}
                 <div style={{
                   position: 'absolute',
@@ -395,9 +772,27 @@ export const VideoPlayerTrackingTemplate = ({
                   padding: '8px 16px',
                   borderRadius: '4px',
                   fontSize: '18px',
-                  fontWeight: 'bold'
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end'
                 }}>
-                  Player Tracking
+                  <div>Player Tracking</div>
+                  {(() => {
+                    const { finalThrower, finalCatcher } = getPlaySequence(
+                      video, 
+                      parseInt(tagInfo.startFrame, 10),
+                      parseInt(tagInfo.endFrame, 10)
+                    );
+                    if (finalThrower && finalCatcher) {
+                      return (
+                        <div style={{ fontSize: '16px', marginTop: '4px' }}>
+                          {finalThrower} ➜ {finalCatcher}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               </div>
             </AbsoluteFill>
