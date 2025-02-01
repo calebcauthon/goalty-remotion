@@ -45,12 +45,6 @@ function PlayerTracking() {
   }, [frameImage, rectangles, currentRect]);
 
   useEffect(() => {
-    if (videoInfo) {
-      setEndFrame(videoInfo.frame_count);
-    }
-  }, [videoInfo]);
-
-  useEffect(() => {
     if (selectedVideo && startFrame >= 0) {
       fetchVideoInfo(startFrame);
     }
@@ -300,36 +294,24 @@ function PlayerTracking() {
       return;
     }
 
-    setProcessing(true);
     setError(null);
 
-    try {
-      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/process-tracking`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          rectangles: allRectangles,
-          sourceUrl: selectedVideo.url,
-          outputFilename: outputFilename.endsWith('.mp4') ? outputFilename : `${outputFilename}.mp4`,
-          startFrame,
-          endFrame
-        })
-      });
+    // Fire and forget
+    fetch(`${globalData.APIbaseUrl}/api/videos/process-tracking`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        rectangles: allRectangles,
+        sourceUrl: selectedVideo.url,
+        outputFilename: outputFilename.endsWith('.mp4') ? outputFilename : `${outputFilename}.mp4`,
+        startFrame,
+        endFrame
+      })
+    });
 
-      const data = await response.json();
-      
-      if (data.error) {
-        setError(data.error);
-      } else {
-        alert('Processing started successfully!');
-      }
-    } catch (error) {
-      setError('Failed to start processing');
-    } finally {
-      setProcessing(false);
-    }
+    alert('Processing started!');
   };
 
   const handleDeleteRectangle = (index) => {
@@ -708,9 +690,9 @@ function PlayerTracking() {
                 <button
                   className="cloud-render-button"
                   onClick={handleCloudRender}
-                  disabled={processing || !outputFilename || rectangles.length === 0}
+                  disabled={!outputFilename || rectangles.length === 0}
                 >
-                  {processing ? 'Processing...' : 'Cloud Render'}
+                  Cloud Render
                 </button>
               </div>
             </div>
