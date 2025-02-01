@@ -9,10 +9,12 @@ const require = createRequire(import.meta.url);
   const inputProps = JSON.parse(require('fs').readFileSync('/tmp/props.json', 'utf8'));
   const outputFileName = require('fs').readFileSync('/tmp/filename.txt', 'utf8');
   const range = JSON.parse(require('fs').readFileSync('/tmp/range.txt', 'utf8'));
+  const compositionName = require('fs').readFileSync('/tmp/composition.txt', 'utf8');
 
   console.log(`Input props: ${JSON.stringify(inputProps)}`);
   console.log(`Output filename: ${outputFileName}`);
   console.log(`Range: ${range}`);
+  console.log(`Composition name: ${compositionName}`);
 
   const bundled = await bundle({
     entryPoint: require.resolve("./src/index_studio.js"),
@@ -25,7 +27,7 @@ const require = createRequire(import.meta.url);
 
   const composition = await selectComposition({
     serveUrl: bundled,
-    id: "VideoFirstFiveSeconds",
+    id: compositionName,
     inputProps,
   });
 

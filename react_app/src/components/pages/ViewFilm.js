@@ -790,6 +790,7 @@ function ViewFilm() {
                 videos={videos}
                 selectedTags={selectedTags}
                 outputFileName={`${film.name.replace(/\s+/g, '_')}.mp4`}
+                compositionName={selectedTemplate}
                 onRenderStart={(filename) => {
                   setRenderStatus('rendering');
                   setRenderFilename(filename);
@@ -800,7 +801,7 @@ function ViewFilm() {
                     if (isComplete) {
                       clearInterval(pollInterval);
                     }
-                  }, 1000); // Poll every 5 seconds
+                  }, 1000);
                 }}
                 renderStatus={renderStatus}
               />
