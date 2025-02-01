@@ -13,6 +13,16 @@ export const VideoPlayerTrackingSettings = {
   playerNameColor: {
     type: 'color',
     label: 'Player Name Color',
+    default: '#FFFFFF'  // Changed to white for better contrast
+  },
+  playerNameBgColor: {
+    type: 'color',
+    label: 'Player Name Background',
+    default: '#FF6B00'
+  },
+  boundingBoxColor: {
+    type: 'color',
+    label: 'Bounding Box Color',
     default: '#FF6B00'
   },
   parabolaColor: {
@@ -28,6 +38,22 @@ export const VideoPlayerTrackingSettings = {
     step: 0.1,
     default: 0.6
   },
+  boundingBoxOpacity: {
+    type: 'range',
+    label: 'Bounding Box Opacity',
+    min: 0,
+    max: 1,
+    step: 0.1,
+    default: 1
+  },
+  playerNameOpacity: {
+    type: 'range',
+    label: 'Player Name Opacity',
+    min: 0,
+    max: 1,
+    step: 0.1,
+    default: 1
+  },
   playerSettings: {
     type: 'playerGroup',
     label: 'Player Settings',
@@ -35,6 +61,11 @@ export const VideoPlayerTrackingSettings = {
       hidden: {
         type: 'checkbox',
         label: 'Hide Player',
+        default: false
+      },
+      useCustomSettings: {  // Single override toggle
+        type: 'checkbox',
+        label: 'Use Custom Settings',
         default: false
       },
       pathColor: {
@@ -50,9 +81,34 @@ export const VideoPlayerTrackingSettings = {
         step: 0.1,
         default: 0.8
       },
-      boxOpacity: {
+      // Custom color overrides
+      customBoxColor: {
+        type: 'color',
+        label: 'Box Color',
+        default: '#FF6B00'
+      },
+      customNameColor: {
+        type: 'color',
+        label: 'Name Text Color',
+        default: '#FFFFFF'
+      },
+      customNameBgColor: {
+        type: 'color',
+        label: 'Name Background',
+        default: '#FF6B00'
+      },
+      // Custom opacity overrides
+      customBoxOpacity: {
         type: 'range',
         label: 'Box Opacity',
+        min: 0,
+        max: 1,
+        step: 0.1,
+        default: 1
+      },
+      customNameOpacity: {
+        type: 'range',
+        label: 'Name Opacity',
         min: 0,
         max: 1,
         step: 0.1,
@@ -283,7 +339,7 @@ export const VideoPlayerTrackingTemplate = ({
     const clipSettings = currentSettings.playerSettings?.[player];
     if (clipSettings?.hidden) return 0;
     
-    const opacity = clipSettings?.boxOpacity;
+    const opacity = clipSettings?.pathOpacity;
     return typeof opacity === 'number' ? opacity : 1;
   };
 
@@ -856,6 +912,89 @@ export const VideoPlayerTrackingTemplate = ({
     return currentSettings.playerNameColor ?? VideoPlayerTrackingSettings.playerNameColor.default;
   };
 
+  // Add these helper functions near the other getter functions
+  const getBoundingBoxColor = () => {
+    if (!currentSettings) return VideoPlayerTrackingSettings.boundingBoxColor.default;
+    return currentSettings.boundingBoxColor ?? VideoPlayerTrackingSettings.boundingBoxColor.default;
+  };
+
+  const getPlayerNameBgColor = () => {
+    if (!currentSettings) return VideoPlayerTrackingSettings.playerNameBgColor.default;
+    return currentSettings.playerNameBgColor ?? VideoPlayerTrackingSettings.playerNameBgColor.default;
+  };
+
+  // Add new getter functions
+  const getBoundingBoxOpacity = () => {
+    if (!currentSettings) return VideoPlayerTrackingSettings.boundingBoxOpacity.default;
+    return currentSettings.boundingBoxOpacity ?? VideoPlayerTrackingSettings.boundingBoxOpacity.default;
+  };
+
+  const getPlayerNameOpacity = () => {
+    if (!currentSettings) return VideoPlayerTrackingSettings.playerNameOpacity.default;
+    return currentSettings.playerNameOpacity ?? VideoPlayerTrackingSettings.playerNameOpacity.default;
+  };
+
+  // Update the getter functions to handle the new overrides
+  const getPlayerBoundingBoxColor = (player) => {
+    if (!currentSettings) return getBoundingBoxColor();
+
+    const clipSettings = currentSettings.playerSettings?.[player];
+    if (clipSettings?.useCustomSettings) {
+      return clipSettings?.customBoxColor ?? VideoPlayerTrackingSettings.playerSettings.perPlayer.customBoxColor.default;
+    }
+    
+    return getBoundingBoxColor();
+  };
+
+  const getPlayerNameTextColor = (player) => {
+    if (!currentSettings) return getPlayerNameColor();
+
+    const clipSettings = currentSettings.playerSettings?.[player];
+    if (clipSettings?.useCustomSettings) {
+      return clipSettings?.customNameColor ?? VideoPlayerTrackingSettings.playerSettings.perPlayer.customNameColor.default;
+    }
+    
+    return getPlayerNameColor();
+  };
+
+  const getPlayerNameBackgroundColor = (player) => {
+    if (!currentSettings) return getPlayerNameBgColor();
+
+    const clipSettings = currentSettings.playerSettings?.[player];
+    if (clipSettings?.useCustomSettings) {
+      return clipSettings?.customNameBgColor ?? VideoPlayerTrackingSettings.playerSettings.perPlayer.customNameBgColor.default;
+    }
+    
+    return getPlayerNameBgColor();
+  };
+
+  // Update the opacity getters to use useCustomSettings instead of useCustomOpacity
+  const getPlayerBoundingBoxOpacity = (player) => {
+    if (!currentSettings) return getBoundingBoxOpacity();
+
+    const clipSettings = currentSettings.playerSettings?.[player];
+    if (clipSettings?.hidden) return 0;
+    
+    if (clipSettings?.useCustomSettings) {
+      return clipSettings?.customBoxOpacity ?? VideoPlayerTrackingSettings.playerSettings.perPlayer.customBoxOpacity.default;
+    }
+    
+    return getBoundingBoxOpacity();
+  };
+
+  const getPlayerNameTagOpacity = (player) => {
+    if (!currentSettings) return getPlayerNameOpacity();
+
+    const clipSettings = currentSettings.playerSettings?.[player];
+    if (clipSettings?.hidden) return 0;
+    
+    if (clipSettings?.useCustomSettings) {
+      return clipSettings?.customNameOpacity ?? VideoPlayerTrackingSettings.playerSettings.perPlayer.customNameOpacity.default;
+    }
+    
+    return getPlayerNameOpacity();
+  };
+
   return (
     <AbsoluteFill>
       {tagArray.map((tagInfo, index) => {
@@ -945,7 +1084,8 @@ export const VideoPlayerTrackingTemplate = ({
                     {boxes.map((box, i) => {
                       const scaledBox = scaleBox(box, originalSize, containerSize);
                       const hasReception = hasReceptionAtFrame(video, currentClipFrame, box.player);
-                      const boxOpacity = getPlayerBoxOpacity(box.player);
+                      const isHidden = currentSettings?.playerSettings?.[box.player]?.hidden ?? false;
+                      const baseOpacity = isHidden ? 0 : 1;
                       
                       return (
                         <div key={i}>
@@ -955,10 +1095,10 @@ export const VideoPlayerTrackingTemplate = ({
                             top: `${scaledBox.y}px`,
                             width: `${scaledBox.width}px`,
                             height: `${scaledBox.height}px`,
-                            border: '2px solid #FF6B00',
+                            border: `2px solid ${getPlayerBoundingBoxColor(box.player)}`,
                             boxSizing: 'border-box',
                             pointerEvents: 'none',
-                            opacity: boxOpacity
+                            opacity: baseOpacity * getPlayerBoundingBoxOpacity(box.player)
                           }} />
                           {/* Position marker circle */}
                           <div style={{
@@ -972,20 +1112,20 @@ export const VideoPlayerTrackingTemplate = ({
                             pointerEvents: 'none',
                             transform: hasReception ? `scale(2)` : 'none',
                             boxShadow: hasReception ? '0 0 10px rgba(255, 255, 0, 0.5)' : 'none',
-                            opacity: boxOpacity
+                            opacity: baseOpacity * getPlayerBoundingBoxOpacity(box.player)
                           }} />
                           <div style={{
                             position: 'absolute',
                             left: `${scaledBox.x}px`,
                             top: `${scaledBox.y - 25}px`,
-                            background: '#FF6B00',
-                            color: getPlayerNameColor(),
+                            background: getPlayerNameBackgroundColor(box.player),
+                            color: getPlayerNameTextColor(box.player),
                             padding: '2px 6px',
                             borderRadius: '4px',
                             fontSize: '14px',
                             fontWeight: 'bold',
                             whiteSpace: 'nowrap',
-                            opacity: boxOpacity
+                            opacity: baseOpacity * getPlayerNameTagOpacity(box.player)
                           }}>
                             {box.player}
                             {hasReception ? ' 🏈' : ''}
