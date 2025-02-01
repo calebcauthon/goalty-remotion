@@ -8,7 +8,8 @@ export const CloudRenderButton = ({
   outputFileName,
   compositionName,
   onRenderStart,
-  renderStatus 
+  renderStatus,
+  settings
 }) => {
   const globalData = useContext(GlobalContext);
   const [isRendering, setIsRendering] = useState(false);
@@ -49,7 +50,8 @@ export const CloudRenderButton = ({
         videos: filteredVideosWithoutMetadata,
         selectedTags: Array.from(selectedTags),
         useStaticFile: true,
-        composition_name: compositionName
+        composition_name: compositionName,
+        settings: settings
       },
       output_file_name: editedFileName,
       composition_name: compositionName

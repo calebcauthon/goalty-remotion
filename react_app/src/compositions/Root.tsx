@@ -31,6 +31,7 @@ export const Root: React.FC = () => {
             durationInFrames: calculateFirstFiveSecondsDuration(props.selectedTags),
             width,
             height,
+            settings: props.settings || {},
           };
         }}
       />
@@ -54,6 +55,7 @@ export const Root: React.FC = () => {
             durationInFrames: calculatePlayerTrackingDuration(props.selectedTags),
             width,
             height,
+            settings: props.settings || {},
           };
         }}
       />

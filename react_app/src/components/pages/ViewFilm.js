@@ -738,6 +738,7 @@ function ViewFilm() {
                 selectedTags={selectedTags}
                 outputFileName={`${film.name.replace(/\s+/g, '_')}.mp4`}
                 compositionName={selectedTemplate}
+                settings={clipSettings}
                 onRenderStart={(filename) => {
                   setRenderStatus('rendering');
                   setRenderFilename(filename);
