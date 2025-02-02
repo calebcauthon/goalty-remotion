@@ -183,7 +183,7 @@ function ViewFilm() {
   const handleAddClip = (videoId, tagName, frame, videoName, videoFilepath, startFrame, endFrame) => {
     const timestamp = Date.now(); // Add timestamp to make each key unique
     const newClip = {
-      key: `${videoId}-${tagName}-${frame}-${startFrame}-${endFrame}-${timestamp}`,
+      key: `${videoId}-${tagName}-${startFrame}-${endFrame}-${timestamp}`,
       videoId,
       videoName,
       videoFilepath,
@@ -800,6 +800,34 @@ function ViewFilm() {
             isRefreshing={isRefreshing}
           />
         )}
+
+        <div className="video-table-container">
+          <h2>Videos</h2>
+          <table className="film-table">
+            <thead>
+              <tr>
+                <th>Show</th>
+                <th>Video Name</th>
+                <th>Number of Tags</th>
+              </tr>
+            </thead>
+            <tbody>
+              {videos.map((video) => (
+                <tr key={video.id}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedVideos.has(video.id)}
+                      onChange={() => handleVideoToggle(video.id)}
+                    />
+                  </td>
+                  <td>{video.name}</td>
+                  <td>{video.tags.length}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         <TagsTable 
           videos={videos}

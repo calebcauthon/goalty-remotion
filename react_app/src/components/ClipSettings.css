@@ -44,4 +44,35 @@
 
 .setting-item input[type="range"] {
   width: 100px;
+}
+
+.player-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.player-settings-controls {
+  display: flex;
+  gap: 5px;
+}
+
+.copy-paste-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f5f5f5;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.copy-paste-btn:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.copy-paste-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 } 
