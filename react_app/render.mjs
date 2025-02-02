@@ -11,7 +11,18 @@ const require = createRequire(import.meta.url);
   const range = JSON.parse(require('fs').readFileSync('/tmp/range.txt', 'utf8'));
   const compositionName = require('fs').readFileSync('/tmp/composition.txt', 'utf8');
 
-  console.log(`Input props: ${JSON.stringify(inputProps, null, 2).substring(0, 5000)}`);
+
+  const cleanedProps = JSON.parse(JSON.stringify(inputProps));
+  if (cleanedProps.videos) {
+    cleanedProps.videos = cleanedProps.videos.map(video => ({
+      ...video,
+      metadata: {
+        ...video.metadata,
+        boxes: []
+      }
+    }));
+  }
+  console.log(`Cleaned Input props: ${JSON.stringify(cleanedProps, null, 2)}`);
   console.log(`Output filename: ${outputFileName}`);
   console.log(`Range: ${range}`);
   console.log(`Composition name: ${compositionName}`);
