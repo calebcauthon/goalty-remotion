@@ -153,6 +153,11 @@ export const VideoPlayerTrackingSettings = {
     label: 'Show Entire Clip',
     default: false
   },
+  showDebugOverlay: {
+    type: 'checkbox',
+    label: 'Show Debug Overlay',
+    default: false
+  },
 };
 
 // Add this helper function near the top of the file
@@ -1011,6 +1016,12 @@ export const VideoPlayerTrackingTemplate = ({
     return currentSettings.showEntireClip ?? VideoPlayerTrackingSettings.showEntireClip.default;
   };
 
+  // Add getter function with the other getters
+  const getShowDebugOverlay = () => {
+    if (!currentSettings) return VideoPlayerTrackingSettings.showDebugOverlay.default;
+    return currentSettings.showDebugOverlay ?? VideoPlayerTrackingSettings.showDebugOverlay.default;
+  };
+
   return (
     <AbsoluteFill>
       {tagArray.map((tagInfo, index) => {
@@ -1405,91 +1416,93 @@ export const VideoPlayerTrackingTemplate = ({
                     </div>
 
                     {/* Debug overlay */}
-                    <div style={{
-                      position: 'absolute',
-                      bottom: 20,
-                      right: 20,
-                      background: 'rgba(0, 0, 0, 0.8)',
-                      color: '#00FF00',
-                      padding: '12px',
-                      borderRadius: '4px',
-                      fontSize: '13px',
-                      fontFamily: 'monospace',
-                      width: '300px',
-                      maxHeight: '80vh',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '12px'
-                    }}>
-                      <div style={{ 
-                        fontWeight: 'bold', 
-                        borderBottom: '1px solid #00FF00',
-                        paddingBottom: '4px'
+                    {getShowDebugOverlay() && (
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 20,
+                        right: 20,
+                        background: 'rgba(0, 0, 0, 0.8)',
+                        color: '#00FF00',
+                        padding: '12px',
+                        borderRadius: '4px',
+                        fontSize: '13px',
+                        fontFamily: 'monospace',
+                        width: '300px',
+                        maxHeight: '80vh',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px'
                       }}>
-                        🔍 Debug Info
-                      </div>
-                      {(() => {
-                        const metadata = getVideoMetadata(video);
-                        const currentBoxes = getBoxesForFrame(video, currentClipFrame);
-                        const currentTags = getTagsForFrame(video, currentClipFrame);
-                        
-                        return (
-                          <>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <div>Frame: {currentClipFrame}</div>
-                              <div>Clip: {tagInfo.key}</div>
-                              <div>Video: {video.id}</div>
-                            </div>
-
-                            {/* Add new section for clip reference info */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <div style={{ color: '#FFF', marginBottom: '2px' }}>Clip Reference</div>
-                              <div>• Start: {effectiveCurrentClipRef?.startFrame || '?'}</div>
-                              <div>• End: {effectiveCurrentClipRef?.endFrame || '?'}</div>
-                              <div>• Tag: {effectiveCurrentClipRef?.tagName || '?'}</div>
-                              <div>• Key: {effectiveCurrentClipRef?.key || '?'}</div>
-                              <div style={{ fontSize: '12px', color: '#AAA', marginLeft: '8px' }}>
-                                Video: {effectiveCurrentClipRef?.videoName || '?'}
+                        <div style={{ 
+                          fontWeight: 'bold', 
+                          borderBottom: '1px solid #00FF00',
+                          paddingBottom: '4px'
+                        }}>
+                          🔍 Debug Info
+                        </div>
+                        {(() => {
+                          const metadata = getVideoMetadata(video);
+                          const currentBoxes = getBoxesForFrame(video, currentClipFrame);
+                          const currentTags = getTagsForFrame(video, currentClipFrame);
+                          
+                          return (
+                            <>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div>Frame: {currentClipFrame}</div>
+                                <div>Clip: {tagInfo.key}</div>
+                                <div>Video: {video.id}</div>
                               </div>
-                            </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <div style={{ color: '#FFF', marginBottom: '2px' }}>Metadata</div>
-                              <div>• Resolution: {metadata?.width || '?'}x{metadata?.height || '?'}</div>
-                              <div>• Total Boxes: {metadata?.boxes?.length || 0}</div>
-                              <div>• Total Tags: {metadata?.tags?.length || 0}</div>
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <div style={{ color: '#FFF', marginBottom: '2px' }}>Current Frame</div>
-                              <div>• Active Boxes: {currentBoxes.length}</div>
-                              <div>• Active Tags: {currentTags.length}</div>
-                              {currentBoxes.length > 0 && (
-                                <div style={{ marginLeft: '8px', fontSize: '12px', color: '#AAA' }}>
-                                  {currentBoxes.map((box, i) => (
-                                    <div key={i}>- {box.player}: [{box.bbox.map(n => n.toFixed(1)).join(', ')}]</div>
-                                  ))}
+                              {/* Add new section for clip reference info */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div style={{ color: '#FFF', marginBottom: '2px' }}>Clip Reference</div>
+                                <div>• Start: {effectiveCurrentClipRef?.startFrame || '?'}</div>
+                                <div>• End: {effectiveCurrentClipRef?.endFrame || '?'}</div>
+                                <div>• Tag: {effectiveCurrentClipRef?.tagName || '?'}</div>
+                                <div>• Key: {effectiveCurrentClipRef?.key || '?'}</div>
+                                <div style={{ fontSize: '12px', color: '#AAA', marginLeft: '8px' }}>
+                                  Video: {effectiveCurrentClipRef?.videoName || '?'}
                                 </div>
-                              )}
-                              {currentTags.length > 0 && (
-                                <div style={{ marginLeft: '8px', fontSize: '12px', color: '#AAA' }}>
-                                  {currentTags.map((tag, i) => (
-                                    <div key={i}>- {tag.name}</div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
+                              </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <div style={{ color: '#FFF', marginBottom: '2px' }}>Settings</div>
-                              <div>• Show Full Path: {getShowEntireClip() ? 'Yes' : 'No'}</div>
-                              <div>• Path Detail: {getStretchCount()}%</div>
-                              <div>• Smoothing: {getSmoothingFactor().toFixed(2)}</div>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div style={{ color: '#FFF', marginBottom: '2px' }}>Metadata</div>
+                                <div>• Resolution: {metadata?.width || '?'}x{metadata?.height || '?'}</div>
+                                <div>• Total Boxes: {metadata?.boxes?.length || 0}</div>
+                                <div>• Total Tags: {metadata?.tags?.length || 0}</div>
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div style={{ color: '#FFF', marginBottom: '2px' }}>Current Frame</div>
+                                <div>• Active Boxes: {currentBoxes.length}</div>
+                                <div>• Active Tags: {currentTags.length}</div>
+                                {currentBoxes.length > 0 && (
+                                  <div style={{ marginLeft: '8px', fontSize: '12px', color: '#AAA' }}>
+                                    {currentBoxes.map((box, i) => (
+                                      <div key={i}>- {box.player}: [{box.bbox.map(n => n.toFixed(1)).join(', ')}]</div>
+                                    ))}
+                                  </div>
+                                )}
+                                {currentTags.length > 0 && (
+                                  <div style={{ marginLeft: '8px', fontSize: '12px', color: '#AAA' }}>
+                                    {currentTags.map((tag, i) => (
+                                      <div key={i}>- {tag.name}</div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div style={{ color: '#FFF', marginBottom: '2px' }}>Settings</div>
+                                <div>• Show Full Path: {getShowEntireClip() ? 'Yes' : 'No'}</div>
+                                <div>• Path Detail: {getStretchCount()}%</div>
+                                <div>• Smoothing: {getSmoothingFactor().toFixed(2)}</div>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </>
                 )}
               </div>
