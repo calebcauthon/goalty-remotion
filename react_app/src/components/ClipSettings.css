@@ -4,7 +4,6 @@
 
 .clip-settings {
   display: flex;
-  flex-wrap: wrap;
   gap: 12px;
   padding: 8px;
 }

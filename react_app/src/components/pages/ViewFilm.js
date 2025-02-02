@@ -98,6 +98,7 @@ function ViewFilm() {
   const [currentFrame, setCurrentFrame] = useState(0);
   const [currentPlayingClipRef, setCurrentPlayingClipRef] = useState(null);
   const [expandedSettings, setExpandedSettings] = useState(new Set());
+  const [settingsClipboard, setSettingsClipboard] = useState(null);
 
   const fetchFilm = async () => {
     try {
@@ -518,18 +519,81 @@ function ViewFilm() {
     }
   }, [film?.data, globalData.APIbaseUrl, id]);
 
-  const handleSettingChange = useCallback((clipKey, setting, value) => {
-    console.log('handleSettingChange', { clipKey, setting, value });
-    const newSettings = {
-      ...(film.data?.clipSettings?.[clipKey] || {}),
-      [setting]: value
-    };
-    
-    saveClipSettings(clipKey, newSettings);
-  }, [film?.data?.clipSettings, saveClipSettings]);
+  const handleSettingChange = useCallback(async (clipKey, setting, value) => {
+    try {
+      const newClipSettings = {
+        ...(film.data?.clipSettings || {}),
+        [clipKey]: {
+          ...(film.data?.clipSettings?.[clipKey] || {}),
+          [setting]: value
+        }
+      };
+
+      const response = await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data: {
+            ...film.data,
+            clipSettings: newClipSettings
+          }
+        }),
+      });
+
+      if (response.ok) {
+        setFilm(prev => ({
+          ...prev,
+          data: {
+            ...prev.data,
+            clipSettings: newClipSettings
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error updating clip settings:', error);
+    }
+  }, [film?.data, globalData.APIbaseUrl, id]);
+
+  const handleBulkSettingChange = useCallback(async (clipKey, settings) => {
+    try {
+      const newClipSettings = {
+        ...(film.data?.clipSettings || {}),
+        [clipKey]: {
+          ...(film.data?.clipSettings?.[clipKey] || {}),
+          ...settings
+        }
+      };
+
+      const response = await fetch(`${globalData.APIbaseUrl}/api/films/${id}/data`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data: {
+            ...film.data,
+            clipSettings: newClipSettings
+          }
+        }),
+      });
+
+      if (response.ok) {
+        setFilm(prev => ({
+          ...prev,
+          data: {
+            ...prev.data,
+            clipSettings: newClipSettings
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error updating clip settings:', error);
+    }
+  }, [film?.data, globalData.APIbaseUrl, id]);
 
   const toggleSettings = useCallback((clipKey) => {
-    console.log('toggleSettings', { clipKey });
     setExpandedSettings(prev => {
       const newSet = new Set(prev);
       if (newSet.has(clipKey)) {
@@ -537,7 +601,6 @@ function ViewFilm() {
       } else {
         newSet.add(clipKey);
       }
-      console.log('toggleSettings', { clipKey, newSet });
       return newSet;
     });
   }, [setExpandedSettings]);
@@ -734,6 +797,9 @@ function ViewFilm() {
                               videos={videos}
                               clipSettings={film.data?.clipSettings || {}}
                               onSettingChange={handleSettingChange}
+                              onBulkSettingChange={handleBulkSettingChange}
+                              settingsClipboard={settingsClipboard}
+                              setSettingsClipboard={setSettingsClipboard}
                             />
                           )}
                         </React.Fragment>

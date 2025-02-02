@@ -218,6 +218,14 @@ const getExponentialPercentage = (linearValue) => {
   return Math.max(1, Math.min(100, exponentialValue * 100));
 };
 
+// Add this helper function near the top with other helpers
+const isValidBox = (bbox) => {
+  return bbox && 
+         Array.isArray(bbox) && 
+         bbox.length === 4 && 
+         !(bbox[0] === 0 && bbox[1] === 0);
+};
+
 export const VideoPlayerTrackingTemplate = ({ 
   selectedVideos, 
   videos, 
@@ -370,7 +378,7 @@ export const VideoPlayerTrackingTemplate = ({
     return metadata.tags?.filter(tag => tag.frame === frame) || [];
   };
 
-  // Update getBoxesForFrame to use memoized metadata
+  // Update getBoxesForFrame to filter invalid boxes
   const getBoxesForFrame = (video, frame) => {
     const metadata = getVideoMetadata(video);
     if (!metadata) return [];
@@ -388,10 +396,13 @@ export const VideoPlayerTrackingTemplate = ({
 
       if (!targetFrameData) return [];
 
-      return Object.entries(targetFrameData).map(([player, data]) => ({
-        player,
-        bbox: data.bbox
-      }));
+      // Add filter for valid boxes
+      return Object.entries(targetFrameData)
+        .filter(([_, data]) => isValidBox(data.bbox))
+        .map(([player, data]) => ({
+          player,
+          bbox: data.bbox
+        }));
 
     } catch (error) {
       console.error('💥 Error parsing boxes metadata:', error);
@@ -424,7 +435,7 @@ export const VideoPlayerTrackingTemplate = ({
     return currentSettings.stretchCount ?? VideoPlayerTrackingSettings.stretchCount.default;
   };
 
-  // Update getTrailPositions to only include catches as key points
+  // Update getTrailPositions to filter invalid boxes
   const getTrailPositions = (video, currentClipFrame, currentPlayingClipRef) => {
     const playerPaths = {};
     const frameSet = new Set();
@@ -441,17 +452,20 @@ export const VideoPlayerTrackingTemplate = ({
       for (let frame = startFrame; frame <= endFrame; frame++) {
         const boxes = getBoxesForFrame(video, frame);
         boxes.forEach(box => {
-          if (!playerPaths[box.player]) {
-            playerPaths[box.player] = {
-              positions: [],
-              receptionFrames: []
-            };
+          // Only process if box coordinates are valid
+          if (isValidBox(box.bbox)) {
+            if (!playerPaths[box.player]) {
+              playerPaths[box.player] = {
+                positions: [],
+                receptionFrames: []
+              };
+            }
+            frames.push({
+              frame,
+              player: box.player,
+              bbox: box.bbox
+            });
           }
-          frames.push({
-            frame,
-            player: box.player,
-            bbox: box.bbox
-          });
         });
       }
       return frames;
@@ -1018,7 +1032,13 @@ export const VideoPlayerTrackingTemplate = ({
   // In the template component, add this after other settings getters
   const getShowEntireClip = () => {
     if (!currentSettings) return VideoPlayerTrackingSettings.showEntireClip.default;
-    return currentSettings.showEntireClip ?? VideoPlayerTrackingSettings.showEntireClip.default;
+    const value = currentSettings.showEntireClip ?? VideoPlayerTrackingSettings.showEntireClip.default;
+    console.log('showEntireClip value:', value);
+    if (value === "false") {
+      return false;
+    }
+
+    return value;
   };
 
   // Add getter function with the other getters
@@ -1511,7 +1531,7 @@ export const VideoPlayerTrackingTemplate = ({
 
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <div style={{ color: '#FFF', marginBottom: '2px' }}>Settings</div>
-                                <div>• Show Full Path: {getShowEntireClip() ? 'Yes' : 'No'}</div>
+                                <div>• Show Full Path: {getShowEntireClip() == "true" ? 'Yes' : 'No'}</div>
                                 <div>• Path Detail: {getStretchCount()}%</div>
                                 <div>• Smoothing: {getSmoothingFactor().toFixed(2)}</div>
                               </div>

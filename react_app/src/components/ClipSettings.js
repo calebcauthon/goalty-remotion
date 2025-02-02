@@ -22,10 +22,11 @@ export const ClipSettings = ({
   clip,
   videos,
   clipSettings,
-  onSettingChange
+  onSettingChange,
+  onBulkSettingChange,
+  settingsClipboard,
+  setSettingsClipboard
 }) => {
-  const [settingsClipboard, setSettingsClipboard] = useState(null);
-  
   const video = videos.find(v => v.id === clip.videoId);
   const metadata = video?.metadata ? 
     (typeof video.metadata === 'string' ? JSON.parse(video.metadata) : video.metadata) 
@@ -33,11 +34,48 @@ export const ClipSettings = ({
   
   const players = getPlayersInFrameRange(metadata, clip.startFrame, clip.endFrame);
 
+  const handleCopyAllSettings = () => {
+    // Copy both regular and player settings
+    const allSettings = {
+      ...clipSettings[clip.key],
+      playerSettings: clipSettings[clip.key]?.playerSettings || {}
+    };
+    setSettingsClipboard(allSettings);
+  };
+
+  const handlePasteAllSettings = () => {
+    if (!settingsClipboard) return;
+    // Use the bulk update instead of individual updates
+    onBulkSettingChange(clip.key, settingsClipboard);
+  };
+
   return (
     <tr className="settings-row">
       <td colSpan="8">
         <div className="clip-settings">
+          <div className="settings-header">
+            <h4>All Settings</h4>
+            <div className="player-settings-controls">
+              <button
+                onClick={handleCopyAllSettings}
+                className="copy-paste-btn"
+                title="Copy all settings"
+              >
+                📋 Copy All
+              </button>
+              <button
+                onClick={handlePasteAllSettings}
+                className="copy-paste-btn"
+                disabled={!settingsClipboard}
+                title="Paste all settings"
+              >
+                📝 Paste All
+              </button>
+            </div>
+          </div>
+
           <div className="regular-settings">
+            for key: {clip.key}
             {Object.entries(VideoPlayerTrackingSettings).map(([key, setting]) => {
               if (setting.type === 'playerGroup') return null;
               
@@ -49,14 +87,23 @@ export const ClipSettings = ({
                     min={setting.min ?? 0}
                     max={setting.max ?? 1}
                     step={setting.step ?? 0.1}
-                    value={clipSettings[clip.key]?.[key] ?? setting.default}
+                    checked={setting.type === 'checkbox' ?
+                      (clipSettings[clip.key]?.[key] ?? setting.default) :
+                      undefined
+                    }
+                    value={setting.type !== 'checkbox' ?
+                      (clipSettings[clip.key]?.[key] ?? setting.default) :
+                      undefined
+                    }
                     onChange={(e) => {
-                      const value = setting.type === 'range' ? 
-                        Number(e.target.value) : 
-                        e.target.value;
+                      const value = {
+                        range: () => Number(e.target.value),
+                        checkbox: () => e.target.checked,
+                      }[setting.type]?.() ?? e.target.value;
+
                       onSettingChange(clip.key, key, value);
                     }}
-                  />
+                 />
                 </div>
               );
             })}
