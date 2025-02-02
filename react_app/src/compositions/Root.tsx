@@ -53,8 +53,8 @@ export const Root: React.FC = () => {
           
           return {
             durationInFrames: calculatePlayerTrackingDuration(props.selectedTags),
-            width,
-            height,
+            width: 1280,
+            height: 720,
             settings: props.settings || {},
           };
         }}
