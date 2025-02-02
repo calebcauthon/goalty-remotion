@@ -26,6 +26,8 @@ const require = createRequire(import.meta.url);
   console.log(`Output filename: ${outputFileName}`);
   console.log(`Range: ${range}`);
   console.log(`Composition name: ${compositionName}`);
+  console.log(`# of boxes for first video: ${inputProps.videos[0].metadata.boxes.length}`);
+  console.log(`# of non-empty boxes for first video: ${inputProps.videos[0].metadata.boxes.filter(box => JSON.stringify(box) != '{}').length}`);
 
   const bundled = await bundle({
     entryPoint: require.resolve("./src/index_studio.js"),
@@ -35,10 +37,6 @@ const require = createRequire(import.meta.url);
 
   console.log(`Bundled!`);
   console.log(`Selecting composition...`);
-
-  inputProps.width = 1920;
-  inputProps.height = 1080;
-  console.log(`Setting width and height to 1920 and 1080`);
 
   const composition = await selectComposition({
     serveUrl: bundled,
