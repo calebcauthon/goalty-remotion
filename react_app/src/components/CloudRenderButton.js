@@ -30,7 +30,7 @@ export const CloudRenderButton = ({
     })();
 
     const other = ((metadata) => {
-      const { tags: metadataTags, extracted_yt_info, ...otherMetadata } = metadata;
+      const { extracted_yt_info, ...otherMetadata } = metadata;
       return otherMetadata;
     })(JSON.parse(metadata));
 
