@@ -97,6 +97,7 @@ function ViewFilm() {
   const [currentPlayingClip, setCurrentPlayingClip] = useState(null);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [currentPlayingClipRef, setCurrentPlayingClipRef] = useState(null);
+  const [expandedSettings, setExpandedSettings] = useState(new Set());
 
   const fetchFilm = async () => {
     try {
@@ -527,6 +528,20 @@ function ViewFilm() {
     saveClipSettings(clipKey, newSettings);
   }, [film?.data?.clipSettings, saveClipSettings]);
 
+  const toggleSettings = useCallback((clipKey) => {
+    console.log('toggleSettings', { clipKey });
+    setExpandedSettings(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(clipKey)) {
+        newSet.delete(clipKey);
+      } else {
+        newSet.add(clipKey);
+      }
+      console.log('toggleSettings', { clipKey, newSet });
+      return newSet;
+    });
+  }, [setExpandedSettings]);
+
   if (!film) {
     return <Layout>Loading...</Layout>;
   }
@@ -591,140 +606,144 @@ function ViewFilm() {
             </button>
           </div>
           <DragDropContext onDragEnd={onDragEnd}>
-            <table className="included-clips-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '40px' }}></th>
-                  <th>Video Name</th>
-                  <th>Tag Name</th>
-                  <th>Frame</th>
-                  <th>Frame Range</th>
-                  <th>Duration</th>
-                  <th>Frame Range of Output</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <Droppable droppableId="clips">
-                {(provided) => (
-                  <tbody
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                  >
-                    {(() => {
-                      // Calculate all durations once
-                      const allDurations = includedClips.map(clip => 
-                        clip.endFrame - clip.startFrame
-                      );
+            <div className="included-clips-header-row">
+              <div style={{ width: '40px' }}></div>
+              <div>Video Name</div>
+              <div>Tag Name</div>
+              <div>Frame</div>
+              <div>Frame Range</div>
+              <div>Duration</div>
+              <div>Frame Range of Output</div>
+              <div>Actions</div>
+            </div>
+            <Droppable droppableId="clips">
+              {(provided) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className="included-clips-list"
+                >
+                  {(() => {
+                    const allDurations = includedClips.map(clip => 
+                      clip.endFrame - clip.startFrame
+                    );
+                    
+                    return includedClips.map((clip, index) => {
+                      const startFrame = calculateStartFrameForClip(includedClips, index);
+                      const clipDuration = clip.endFrame - clip.startFrame;
+                      const endFrame = startFrame + clipDuration;
+                      const durationInSeconds = (clipDuration / 30).toFixed(1);
+                      const durationClass = getClipDurationClass(clipDuration, allDurations);
                       
-                      return includedClips.map((clip, index) => {
-                        const startFrame = calculateStartFrameForClip(includedClips, index);
-                        const clipDuration = clip.endFrame - clip.startFrame;
-                        const endFrame = startFrame + clipDuration;
-                        const durationInSeconds = (clipDuration / 30).toFixed(1);
-                        const durationClass = getClipDurationClass(clipDuration, allDurations);
-                        
-                        // Calculate if this clip is currently playing and its current frame
-                        const isCurrentClip = currentFrame >= startFrame && currentFrame < endFrame;
-                        const currentClipFrame = isCurrentClip 
-                          ? clip.startFrame + (currentFrame - startFrame)
-                          : null;
-                        
-                        return (
-                          <>
-                            <Draggable 
-                              key={clip.key} 
-                              draggableId={clip.key} 
-                              index={index}
-                            >
-                              {(provided, snapshot) => (
-                                <tr
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  className={`${snapshot.isDragging ? 'dragging' : ''} ${durationClass}`}
-                                >
-                                  <td {...provided.dragHandleProps} className="drag-handle">
-                                    ⋮⋮
-                                  </td>
-                                  <td>
-                                    <a 
-                                      href={`/videos/${clip.videoId}?startFrame=${clip.startFrame}&endFrame=${clip.endFrame}`} 
-                                      className="video-link"
-                                    >
-                                      {clip.videoName} ({clip.startFrame}-{clip.endFrame})
-                                    </a>
-                                  </td>
-                                  <td>{clip.tagName}</td>
-                                  <td>
-                                    {isCurrentClip ? (
-                                      <span style={{ 
-                                        color: '#0d6efd',
-                                        fontWeight: 'bold'
-                                      }}>
-                                        {currentClipFrame} / abs: {currentFrame}
-                                      </span>
-                                    ) : (
-                                      clip.frame
-                                    )}
-                                  </td>
-                                  <td>{`${clip.startFrame}-${clip.endFrame}`}</td>
-                                  <td className="duration-cell">
-                                    <div className="duration-content">
-                                      <span>{durationInSeconds}s</span>
-                                      {currentPlayingClip === clip.key && (
-                                        <div className="clip-progress">
-                                          <div 
-                                            className="progress-bar"
-                                            style={{
-                                              width: `${Math.round(((currentFrame - clip.startFrame) / (clip.endFrame - clip.startFrame)) * 100)}%`
-                                            }}
-                                          />
-                                        </div>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td>
-                                    <span 
-                                      className="clickable-frame-range"
-                                      onClick={() => handleSeekToFrame(startFrame)}
-                                    >
-                                      {`${startFrame}-${endFrame}`}
+                      const isCurrentClip = currentFrame >= startFrame && currentFrame < endFrame;
+                      const currentClipFrame = isCurrentClip 
+                        ? clip.startFrame + (currentFrame - startFrame)
+                        : null;
+                      
+                      return (
+                        <React.Fragment key={clip.key}>
+                          <Draggable 
+                            draggableId={clip.key} 
+                            index={index}
+                          >
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`clip-row ${snapshot.isDragging ? 'dragging' : ''} ${durationClass}`}
+                              >
+                                <div {...provided.dragHandleProps} className="drag-handle">
+                                  ⋮⋮
+                                </div>
+                                <div>
+                                  <a 
+                                    href={`/videos/${clip.videoId}?startFrame=${clip.startFrame}&endFrame=${clip.endFrame}`} 
+                                    className="video-link"
+                                  >
+                                    {clip.videoName} ({clip.startFrame}-{clip.endFrame})
+                                  </a>
+                                </div>
+                                <div>{clip.tagName}</div>
+                                <div>
+                                  {isCurrentClip ? (
+                                    <span style={{ 
+                                      color: '#0d6efd',
+                                      fontWeight: 'bold'
+                                    }}>
+                                      {currentClipFrame} / abs: {currentFrame}
                                     </span>
-                                  </td>
-                                  <td>
-                                    <div className="clip-actions">
-                                      <button 
-                                        onClick={() => handlePreviewClip(clip)}
-                                        className={`preview-clip-button ${currentPlayingClip === clip.key ? 'playing' : ''}`}
-                                        title="Preview this clip"
-                                      >
-                                        {currentPlayingClip === clip.key ? '⏸️' : '▶️'}
-                                      </button>
-                                      <button 
-                                        onClick={() => handleRemoveClip(clip.key)}
-                                        className="remove-clip-button"
-                                      >
-                                        Remove
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </Draggable>
+                                  ) : (
+                                    clip.frame
+                                  )}
+                                </div>
+                                <div>{`${clip.startFrame}-${clip.endFrame}`}</div>
+                                <div className="duration-cell">
+                                  <div className="duration-content">
+                                    <span>{durationInSeconds}s</span>
+                                    {currentPlayingClip === clip.key && (
+                                      <div className="clip-progress">
+                                        <div 
+                                          className="progress-bar"
+                                          style={{
+                                            width: `${Math.round(((currentFrame - clip.startFrame) / (clip.endFrame - clip.startFrame)) * 100)}%`
+                                          }}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span 
+                                    className="clickable-frame-range"
+                                    onClick={() => handleSeekToFrame(startFrame)}
+                                  >
+                                    {`${startFrame}-${endFrame}`}
+                                  </span>
+                                </div>
+                                <div className="clip-actions">
+                                  <button 
+                                    onClick={() => handlePreviewClip(clip)}
+                                    className={`preview-clip-button ${currentPlayingClip === clip.key ? 'playing' : ''}`}
+                                    title="Preview this clip"
+                                  >
+                                    {currentPlayingClip === clip.key ? '⏸️' : '▶️'}
+                                  </button>
+                                  <button 
+                                    onClick={() => handleRemoveClip(clip.key)}
+                                    className="remove-clip-button"
+                                  >
+                                    Remove
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleSettings(clip.key);
+                                    }}
+                                    className="settings-toggle-button"
+                                    title="Toggle Settings"
+                                  >
+                                    {expandedSettings.has(clip.key) ? '⚙️' : '⚙'}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                          {expandedSettings.has(clip.key) && (
                             <ClipSettings
                               clip={clip}
                               videos={videos}
                               clipSettings={film.data?.clipSettings || {}}
                               onSettingChange={handleSettingChange}
                             />
-                          </>
-                        );
-                      });
-                    })()}
-                    {provided.placeholder}
-                  </tbody>
-                )}
-              </Droppable>
-            </table>
+                          )}
+                        </React.Fragment>
+                      );
+                    });
+                  })()}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
           </DragDropContext>
         </div>
 

@@ -158,6 +158,11 @@ export const VideoPlayerTrackingSettings = {
     label: 'Show Debug Overlay',
     default: false
   },
+  showOnlyFirstLastThrow: {
+    type: 'checkbox',
+    label: 'Show Only First/Last Throw',
+    default: false
+  },
 };
 
 // Add this helper function near the top of the file
@@ -1264,30 +1269,42 @@ export const VideoPlayerTrackingTemplate = ({
                       </defs>
                       
                       {/* Completed throws */}
-                      {receptionSequence.map((reception, i) => {
-                        const throwPos = scaleBox({ bbox: reception.throwBbox }, originalSize, containerSize);
-                        const catchPos = scaleBox({ bbox: reception.catchBbox }, originalSize, containerSize);
+                      {(() => {
+                        const showOnlyFirstLast = currentSettings?.showOnlyFirstLastThrow ?? VideoPlayerTrackingSettings.showOnlyFirstLastThrow.default;
                         
-                        // Calculate control point for the parabola
-                        const midX = (throwPos.x + catchPos.x + throwPos.width/2 + catchPos.width/2) / 2;
-                        const midY = Math.min(throwPos.y, catchPos.y) - 
-                          Math.abs(catchPos.x - throwPos.x) * THROW_HEIGHT_FACTOR - 
-                          Math.abs(catchPos.y - throwPos.y) * THROW_HEIGHT_FACTOR;
-                        
-                        return (
-                          <path
-                            key={`reception-line-${i}`}
-                            d={`M ${throwPos.x + throwPos.width/2} ${throwPos.y + throwPos.height}
-                               Q ${midX} ${midY} 
-                               ${catchPos.x + catchPos.width/2} ${catchPos.y + catchPos.height}`}
-                            stroke={getParabolaColor()}
-                            strokeWidth={RECEPTION_LINE_WIDTH}
-                            opacity={getParabolaOpacity()}
-                            fill="none"
-                            markerEnd="url(#arrowhead)"
-                          />
-                        );
-                      })}
+                        let throwsToRender = receptionSequence;
+                        if (showOnlyFirstLast && receptionSequence.length > 0) {
+                          throwsToRender = [
+                            receptionSequence[0],  // First throw
+                            ...(receptionSequence.length > 1 ? [receptionSequence[receptionSequence.length - 1]] : [])  // Last throw if exists
+                          ];
+                        }
+
+                        return throwsToRender.map((reception, i) => {
+                          const throwPos = scaleBox({ bbox: reception.throwBbox }, originalSize, containerSize);
+                          const catchPos = scaleBox({ bbox: reception.catchBbox }, originalSize, containerSize);
+                          
+                          // Calculate control point for the parabola
+                          const midX = (throwPos.x + catchPos.x + throwPos.width/2 + catchPos.width/2) / 2;
+                          const midY = Math.min(throwPos.y, catchPos.y) - 
+                            Math.abs(catchPos.x - throwPos.x) * THROW_HEIGHT_FACTOR - 
+                            Math.abs(catchPos.y - throwPos.y) * THROW_HEIGHT_FACTOR;
+                          
+                          return (
+                            <path
+                              key={`reception-line-${i}`}
+                              d={`M ${throwPos.x + throwPos.width/2} ${throwPos.y + throwPos.height}
+                                 Q ${midX} ${midY} 
+                                 ${catchPos.x + catchPos.width/2} ${catchPos.y + catchPos.height}`}
+                              stroke={getParabolaColor()}
+                              strokeWidth={RECEPTION_LINE_WIDTH}
+                              opacity={getParabolaOpacity()}
+                              fill="none"
+                              markerEnd="url(#arrowhead)"
+                            />
+                          );
+                        });
+                      })()}
 
                       {/* Active throw */}
                       {(() => {

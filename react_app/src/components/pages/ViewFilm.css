@@ -489,9 +489,14 @@
 }
 
 .clip-settings {
-  padding: 8px;
+  grid-column: 1 / -1;
+  background-color: #f8f9fa;
+  padding: 12px;
+  border-bottom: 1px solid #eee;
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
+  transition: all 0.2s ease;
 }
 
 .setting-item {
@@ -500,21 +505,11 @@
   gap: 8px;
 }
 
-.setting-item label {
-  font-size: 0.9em;
-  color: #666;
-}
-
-.setting-item input {
-  padding: 4px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
 .player-settings-group {
   border: 1px solid #eee;
   padding: 8px;
   border-radius: 4px;
+  background-color: white;
   margin: 4px 0;
 }
 
@@ -522,13 +517,6 @@
   margin: 0 0 8px 0;
   font-size: 0.9em;
   color: #666;
-}
-
-.clip-settings {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding: 12px;
 }
 
 .setting-item input[type="range"] {
@@ -546,4 +534,61 @@
 .setting-item input[type="checkbox"] + label {
   order: 2;
   margin-left: 4px;
+}
+
+.included-clips-header-row {
+  display: grid;
+  grid-template-columns: 40px 2fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  padding: 8px;
+  background-color: #f5f5f5;
+  font-weight: bold;
+  border-bottom: 1px solid #ddd;
+}
+
+.included-clips-list {
+  min-height: 50px;
+}
+
+.clip-row {
+  display: grid;
+  grid-template-columns: 40px 2fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+  background-color: white;
+}
+
+.clip-row.dragging {
+  background-color: #f8f9fa;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.drag-handle {
+  cursor: grab;
+  text-align: center;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Add these styles */
+.settings-toggle-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  font-size: 1.2em;
+  opacity: 0.7;
+}
+
+.settings-toggle-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  opacity: 1;
+}
+
+.settings-collapsed {
+  display: none;
 }
