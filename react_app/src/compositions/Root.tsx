@@ -49,12 +49,11 @@ export const Root: React.FC = () => {
         }}
         calculateMetadata={({ props, defaultProps }) => {
           const firstVideo = props.videos?.[0];
-          const { width, height } = getVideoMetadata(firstVideo);
           
           return {
             durationInFrames: calculatePlayerTrackingDuration(props.selectedTags),
-            width,
-            height,
+            width: 1920,
+            height: 1080,
             settings: props.settings || {},
           };
         }}
