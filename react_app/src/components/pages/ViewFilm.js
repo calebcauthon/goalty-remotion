@@ -739,13 +739,13 @@ function ViewFilm() {
                   videos,
                   selectedTags,
                   onFrameUpdate: handleFrameUpdate,
-                  width: 1280,
-                  height: 720,
+                  width: 1920,
+                  height: 1080,
                   settings: film.data?.clipSettings || {}
                 }}
                 durationInFrames={calculateDuration()}
-                compositionWidth={1280}
-                compositionHeight={720}
+                compositionWidth={1920}
+                compositionHeight={1080}
                 fps={30}
                 controls
                 loop={!previewEndFrame}
