@@ -25,6 +25,62 @@ import { DictationDisplay } from '../DictationDisplay';
 import { HotkeySection } from '../HotkeySection';
 import { useAutoListen } from '../hotkeys/AutoListen';
 
+const VideoInfoUpdater = ({ video, globalData, onUpdate }) => {
+  const [loading, setLoading] = useState(false);
+
+  const handlePullB2Data = async () => {
+    setLoading(true);
+    try {
+      const b2Response = await fetch(
+        `${globalData.APIbaseUrl}/api/videos/b2-info`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            url: video.filepath,
+            frame_number: 0
+          })
+        }
+      );
+      const b2Data = await b2Response.json();
+      
+      if (b2Data.error) {
+        console.error(b2Data.error);
+      } else {
+        onUpdate({
+          fps: b2Data.fps,
+          duration: b2Data.duration,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch video info:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handlePullB2Data}
+      disabled={loading}
+      style={{
+        padding: '8px 16px',
+        backgroundColor: '#4CAF50',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        cursor: loading ? 'not-allowed' : 'pointer',
+        opacity: loading ? 0.7 : 1,
+        marginLeft: '10px'
+      }}
+    >
+      {loading ? 'Loading...' : 'Update Video Info'}
+    </button>
+  );
+};
+
 function VideoDetail() {
   const globalData = useContext(GlobalContext);
   const { id } = useParams();
@@ -83,6 +139,10 @@ function VideoDetail() {
   const [activeGroupInstructions, setActiveGroupInstructions] = useState([]);
   const [clickFeedback, setClickFeedback] = useState(null);
   const [feedbackTimeout, setFeedbackTimeout] = useState(null);
+  const [showMissButtons, setShowMissButtons] = useState(false);
+  const [currentBoxes, setCurrentBoxes] = useState(null);
+  const [autoRefreshBoxes, setAutoRefreshBoxes] = useState(false);
+  const [lastBoxUpdate, setLastBoxUpdate] = useState(null);
 
   useEffect(() => {
     const fetchVideoDetails = async () => {
@@ -420,8 +480,8 @@ function VideoDetail() {
     ));
   };
 
-  const handleFetchBoxes = async () => {
-    setBoxesLoading(true);
+  const handleFetchBoxes = async (silent = false) => {
+    if (!silent) setBoxesLoading(true);
     try {
       const response = await fetch(`${globalData.APIbaseUrl}/api/videos/get-boxes`, {
         method: 'POST',
@@ -432,24 +492,34 @@ function VideoDetail() {
           video_url: video.filepath,
         })
       });
-      
 
       const data = await response.json();
-      console.log('data', data);
       setBoxesData(data.boxes);
       
-      
-      // Update the metadata display without saving
+      // Update the metadata
       const newMetadata = JSON.parse(metadata);
       newMetadata.boxes = data.boxes;
       setMetadata(JSON.stringify(newMetadata, null, 2));
       setParsedMetadata(newMetadata);
+
+      // Save metadata automatically
+      await axios.post(`${globalData.APIbaseUrl}/api/videos/${id}/metadata`, { 
+        metadata: JSON.stringify(newMetadata, null, 2) 
+      });
+
+      setLastBoxUpdate(new Date().toLocaleTimeString());
+
+      if (!silent) {
+        alert('Boxes data loaded and saved successfully');
+      }
       
     } catch (error) {
       console.error('Error fetching boxes:', error);
-      alert('Failed to fetch boxes data');
+      if (!silent) {
+        alert('Failed to fetch boxes data');
+      }
     } finally {
-      setBoxesLoading(false);
+      if (!silent) setBoxesLoading(false);
     }
   };
 
@@ -559,6 +629,10 @@ function VideoDetail() {
         hit: true,
         text: newAction.toUpperCase()
       });
+
+      // Clear any miss boxes/buttons
+      setShowMissButtons(false);
+      setCurrentBoxes(null);
     } else {
       console.log('No box found containing click coordinates');
       
@@ -569,6 +643,18 @@ function VideoDetail() {
         hit: false,
         text: 'MISS'
       });
+
+      // Pause video and show player buttons
+      if (playerRef.current) {
+        playerRef.current.pause();
+      }
+
+      // Get current frame's boxes
+      const frameBoxes = parsedMetadata?.boxes?.[currentFrame];
+      if (frameBoxes) {
+        setCurrentBoxes(frameBoxes);
+        setShowMissButtons(true);
+      }
     }
     
     // Clear feedback after 1 second
@@ -576,12 +662,90 @@ function VideoDetail() {
       setClickFeedback(null);
     }, 1000);
     setFeedbackTimeout(timeout);
+  }, [currentFrame, parsedMetadata]);
+
+  const handlePlayerButtonClick = (playerName, bbox) => {
+    // Create tag as if player was clicked
+    updateMetadata(prevMetadata => {
+      const newMetadata = { ...prevMetadata };
+      if (!newMetadata.tags) newMetadata.tags = [];
+      
+      const lastAction = getLastAction(newMetadata.tags || [], playerName);
+      const newAction = lastAction === 'catch' ? 'throw' : 'catch';
+      
+      const newTag = {
+        name: `${playerName} ${newAction}`,
+        frame: currentFrame,
+        x: bbox[0] + bbox[2]/2, // center x of box
+        y: bbox[1] + bbox[3]/2, // center y of box
+        box: bbox,
+        player: playerName,
+        action: newAction
+      };
+      
+      newMetadata.tags.push(newTag);
+      return newMetadata;
+    });
     
-    // Resume playback
+    // Auto-save metadata
+    handleSaveMetadata();
+    
+    // Hide buttons and resume playback
+    setShowMissButtons(false);
+    setCurrentBoxes(null);
     if (playerRef.current) {
       playerRef.current.play();
     }
-  }, [currentFrame, parsedMetadata]);
+  };
+
+  const PlayerBoxOverlay = ({ boxes }) => {
+    if (!boxes) return null;
+
+    const desiredWidth = 800;
+    const scale = desiredWidth / videoMetadata?.width;
+
+    return (
+      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+        {Object.entries(boxes).map(([playerName, { bbox }]) => {
+          const [x, y, width, height] = bbox;
+          return (
+            <div
+              key={playerName}
+              style={{
+                position: 'absolute',
+                left: x * scale,
+                top: y * scale,
+                width: width * scale,
+                height: height * scale,
+                border: '2px solid red',
+                boxSizing: 'border-box'
+              }}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    let intervalId;
+    
+    if (autoRefreshBoxes) {
+      // Initial fetch
+      handleFetchBoxes(true);
+      
+      // Set up interval
+      intervalId = setInterval(() => {
+        handleFetchBoxes(true);
+      }, 10000);
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [autoRefreshBoxes]);
 
   if (loading) {
     return <Layout><div>Loading...</div></Layout>;
@@ -731,11 +895,12 @@ function VideoDetail() {
               compositionWidth={desiredWidth}
               compositionHeight={Math.round(desiredWidth * (videoMetadata?.height / videoMetadata?.width))}
               playbackRate={playbackRate}
-              fps={videoMetadata?.fps || 30}
+              fps={29.85}
               controls
               renderLoading={() => <div>Loading...</div>}
             />
             <ClickFeedback feedback={clickFeedback} />
+            {showMissButtons && <PlayerBoxOverlay boxes={currentBoxes} />}
             
             {shapesExpanded && (
               <Stage
@@ -863,6 +1028,19 @@ function VideoDetail() {
         <div className="video-info">
           <div className="video-info-header" onClick={() => setVideoInfoExpanded(!videoInfoExpanded)}>
             <h3>Video Info {videoInfoExpanded ? '▼' : '▶'}</h3>
+            <VideoInfoUpdater 
+              video={video}
+              globalData={globalData}
+              onUpdate={(newData) => {
+                setVideoMetadata(prev => ({
+                  ...prev,
+                  ...newData
+                }));
+                // Update duration in frames based on new FPS
+                console.log('newData', newData);
+                setDurationInFrames(Math.ceil(newData.duration * newData.fps));
+              }}
+            />
           </div>
           {videoInfoExpanded && (
             <div className="video-info-content">
@@ -945,14 +1123,30 @@ function VideoDetail() {
               />
               <button onClick={handleSaveMetadata} disabled={!!jsonError}>{saveButtonText}</button>
 
-              <button 
-                onClick={handleFetchBoxes}
-                disabled={boxesLoading}
-                className="action-button"
-                style={{ marginTop: '10px' }}
-              >
-                {boxesLoading ? 'Loading Boxes...' : 'Load Boxes Data'}
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                <button 
+                  onClick={() => handleFetchBoxes(false)}
+                  disabled={boxesLoading}
+                  className="action-button"
+                >
+                  {boxesLoading ? 'Loading Boxes...' : 'Load Boxes Data'}
+                </button>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <input
+                    type="checkbox"
+                    checked={autoRefreshBoxes}
+                    onChange={(e) => setAutoRefreshBoxes(e.target.checked)}
+                  />
+                  Auto-refresh every 10s
+                </label>
+
+                {lastBoxUpdate && (
+                  <span style={{ fontSize: '0.9em', color: '#666' }}>
+                    Last updated: {lastBoxUpdate}
+                  </span>
+                )}
+              </div>
               {boxesData && (
                 <p><strong>Boxes Data:</strong> Loaded for frame {currentFrame}</p>
               )}
@@ -1086,6 +1280,32 @@ function VideoDetail() {
           instructions={turnedOnInstructions}
           isAuto={true}
         />
+
+        {showMissButtons && currentBoxes && (
+          <div className="player-buttons" style={{ 
+            display: 'flex', 
+            gap: '10px', 
+            padding: '10px',
+            justifyContent: 'center'
+          }}>
+            {Object.entries(currentBoxes).map(([playerName, { bbox }]) => (
+              <button
+                key={playerName}
+                onClick={() => handlePlayerButtonClick(playerName, bbox)}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                {playerName}
+              </button>
+            ))}
+          </div>
+        )}
 
       </div>
     </Layout>

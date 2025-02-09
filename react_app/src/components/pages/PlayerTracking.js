@@ -667,12 +667,17 @@ console.log({selectedVideo, tag})
               className="frame-canvas"
             />
             <div className="coordinates-table-container">
+
+              <div className="video-info">
+                <span>FPS: {videoInfo?.fps || 30}</span>
+                <span>Time: {videoRef?.currentTime?.toFixed(2) || 0}s</span>
+              </div>
               <button 
                 onClick={handlePullBoxes}
                 className="pull-boxes-button"
                 disabled={!videoRef || !selectedVideo}
               >
-                Pull boxes for frame {videoRef ? Math.floor(videoRef.currentTime * (videoInfo?.fps || 30)) : 0}
+                Pull Frame {videoRef ? Math.floor(videoRef.currentTime * (videoInfo?.fps || 30)) : 0}
               </button>
               {tableJsx}
             </div>
