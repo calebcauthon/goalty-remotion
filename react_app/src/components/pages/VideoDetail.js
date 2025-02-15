@@ -161,7 +161,7 @@ function VideoDetail() {
         // Get video metadata using Remotion
         const videoUrl = response.data.filepath;
         const metadata = await getVideoMetadata(videoUrl);
-        const assumedFps = 30;
+        const assumedFps = 29.8;
         metadata.fps = assumedFps;
         setVideoMetadata(metadata);
         
@@ -894,7 +894,7 @@ function VideoDetail() {
             compositionWidth={desiredWidth}
             compositionHeight={Math.round(desiredWidth * (videoMetadata?.height / videoMetadata?.width))}
             playbackRate={playbackRate}
-            fps={29.85}
+            fps={29.80}
             controls
             renderLoading={() => <div>Loading...</div>}
           />
@@ -1314,27 +1314,62 @@ function VideoDetail() {
 
         {showMissButtons && currentBoxes && (
           <div className="player-buttons" style={{ 
+            position: 'fixed', 
+            bottom: '20px', 
+            left: '50%', 
+            transform: 'translateX(-50%)', 
             display: 'flex', 
             gap: '10px', 
-            padding: '10px',
-            justifyContent: 'center'
+            padding: '15px',
+            background: 'rgba(0,0,0,0.8)', 
+            borderRadius: '8px',
+            zIndex: 1000,
+            boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
           }}>
             {Object.entries(currentBoxes).map(([playerName, { bbox }]) => (
               <button
                 key={playerName}
                 onClick={() => handlePlayerButtonClick(playerName, bbox)}
                 style={{
-                  padding: '8px 16px',
+                  padding: '10px 20px',
                   backgroundColor: '#4CAF50',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  transition: 'all 0.2s ease',
+                  ':hover': {
+                    backgroundColor: '#45a049'
+                  }
                 }}
               >
                 {playerName}
               </button>
             ))}
+            <button
+              onClick={() => {
+                setShowMissButtons(false);
+                setCurrentBoxes(null);
+                if (playerRef.current) {
+                  playerRef.current.play();
+                }
+              }}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#f44336',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                marginLeft: '10px'
+              }}
+            >
+              Cancel
+            </button>
           </div>
         )}
 
