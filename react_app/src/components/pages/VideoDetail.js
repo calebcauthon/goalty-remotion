@@ -881,114 +881,126 @@ function VideoDetail() {
           </Link>
         </div>
 
-        {video.filepath.includes('backblaze') ? (
-          <div className="video-player" style={{ position: 'relative' }}>
-            <Player
-              ref={playerRef}
-              component={VideoPlayer}
-              inputProps={{
-                src: video.filepath,
-                onFrameUpdate: handleFrameUpdate,
-                onClick: handleVideoClick
-              }}
-              durationInFrames={durationInFrames}
-              compositionWidth={desiredWidth}
-              compositionHeight={Math.round(desiredWidth * (videoMetadata?.height / videoMetadata?.width))}
-              playbackRate={playbackRate}
-              fps={29.85}
-              controls
-              renderLoading={() => <div>Loading...</div>}
-            />
-            <ClickFeedback feedback={clickFeedback} />
-            {showMissButtons && <PlayerBoxOverlay boxes={currentBoxes} />}
-            
-            {shapesExpanded && (
-              <Stage
-                ref={stageRef}
-                width={desiredWidth}
-                height={Math.round(desiredWidth * (videoMetadata?.height / videoMetadata?.width))}
-                onClick={(e) => {
-                  if (!isDrawing) return;
-                  
-                  const stage = e.target.getStage();
-                  const point = stage.getPointerPosition();
-                  setCurrentPoints([...currentPoints, point.x, point.y]);
-                  
-                  // If clicking near start point, complete the polygon
-                  if (currentPoints.length >= 4) {
-                    const [startX, startY] = currentPoints;
-                    const dist = Math.hypot(point.x - startX, point.y - startY);
-                    if (dist < 20) {
-                      const newShape = {
-                        id: Date.now(),
-                        points: [...currentPoints],
-                        frame: currentFrame,
-                        area: calculatePolygonArea(currentPoints),
-                        name: `Shape ${shapesData.length + 1}`,
-                        color: '#ff0000', // Default red
-                        visible: true
-                      };
-                      setShapes([...shapes, [...currentPoints]]);
-                      setShapesData([...shapesData, newShape]);
-                      setCurrentPoints([]);
-                      setIsDrawing(false);
-                    }
+        <div className="video-player" style={{ position: 'relative' }}>
+          <Player
+            ref={playerRef}
+            component={VideoPlayer}
+            inputProps={{
+              src: video.filepath,
+              onFrameUpdate: handleFrameUpdate,
+              onClick: handleVideoClick
+            }}
+            durationInFrames={durationInFrames}
+            compositionWidth={desiredWidth}
+            compositionHeight={Math.round(desiredWidth * (videoMetadata?.height / videoMetadata?.width))}
+            playbackRate={playbackRate}
+            fps={29.85}
+            controls
+            renderLoading={() => <div>Loading...</div>}
+          />
+          <ClickFeedback feedback={clickFeedback} />
+          {showMissButtons && <PlayerBoxOverlay boxes={currentBoxes} />}
+          
+          {shapesExpanded && (
+            <Stage
+              ref={stageRef}
+              width={desiredWidth}
+              height={Math.round(desiredWidth * (videoMetadata?.height / videoMetadata?.width))}
+              onClick={(e) => {
+                if (!isDrawing) return;
+                
+                const stage = e.target.getStage();
+                const point = stage.getPointerPosition();
+                setCurrentPoints([...currentPoints, point.x, point.y]);
+                
+                // If clicking near start point, complete the polygon
+                if (currentPoints.length >= 4) {
+                  const [startX, startY] = currentPoints;
+                  const dist = Math.hypot(point.x - startX, point.y - startY);
+                  if (dist < 20) {
+                    const newShape = {
+                      id: Date.now(),
+                      points: [...currentPoints],
+                      frame: currentFrame,
+                      area: calculatePolygonArea(currentPoints),
+                      name: `Shape ${shapesData.length + 1}`,
+                      color: '#ff0000', // Default red
+                      visible: true
+                    };
+                    setShapes([...shapes, [...currentPoints]]);
+                    setShapesData([...shapesData, newShape]);
+                    setCurrentPoints([]);
+                    setIsDrawing(false);
                   }
-                }}
-                style={{ 
-                  position: 'absolute', 
-                  top: 0, 
-                  left: 0,
-                  pointerEvents: isDrawing ? 'auto' : 'none'
-                }}
-              >
-                <Layer>
-                  {/* Draw completed shapes */}
-                  {shapes.map((points, i) => {
-                    const shapeData = shapesData[i];
-                    if (!shapeData?.visible) return null;
-                    
-                    return (
-                      <Line
-                        key={i}
-                        points={points}
-                        closed
-                        fill={`${shapeData.color}4D`} // 30% opacity
-                        stroke={shapeData.color}
-                        strokeWidth={2}
-                      />
-                    );
-                  })}
+                }
+              }}
+              style={{ 
+                position: 'absolute', 
+                top: 0, 
+                left: 0,
+                pointerEvents: isDrawing ? 'auto' : 'none'
+              }}
+            >
+              <Layer>
+                {/* Draw completed shapes */}
+                {shapes.map((points, i) => {
+                  const shapeData = shapesData[i];
+                  if (!shapeData?.visible) return null;
                   
-                  {/* Draw current shape being created */}
-                  {currentPoints.length > 0 && (
-                    <>
-                      <Line
-                        points={currentPoints}
-                        stroke="red"
-                        strokeWidth={2}
+                  return (
+                    <Line
+                      key={i}
+                      points={points}
+                      closed
+                      fill={`${shapeData.color}4D`} // 30% opacity
+                      stroke={shapeData.color}
+                      strokeWidth={2}
+                    />
+                  );
+                })}
+                
+                {/* Draw current shape being created */}
+                {currentPoints.length > 0 && (
+                  <>
+                    <Line
+                      points={currentPoints}
+                      stroke="red"
+                      strokeWidth={2}
+                    />
+                    {/* Draw points */}
+                    {Array.from({ length: currentPoints.length / 2 }, (_, i) => (
+                      <Circle
+                        key={i}
+                        x={currentPoints[i * 2]}
+                        y={currentPoints[i * 2 + 1]}
+                        radius={4}
+                        fill="red"
                       />
-                      {/* Draw points */}
-                      {Array.from({ length: currentPoints.length / 2 }, (_, i) => (
-                        <Circle
-                          key={i}
-                          x={currentPoints[i * 2]}
-                          y={currentPoints[i * 2 + 1]}
-                          radius={4}
-                          fill="red"
-                        />
-                      ))}
-                    </>
-                  )}
-                </Layer>
-              </Stage>
-            )}
-          </div>
-        ) : (
-          <div className="video-unavailable-message">
-            <p>This video is not hosted on Backblaze and cannot be played.</p>
-          </div>
-        )}
+                    ))}
+                  </>
+                )}
+              </Layer>
+            </Stage>
+          )}
+        </div>
+
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(currentFrame.toString());
+          }}
+          style={{
+            marginTop: '10px',
+            padding: '4px 12px',
+            cursor: 'pointer',
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            fontSize: '12px'
+          }}
+        >
+          Copy Frame {currentFrame}
+        </button>
 
         <HotkeySection 
           hotkeyMode={hotkeyMode}
