@@ -831,7 +831,7 @@ function ViewFilm() {
                 durationInFrames={calculateDuration()}
                 compositionWidth={1920}
                 compositionHeight={1080}
-                fps={30}
+                fps={29.8}
                 controls
                 loop={!previewEndFrame}
                 playbackRate={previewPlaybackRate} 
