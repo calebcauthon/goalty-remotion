@@ -150,6 +150,7 @@ def get_frame_with_box(video_id):
         crop = request.args.get('crop', type=bool, default=False)
         pad_crop = request.args.get('pad_crop', type=int, default=0)
         make_dataset = request.args.get('make_dataset', type=bool, default=False)
+        name_prefix = request.args.get('name_prefix', default='')
         player_name = request.args.get('player_name', default='unknown')
         
         if frame_number is None or any(v is None for v in [x, y, w, h]):
@@ -159,6 +160,9 @@ def get_frame_with_box(video_id):
         if not video:
             return jsonify({'error': 'Video not found'}), 404
 
+        # Combine prefix with player name
+        full_player_name = f"{name_prefix}{player_name}"
+
         frame = extract_frame_with_box(
             video['filepath'], 
             frame_number, 
@@ -166,7 +170,7 @@ def get_frame_with_box(video_id):
             crop=crop,
             pad_crop=pad_crop,
             make_dataset=make_dataset,
-            player_name=player_name,
+            player_name=full_player_name,
             video_id=video_id
         )
 
@@ -187,11 +191,11 @@ def get_player_trajectories(video_id):
     print(f"Getting player trajectories for video {video_id}")
     try:
         print(f"\n=== Getting trajectories for video {video_id} ===")
-        start_frame = request.args.get('start_frame', type=int)
-        end_frame = request.args.get('end_frame', type=int)
+        start_frame = request.args.get('start_frame', type=int, default=0)
         make_dataset = request.args.get('make_dataset', type=bool, default=False)
         skip = request.args.get('skip', type=int, default=0)
-        print(f"Frame range requested: {start_frame} to {end_frame}, make_dataset={make_dataset}, skip={skip}")
+        invert = request.args.get('invert', type=bool, default=False)
+        name_prefix = request.args.get('name_prefix', default='')
 
         video = get_video(video_id)
         if not video:
@@ -201,10 +205,16 @@ def get_player_trajectories(video_id):
         tags = video_metadata.get('tags', [])
         print(f"Found {len(tags)} total tags")
 
-        # Filter tags by frame range if provided
-        if start_frame is not None:
+        # Find max frame from tags
+        max_frame = max((tag.get('frame', 0) for tag in tags), default=0)
+        end_frame = request.args.get('end_frame', type=int, default=max_frame)
+        
+        print(f"Frame range: {start_frame} to {end_frame} (max tag frame: {max_frame}), make_dataset={make_dataset}, skip={skip}, invert={invert}, name_prefix={name_prefix}")
+
+        # Filter tags by frame range
+        if start_frame > 0:
             tags = [tag for tag in tags if tag.get('frame', 0) >= start_frame]
-        if end_frame is not None:
+        if end_frame < max_frame:
             tags = [tag for tag in tags if tag.get('frame', 0) <= end_frame]
         print(f"After frame range filter: {len(tags)} tags")
 
@@ -223,95 +233,172 @@ def get_player_trajectories(video_id):
         boxes_data = json.loads(file_data.read().decode('utf-8'))
         print(f"Loaded boxes data: {len(boxes_data)} frames")
 
-        trajectories = []
-        for i, tag in enumerate(tags):
-            tag_name = tag.get('name', '')
-            if 'catch' in tag_name.lower():
-                player_name = tag_name.split(' catch')[0].strip()
-                catch_frame = tag.get('frame')
-                print(f"\nFound catch by {player_name} at frame {catch_frame}")
-                
-                # Look for next throw by same player within frame range
-                for next_tag in tags[i+1:]:
-                    next_tag_name = next_tag.get('name', '')
-                    if ('throw' in next_tag_name.lower() and 
-                        next_tag_name.startswith(player_name)):
-                        throw_frame = next_tag.get('frame')
-                        print(f"  ↳ Found matching throw at frame {throw_frame}")
-                        
-                        # Skip if throw is outside requested range
-                        if end_frame is not None and throw_frame > end_frame:
-                            print(f"  ↳ Skipping: throw frame {throw_frame} > end frame {end_frame}")
-                            continue
-
-                        player_boxes = []
-                        frame_count = 0  # Counter for skip logic
-                        for frame in range(catch_frame, throw_frame + 1):
-                            # Skip frames based on skip parameter
-                            if skip > 0 and frame_count > 0 and frame_count % (skip + 1) != 0:
-                                frame_count += 1
-                                continue
-                                
-                            if frame < len(boxes_data):
-                                frame_boxes = boxes_data[frame]
-                                print(f"  ↳ Frame {frame} has {len(frame_boxes)} boxes")
-                                print(f"  ↳ Boxes: {frame_boxes}")
-                                
-                                if player_name in frame_boxes:
-                                    box_data = frame_boxes[player_name]
-                                    print(f"  ↳ Found box for {player_name}: {box_data}")
-                                    bbox = box_data['bbox']
-                                    
-                                    # Create dataset image if requested
-                                    if make_dataset:
-                                        try:
-                                            extract_frame_with_box(
-                                                video['filepath'],
-                                                frame,
-                                                bbox[0], bbox[1], bbox[2], bbox[3],
-                                                crop=True,
-                                                pad_crop=5,
-                                                make_dataset=True,
-                                                player_name=player_name,
-                                                video_id=video_id
-                                            )
-                                            print(f"  ↳ Created dataset image for frame {frame}")
-                                        except Exception as e:
-                                            print(f"  ↳ Error creating dataset image for frame {frame}: {str(e)}")
-                                    
-                                    player_boxes.append({
-                                        'frame': frame,
-                                        'bbox': bbox
-                                    })
-                            
-                            frame_count += 1
-                        
-                        if player_boxes:
-                            print(f"  ↳ Found {len(player_boxes)} boxes for trajectory")
-                            
-                            # Add frame image URLs to each box
-                            for box in player_boxes:
-                                bbox = box['bbox']
-                                box['frame_url'] = f"/videos/{video_id}/frame-with-box?frame={box['frame']}&x={bbox[0]}&y={bbox[1]}&w={bbox[2]}&h={bbox[3]}&player_name={player_name}"
-                            
-                            trajectories.append({
+        # If inverting, first collect all catch/throw ranges with buffer
+        catch_throw_ranges = []
+        if invert:
+            buffer_frames = 30  # frames to skip before/after catch/throw
+            for i, tag in enumerate(tags):
+                tag_name = tag.get('name', '')
+                if 'catch' in tag_name.lower():
+                    player_name = tag_name.split(' catch')[0].strip()
+                    catch_frame = tag.get('frame')
+                    
+                    # Look for next throw by same player
+                    for next_tag in tags[i+1:]:
+                        next_tag_name = next_tag.get('name', '')
+                        if ('throw' in next_tag_name.lower() and 
+                            next_tag_name.startswith(player_name)):
+                            throw_frame = next_tag.get('frame')
+                            # Add buffer to range
+                            buffered_start = max(0, catch_frame - buffer_frames)
+                            buffered_end = throw_frame + buffer_frames
+                            catch_throw_ranges.append({
                                 'player': player_name,
-                                'start_frame': catch_frame,
-                                'end_frame': throw_frame,
-                                'boxes': player_boxes
+                                'range': (buffered_start, buffered_end)
                             })
-                        else:
-                            print(f"  ↳ Warning: No boxes found for this trajectory")
-                        break
+                            break
 
-        print(f"\nFound {len(trajectories)} total trajectories")
-        return jsonify({
-            'trajectories': trajectories,
-            'frame_range': {
-                'start': start_frame,
-                'end': end_frame
-            }
-        }), 200
+        trajectories = []
+        if invert:
+            # Process frames outside catch/throw ranges
+            all_frames = set(range(start_frame or 0, (end_frame or len(boxes_data))))
+            
+            # For each frame and player, check if it's in a buffered range
+            frame_count = 0
+            for frame in sorted(all_frames):
+                # Apply skip logic
+                if skip > 0 and frame_count > 0 and frame_count % (skip + 1) != 0:
+                    frame_count += 1
+                    continue
+                
+                if frame < len(boxes_data):
+                    frame_boxes = boxes_data[frame]
+                    for player_name, box_data in frame_boxes.items():
+                        # Check if this player is in a catch/throw sequence at this frame
+                        is_in_sequence = any(
+                            r['player'] == player_name and 
+                            r['range'][0] <= frame <= r['range'][1] 
+                            for r in catch_throw_ranges
+                        )
+                        
+                        if not is_in_sequence:
+                            bbox = box_data['bbox']
+                            if make_dataset:
+                                try:
+                                    extract_frame_with_box(
+                                        video['filepath'],
+                                        frame,
+                                        bbox[0], bbox[1], bbox[2], bbox[3],
+                                        crop=True,
+                                        pad_crop=5,
+                                        make_dataset=True,
+                                        player_name=f"{name_prefix}{player_name}_non_throw",
+                                        video_id=video_id
+                                    )
+                                    print(f"  ↳ Created dataset image for frame {frame}, player {name_prefix}{player_name}")
+                                except Exception as e:
+                                    print(f"  ↳ Error creating dataset image for frame {frame}: {str(e)}")
+                
+                frame_count += 1
+            
+            # For inverted mode, we don't return trajectory data
+            return jsonify({
+                'message': f'Processed {len(all_frames)} frames outside catch/throw sequences',
+                'frame_range': {
+                    'start': start_frame,
+                    'end': end_frame
+                }
+            }), 200
+        else:
+            # Original catch/throw trajectory processing
+            for i, tag in enumerate(tags):
+                tag_name = tag.get('name', '')
+                if 'catch' in tag_name.lower():
+                    player_name = tag_name.split(' catch')[0].strip()
+                    catch_frame = tag.get('frame')
+                    print(f"\nFound catch by {player_name} at frame {catch_frame}")
+                    
+                    # Look for next throw by same player within frame range
+                    for next_tag in tags[i+1:]:
+                        next_tag_name = next_tag.get('name', '')
+                        if ('throw' in next_tag_name.lower() and 
+                            next_tag_name.startswith(player_name)):
+                            throw_frame = next_tag.get('frame')
+                            print(f"  ↳ Found matching throw at frame {throw_frame}")
+                            
+                            # Skip if throw is outside requested range
+                            if end_frame is not None and throw_frame > end_frame:
+                                print(f"  ↳ Skipping: throw frame {throw_frame} > end frame {end_frame}")
+                                continue
+
+                            player_boxes = []
+                            frame_count = 0  # Counter for skip logic
+                            for frame in range(catch_frame, throw_frame + 1):
+                                # Skip frames based on skip parameter
+                                if skip > 0 and frame_count > 0 and frame_count % (skip + 1) != 0:
+                                    frame_count += 1
+                                    continue
+                                    
+                                if frame < len(boxes_data):
+                                    frame_boxes = boxes_data[frame]
+                                    print(f"  ↳ Frame {frame} has {len(frame_boxes)} boxes")
+                                    print(f"  ↳ Boxes: {frame_boxes}")
+                                    
+                                    if player_name in frame_boxes:
+                                        box_data = frame_boxes[player_name]
+                                        print(f"  ↳ Found box for {player_name}: {box_data}")
+                                        bbox = box_data['bbox']
+                                        
+                                        # Create dataset image if requested
+                                        if make_dataset:
+                                            try:
+                                                extract_frame_with_box(
+                                                    video['filepath'],
+                                                    frame,
+                                                    bbox[0], bbox[1], bbox[2], bbox[3],
+                                                    crop=True,
+                                                    pad_crop=5,
+                                                    make_dataset=True,
+                                                    player_name=f"{name_prefix}{player_name}",
+                                                    video_id=video_id
+                                                )
+                                                print(f"  ↳ Created dataset image for frame {frame}")
+                                            except Exception as e:
+                                                print(f"  ↳ Error creating dataset image for frame {frame}: {str(e)}")
+                                        
+                                        player_boxes.append({
+                                            'frame': frame,
+                                            'bbox': bbox
+                                        })
+                                
+                                frame_count += 1
+                            
+                            if player_boxes:
+                                print(f"  ↳ Found {len(player_boxes)} boxes for trajectory")
+                                
+                                # Update frame URL to include prefix
+                                for box in player_boxes:
+                                    bbox = box['bbox']
+                                    box['frame_url'] = f"/videos/{video_id}/frame-with-box?frame={box['frame']}&x={bbox[0]}&y={bbox[1]}&w={bbox[2]}&h={bbox[3]}&player_name={name_prefix}{player_name}"
+                                
+                                trajectories.append({
+                                    'player': player_name,
+                                    'start_frame': catch_frame,
+                                    'end_frame': throw_frame,
+                                    'boxes': player_boxes
+                                })
+                            else:
+                                print(f"  ↳ Warning: No boxes found for this trajectory")
+                            break
+
+            print(f"\nFound {len(trajectories)} total trajectories")
+            return jsonify({
+                'trajectories': trajectories,
+                'frame_range': {
+                    'start': start_frame,
+                    'end': end_frame
+                }
+            }), 200
 
     except Exception as e:
         print(f"Error getting player trajectories: {str(e)}")
