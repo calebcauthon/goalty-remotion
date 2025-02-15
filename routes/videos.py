@@ -189,7 +189,9 @@ def get_player_trajectories(video_id):
         print(f"\n=== Getting trajectories for video {video_id} ===")
         start_frame = request.args.get('start_frame', type=int)
         end_frame = request.args.get('end_frame', type=int)
-        print(f"Frame range requested: {start_frame} to {end_frame}")
+        make_dataset = request.args.get('make_dataset', type=bool, default=False)
+        skip = request.args.get('skip', type=int, default=0)
+        print(f"Frame range requested: {start_frame} to {end_frame}, make_dataset={make_dataset}, skip={skip}")
 
         video = get_video(video_id)
         if not video:
@@ -243,7 +245,13 @@ def get_player_trajectories(video_id):
                             continue
 
                         player_boxes = []
+                        frame_count = 0  # Counter for skip logic
                         for frame in range(catch_frame, throw_frame + 1):
+                            # Skip frames based on skip parameter
+                            if skip > 0 and frame_count > 0 and frame_count % (skip + 1) != 0:
+                                frame_count += 1
+                                continue
+                                
                             if frame < len(boxes_data):
                                 frame_boxes = boxes_data[frame]
                                 print(f"  ↳ Frame {frame} has {len(frame_boxes)} boxes")
@@ -252,10 +260,31 @@ def get_player_trajectories(video_id):
                                 if player_name in frame_boxes:
                                     box_data = frame_boxes[player_name]
                                     print(f"  ↳ Found box for {player_name}: {box_data}")
+                                    bbox = box_data['bbox']
+                                    
+                                    # Create dataset image if requested
+                                    if make_dataset:
+                                        try:
+                                            extract_frame_with_box(
+                                                video['filepath'],
+                                                frame,
+                                                bbox[0], bbox[1], bbox[2], bbox[3],
+                                                crop=True,
+                                                pad_crop=5,
+                                                make_dataset=True,
+                                                player_name=player_name,
+                                                video_id=video_id
+                                            )
+                                            print(f"  ↳ Created dataset image for frame {frame}")
+                                        except Exception as e:
+                                            print(f"  ↳ Error creating dataset image for frame {frame}: {str(e)}")
+                                    
                                     player_boxes.append({
                                         'frame': frame,
-                                        'bbox': box_data['bbox']
+                                        'bbox': bbox
                                     })
+                            
+                            frame_count += 1
                         
                         if player_boxes:
                             print(f"  ↳ Found {len(player_boxes)} boxes for trajectory")
