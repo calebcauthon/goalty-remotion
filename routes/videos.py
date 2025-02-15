@@ -1,6 +1,6 @@
 import os
 import json
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 from datetime import datetime
 import database
 from b2 import b2_api, bucket, check_file_exists_in_b2, sam_bucket
@@ -12,8 +12,8 @@ from io import BytesIO
 from PIL import Image
 import requests
 import urllib.parse
-import replicate
 import ell
+import traceback
 
 videos_bp = Blueprint('videos', __name__)
 
@@ -63,6 +63,185 @@ def get_videos_with_tags():
         return jsonify(videos), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@videos_bp.route('/<int:video_id>/frame-with-box', methods=['GET'])
+def get_frame_with_box(video_id):
+    try:
+        frame_number = request.args.get('frame', type=int)
+        x = request.args.get('x', type=float)
+        y = request.args.get('y', type=float)
+        w = request.args.get('w', type=float)
+        h = request.args.get('h', type=float)
+        crop = request.args.get('crop', type=bool, default=False)
+        pad_crop = request.args.get('pad_crop', type=int, default=0)
+        
+        if frame_number is None or any(v is None for v in [x, y, w, h]):
+            return jsonify({'error': 'Missing required parameters: frame, x, y, w, h'}), 400
+
+        print(f"Getting frame {frame_number} with box [{x}, {y}, {w}, {h}], crop={crop}, pad={pad_crop}")
+
+        video = get_video(video_id)
+        if not video:
+            return jsonify({'error': 'Video not found'}), 404
+
+        cap = cv2.VideoCapture(urllib.parse.quote(video['filepath'], safe=':/?='))
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+        ret, frame = cap.read()
+        cap.release()
+
+        if not ret:
+            return jsonify({'error': 'Could not read frame'}), 400
+
+        # Use pixel coordinates directly
+        x_px = int(x)
+        y_px = int(y)
+        w_px = int(w)
+        h_px = int(h)
+        
+        print(f"Drawing box at: pos=({x_px},{y_px}), size=({w_px},{h_px})")
+
+        height, width = frame.shape[:2]
+
+        if crop:
+            # Calculate padded coordinates with bounds checking
+            x1 = max(0, x_px - pad_crop)
+            y1 = max(0, y_px - pad_crop)
+            x2 = min(width, x_px + w_px + pad_crop)
+            y2 = min(height, y_px + h_px + pad_crop)
+            
+            # Extract the padded region
+            frame = frame[y1:y2, x1:x2]
+        else:
+            # Draw rectangle on full frame
+            color = (0, 255, 0)  # Green in BGR
+            thickness = 2
+            start_point = (x_px, y_px)
+            end_point = (x_px + w_px, y_px + h_px)
+            frame = cv2.rectangle(frame, start_point, end_point, color, thickness)
+
+        # Convert to JPEG
+        _, buffer = cv2.imencode('.jpg', frame)
+        response = make_response(buffer.tobytes())
+        response.headers['Content-Type'] = 'image/jpeg'
+        
+        return response
+
+    except Exception as e:
+        print(f"Error getting frame with box: {str(e)}")
+        print(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 400
+
+
+
+
+@videos_bp.route('/<int:video_id>/player-trajectories', methods=['GET'])
+def get_player_trajectories(video_id):
+    print(f"Getting player trajectories for video {video_id}")
+    try:
+        print(f"\n=== Getting trajectories for video {video_id} ===")
+        start_frame = request.args.get('start_frame', type=int)
+        end_frame = request.args.get('end_frame', type=int)
+        print(f"Frame range requested: {start_frame} to {end_frame}")
+
+        video = get_video(video_id)
+        if not video:
+            return jsonify({'error': 'Video not found'}), 404
+
+        video_metadata = video.get('metadata')
+        tags = video_metadata.get('tags', [])
+        print(f"Found {len(tags)} total tags")
+
+        # Filter tags by frame range if provided
+        if start_frame is not None:
+            tags = [tag for tag in tags if tag.get('frame', 0) >= start_frame]
+        if end_frame is not None:
+            tags = [tag for tag in tags if tag.get('frame', 0) <= end_frame]
+        print(f"After frame range filter: {len(tags)} tags")
+
+        video_filename = video['filepath'].split('/')[-1]
+        base_filename = video_filename.replace('.mp4', '')
+        boxes_filename = f"{base_filename}.boxes.json"
+        print(f"Looking for boxes file: {boxes_filename}")
+
+        if not check_file_exists_in_b2(boxes_filename, sam_bucket)[0]:
+            return jsonify({'error': 'No boxes data found for this video'}), 404
+
+        downloaded_file = sam_bucket.download_file_by_name(boxes_filename)
+        file_data = BytesIO()
+        downloaded_file.save(file_data)
+        file_data.seek(0)
+        boxes_data = json.loads(file_data.read().decode('utf-8'))
+        print(f"Loaded boxes data: {len(boxes_data)} frames")
+
+        trajectories = []
+        for i, tag in enumerate(tags):
+            tag_name = tag.get('name', '')
+            if 'catch' in tag_name.lower():
+                player_name = tag_name.split(' catch')[0].strip()
+                catch_frame = tag.get('frame')
+                print(f"\nFound catch by {player_name} at frame {catch_frame}")
+                
+                # Look for next throw by same player within frame range
+                for next_tag in tags[i+1:]:
+                    next_tag_name = next_tag.get('name', '')
+                    if ('throw' in next_tag_name.lower() and 
+                        next_tag_name.startswith(player_name)):
+                        throw_frame = next_tag.get('frame')
+                        print(f"  ↳ Found matching throw at frame {throw_frame}")
+                        
+                        # Skip if throw is outside requested range
+                        if end_frame is not None and throw_frame > end_frame:
+                            print(f"  ↳ Skipping: throw frame {throw_frame} > end frame {end_frame}")
+                            continue
+
+                        player_boxes = []
+                        for frame in range(catch_frame, throw_frame + 1):
+                            if frame < len(boxes_data):
+                                frame_boxes = boxes_data[frame]
+                                print(f"  ↳ Frame {frame} has {len(frame_boxes)} boxes")
+                                print(f"  ↳ Boxes: {frame_boxes}")
+                                
+                                if player_name in frame_boxes:
+                                    box_data = frame_boxes[player_name]
+                                    print(f"  ↳ Found box for {player_name}: {box_data}")
+                                    player_boxes.append({
+                                        'frame': frame,
+                                        'bbox': box_data['bbox']
+                                    })
+                        
+                        if player_boxes:
+                            print(f"  ↳ Found {len(player_boxes)} boxes for trajectory")
+                            
+                            # Add frame image URLs to each box
+                            for box in player_boxes:
+                                bbox = box['bbox']
+                                box['frame_url'] = f"/videos/{video_id}/frame-with-box?frame={box['frame']}&x={bbox[0]}&y={bbox[1]}&w={bbox[2]}&h={bbox[3]}"
+                            
+                            trajectories.append({
+                                'player': player_name,
+                                'start_frame': catch_frame,
+                                'end_frame': throw_frame,
+                                'boxes': player_boxes
+                            })
+                        else:
+                            print(f"  ↳ Warning: No boxes found for this trajectory")
+                        break
+
+        print(f"\nFound {len(trajectories)} total trajectories")
+        return jsonify({
+            'trajectories': trajectories,
+            'frame_range': {
+                'start': start_frame,
+                'end': end_frame
+            }
+        }), 200
+
+    except Exception as e:
+        print(f"Error getting player trajectories: {str(e)}")
+        print(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 400
+
 
 @videos_bp.route('/<int:video_id>', methods=['GET'])
 def get_video_info(video_id):
@@ -260,9 +439,13 @@ def get_b2_video_info():
             cap.release()
             return jsonify({'error': 'Could not read frame'}), 400
 
-        # Convert frame to base64
-        _, buffer = cv2.imencode('.jpg', frame)
-        frame_base64 = base64.b64encode(buffer).decode('utf-8')
+        # Convert frame to jpg and base64
+        temp_jpg = "temp_frame.jpg"
+        cv2.imwrite(temp_jpg, frame)
+        with open(temp_jpg, 'rb') as f:
+            img_bytes = f.read()
+        os.remove(temp_jpg)  # Clean up
+        img_base64 = base64.b64encode(img_bytes).decode('utf-8')
         
         cap.release()
 
@@ -292,7 +475,7 @@ def get_b2_video_info():
             'height': height,
             'duration': round(duration, 2),
             'boxes_data': boxes_data,
-            'frame_image': frame_base64
+            'frame_image': img_base64
         }), 200
         
     except Exception as e:
@@ -321,27 +504,28 @@ def analyze_frame_with_clip():
             return jsonify({'error': 'Could not read frame'}), 400
 
         # Convert frame to jpg and base64
-        _, img_encoded = cv2.imencode('.jpg', frame)
-        img_bytes = img_encoded.tobytes()
-        img_base64 = base64.b64encode(img_bytes).decode()
+        temp_jpg = "temp_frame.jpg"
+        cv2.imwrite(temp_jpg, frame)
+        with open(temp_jpg, 'rb') as f:
+            img_bytes = f.read()
+        os.remove(temp_jpg)  # Clean up
+        img_base64 = base64.b64encode(img_bytes).decode('utf-8')
 
-        # Run GroundingDINO
-        input = {
-            "image": f"data:image/jpeg;base64,{img_base64}",
-            "query": data['text_prompt'],
-            "box_threshold": 0.2,
-            "text_threshold": 0.2
-        }
 
-        output = replicate.run(
-            "adirik/grounding-dino:efd10a8ddc57ea28773327e881ce95e20cc1d734c589f7dd01d2036921ed78aa",
-            input=input
+        response = requests.post(
+            'https://calebcauthon-dev--object-detection-detect.modal.run',
+            json={'image_path': img_base64},
+            headers={'Content-Type': 'application/json'}
         )
+        output = response.json()
+        print(f"Base64 image: {img_base64}")
 
         return jsonify({
-            'detections': output['detections'],
-            'frame_image': img_base64
+            'detections': output['predictions'],
+            'frame_image': img_base64,
+            'frame_used_by_inference': output['image_path']
         }), 200
+
 
     except Exception as e:
         print(f"Error in CLIP analysis: {str(e)}")
