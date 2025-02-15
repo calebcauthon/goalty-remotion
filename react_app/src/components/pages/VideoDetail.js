@@ -1062,7 +1062,26 @@ function VideoDetail() {
               <p><strong>Duration:</strong> {videoMetadata?.durationInSeconds.toFixed(2)}s ({durationInFrames} frames)</p>
               <p><strong>Resolution:</strong> {videoMetadata?.width}x{videoMetadata?.height}</p>
               <p><strong>FPS:</strong> {videoMetadata?.fps}</p>
-              <p><strong>Current Frame:</strong> {currentFrame}</p>
+              <p>
+                <strong>Current Frame:</strong> {currentFrame}
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(currentFrame.toString());
+                  }}
+                  style={{
+                    marginLeft: '10px',
+                    padding: '2px 8px',
+                    cursor: 'pointer',
+                    backgroundColor: '#4CAF50',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    fontSize: '12px'
+                  }}
+                >
+                  Copy Frame
+                </button>
+              </p>
               <p><strong>Playback Speed:</strong> {playbackRate}x</p>  
             </div>
           )}
