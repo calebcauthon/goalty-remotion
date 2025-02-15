@@ -8,3 +8,4 @@ react_app/out
 .env*
 .jest-cache
 logdir
+/player_crops
