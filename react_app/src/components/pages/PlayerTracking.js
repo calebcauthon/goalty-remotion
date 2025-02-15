@@ -45,12 +45,6 @@ function PlayerTracking() {
     }
   }, [frameImage, rectangles, currentRect]);
 
-  useEffect(() => {
-    if (selectedVideo && startFrame >= 0) {
-      fetchVideoInfo(startFrame);
-    }
-  }, [startFrame]);
-
   const fetchVideos = async () => {
     try {
       const response = await fetch(`${globalData.APIbaseUrl}/api/videos`);
