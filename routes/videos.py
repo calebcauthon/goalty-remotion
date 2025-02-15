@@ -64,34 +64,33 @@ def get_videos_with_tags():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-@videos_bp.route('/<int:video_id>/frame-with-box', methods=['GET'])
-def get_frame_with_box(video_id):
+def extract_frame_with_box(video_filepath, frame_number, x, y, w, h, crop=False, pad_crop=0, make_dataset=False, player_name='unknown', video_id=None):
+    """
+    Extract a frame from a video with optional box drawing and cropping.
+    
+    Args:
+        video_filepath: Path to the video file
+        frame_number: Frame number to extract
+        x, y, w, h: Box coordinates and dimensions (in pixels)
+        crop: Whether to crop to just the box region
+        pad_crop: Padding around crop in pixels
+        make_dataset: Whether to save the frame to dataset
+        player_name: Name of player for dataset saving
+        video_id: Video ID for dataset saving
+    
+    Returns:
+        numpy array: The processed frame
+    """
     try:
-        frame_number = request.args.get('frame', type=int)
-        x = request.args.get('x', type=float)
-        y = request.args.get('y', type=float)
-        w = request.args.get('w', type=float)
-        h = request.args.get('h', type=float)
-        crop = request.args.get('crop', type=bool, default=False)
-        pad_crop = request.args.get('pad_crop', type=int, default=0)
-        
-        if frame_number is None or any(v is None for v in [x, y, w, h]):
-            return jsonify({'error': 'Missing required parameters: frame, x, y, w, h'}), 400
+        print(f"Getting frame {frame_number} with box [{x}, {y}, {w}, {h}], crop={crop}, pad={pad_crop}, make_dataset={make_dataset}")
 
-        print(f"Getting frame {frame_number} with box [{x}, {y}, {w}, {h}], crop={crop}, pad={pad_crop}")
-
-        video = get_video(video_id)
-        if not video:
-            return jsonify({'error': 'Video not found'}), 404
-
-        cap = cv2.VideoCapture(urllib.parse.quote(video['filepath'], safe=':/?='))
+        cap = cv2.VideoCapture(urllib.parse.quote(video_filepath, safe=':/?='))
         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
         ret, frame = cap.read()
         cap.release()
 
         if not ret:
-            return jsonify({'error': 'Could not read frame'}), 400
+            raise Exception('Could not read frame')
 
         # Use pixel coordinates directly
         x_px = int(x)
@@ -111,7 +110,20 @@ def get_frame_with_box(video_id):
             y2 = min(height, y_px + h_px + pad_crop)
             
             # Extract the padded region
-            frame = frame[y1:y2, x1:x2]
+            cropped_frame = frame[y1:y2, x1:x2]
+            
+            if make_dataset and video_id is not None:
+                # Create dataset directory if it doesn't exist
+                dataset_dir = 'player_crops'
+                os.makedirs(dataset_dir, exist_ok=True)
+                
+                # Save cropped image
+                filename = f"{player_name}_{video_id}_{frame_number}.jpg"
+                filepath = os.path.join(dataset_dir, filename)
+                print(f"Saving cropped image to {filepath}")
+                cv2.imwrite(filepath, cropped_frame)
+            
+            frame = cropped_frame
         else:
             # Draw rectangle on full frame
             color = (0, 255, 0)  # Green in BGR
@@ -119,6 +131,44 @@ def get_frame_with_box(video_id):
             start_point = (x_px, y_px)
             end_point = (x_px + w_px, y_px + h_px)
             frame = cv2.rectangle(frame, start_point, end_point, color, thickness)
+
+        return frame
+
+    except Exception as e:
+        print(f"Error processing frame: {str(e)}")
+        print(f"Full traceback: {traceback.format_exc()}")
+        raise
+
+@videos_bp.route('/<int:video_id>/frame-with-box', methods=['GET'])
+def get_frame_with_box(video_id):
+    try:
+        frame_number = request.args.get('frame', type=int)
+        x = request.args.get('x', type=float)
+        y = request.args.get('y', type=float)
+        w = request.args.get('w', type=float)
+        h = request.args.get('h', type=float)
+        crop = request.args.get('crop', type=bool, default=False)
+        pad_crop = request.args.get('pad_crop', type=int, default=0)
+        make_dataset = request.args.get('make_dataset', type=bool, default=False)
+        player_name = request.args.get('player_name', default='unknown')
+        
+        if frame_number is None or any(v is None for v in [x, y, w, h]):
+            return jsonify({'error': 'Missing required parameters: frame, x, y, w, h'}), 400
+
+        video = get_video(video_id)
+        if not video:
+            return jsonify({'error': 'Video not found'}), 404
+
+        frame = extract_frame_with_box(
+            video['filepath'], 
+            frame_number, 
+            x, y, w, h,
+            crop=crop,
+            pad_crop=pad_crop,
+            make_dataset=make_dataset,
+            player_name=player_name,
+            video_id=video_id
+        )
 
         # Convert to JPEG
         _, buffer = cv2.imencode('.jpg', frame)
@@ -128,12 +178,9 @@ def get_frame_with_box(video_id):
         return response
 
     except Exception as e:
-        print(f"Error getting frame with box: {str(e)}")
+        print(f"Error in frame-with-box route: {str(e)}")
         print(f"Full traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 400
-
-
-
 
 @videos_bp.route('/<int:video_id>/player-trajectories', methods=['GET'])
 def get_player_trajectories(video_id):
@@ -216,7 +263,7 @@ def get_player_trajectories(video_id):
                             # Add frame image URLs to each box
                             for box in player_boxes:
                                 bbox = box['bbox']
-                                box['frame_url'] = f"/videos/{video_id}/frame-with-box?frame={box['frame']}&x={bbox[0]}&y={bbox[1]}&w={bbox[2]}&h={bbox[3]}"
+                                box['frame_url'] = f"/videos/{video_id}/frame-with-box?frame={box['frame']}&x={bbox[0]}&y={bbox[1]}&w={bbox[2]}&h={bbox[3]}&player_name={player_name}"
                             
                             trajectories.append({
                                 'player': player_name,
@@ -241,7 +288,6 @@ def get_player_trajectories(video_id):
         print(f"Error getting player trajectories: {str(e)}")
         print(f"Full traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 400
-
 
 @videos_bp.route('/<int:video_id>', methods=['GET'])
 def get_video_info(video_id):
