@@ -14,6 +14,7 @@ import requests
 import urllib.parse
 import ell
 import traceback
+from tqdm import tqdm
 
 videos_bp = Blueprint('videos', __name__)
 
@@ -237,11 +238,13 @@ def get_player_trajectories(video_id):
         catch_throw_ranges = []
         if invert:
             buffer_frames = 30  # frames to skip before/after catch/throw
+            print("\n=== Collecting catch/throw ranges with buffer ===")
             for i, tag in enumerate(tags):
                 tag_name = tag.get('name', '')
                 if 'catch' in tag_name.lower():
                     player_name = tag_name.split(' catch')[0].strip()
                     catch_frame = tag.get('frame')
+                    print(f"\nFound catch by {player_name} at frame {catch_frame}")
                     
                     # Look for next throw by same player
                     for next_tag in tags[i+1:]:
@@ -252,6 +255,8 @@ def get_player_trajectories(video_id):
                             # Add buffer to range
                             buffered_start = max(0, catch_frame - buffer_frames)
                             buffered_end = throw_frame + buffer_frames
+                            print(f"  ↳ Found throw at frame {throw_frame}")
+                            print(f"  ↳ Adding buffered range: {buffered_start} to {buffered_end} for {player_name}")
                             catch_throw_ranges.append({
                                 'player': player_name,
                                 'range': (buffered_start, buffered_end)
@@ -262,44 +267,53 @@ def get_player_trajectories(video_id):
         if invert:
             # Process frames outside catch/throw ranges
             all_frames = set(range(start_frame or 0, (end_frame or len(boxes_data))))
+            print(f"\n=== Processing inverted frames ===")
+            print(f"Total frame range: {min(all_frames)} to {max(all_frames)}")
+            print(f"Total frames: {len(all_frames)}")
+            print(f"Found {len(catch_throw_ranges)} catch/throw ranges")
             
-            # For each frame and player, check if it's in a buffered range
-            frame_count = 0
-            for frame in sorted(all_frames):
-                # Apply skip logic
-                if skip > 0 and frame_count > 0 and frame_count % (skip + 1) != 0:
-                    frame_count += 1
-                    continue
+            if make_dataset:
+                # Collect all frame data for batch processing
+                frame_data = []
+                frame_count = 0
                 
-                if frame < len(boxes_data):
-                    frame_boxes = boxes_data[frame]
-                    for player_name, box_data in frame_boxes.items():
-                        # Check if this player is in a catch/throw sequence at this frame
-                        is_in_sequence = any(
-                            r['player'] == player_name and 
-                            r['range'][0] <= frame <= r['range'][1] 
-                            for r in catch_throw_ranges
-                        )
+                for frame in sorted(all_frames):
+                    # Apply skip logic
+                    if skip > 0 and frame_count > 0 and frame_count % (skip + 1) != 0:
+                        frame_count += 1
+                        continue
                         
-                        if not is_in_sequence:
-                            bbox = box_data['bbox']
-                            if make_dataset:
-                                try:
-                                    extract_frame_with_box(
-                                        video['filepath'],
-                                        frame,
-                                        bbox[0], bbox[1], bbox[2], bbox[3],
-                                        crop=True,
-                                        pad_crop=5,
-                                        make_dataset=True,
-                                        player_name=f"{name_prefix}{player_name}_non_throw",
-                                        video_id=video_id
-                                    )
-                                    print(f"  ↳ Created dataset image for frame {frame}, player {name_prefix}{player_name}")
-                                except Exception as e:
-                                    print(f"  ↳ Error creating dataset image for frame {frame}: {str(e)}")
+                    if frame < len(boxes_data):
+                        frame_boxes = boxes_data[frame]
+                        for player_name, box_data in frame_boxes.items():
+                            # Check if this player is in a catch/throw sequence at this frame
+                            is_in_sequence = any(
+                                r['player'] == player_name and 
+                                r['range'][0] <= frame <= r['range'][1] 
+                                for r in catch_throw_ranges
+                            )
+                            
+                            if not is_in_sequence:
+                                print(f"  ↳ Frame {frame}: {player_name} not in catch/throw sequence")
+                                frame_data.append((
+                                    frame,
+                                    f"{name_prefix}{player_name}_non_throw",
+                                    box_data['bbox']
+                                ))
+                            else:
+                                print(f"  ↳ Frame {frame}: Skipping {player_name} (in catch/throw sequence)")
+                    
+                    frame_count += 1
                 
-                frame_count += 1
+                print(f"\nCollected {len(frame_data)} player crops to process")
+                # Batch process all frames
+                if frame_data:
+                    batch_extract_frames(
+                        video['filepath'],
+                        frame_data,
+                        pad_crop=5,
+                        video_id=video_id
+                    )
             
             # For inverted mode, we don't return trajectory data
             return jsonify({
@@ -381,6 +395,23 @@ def get_player_trajectories(video_id):
                                     bbox = box['bbox']
                                     box['frame_url'] = f"/videos/{video_id}/frame-with-box?frame={box['frame']}&x={bbox[0]}&y={bbox[1]}&w={bbox[2]}&h={bbox[3]}&player_name={name_prefix}{player_name}"
                                 
+                                if make_dataset:
+                                    frame_data = []
+                                    for box in player_boxes:
+                                        frame_data.append((
+                                            box['frame'],
+                                            f"{name_prefix}{player_name}",
+                                            box['bbox']
+                                        ))
+                                    
+                                    if frame_data:
+                                        batch_extract_frames(
+                                            video['filepath'],
+                                            frame_data,
+                                            pad_crop=5,
+                                            video_id=video_id
+                                        )
+
                                 trajectories.append({
                                     'player': player_name,
                                     'start_frame': catch_frame,
@@ -759,5 +790,88 @@ def process_dictation():
     except Exception as e:
         print(f"Error in process_dictation: {str(e)}")
         return jsonify({'error': str(e)}), 400
+
+def batch_extract_frames(video_filepath, frame_data, pad_crop=5, video_id=None):
+    try:
+        if not frame_data:
+            return
+            
+        total_frames = len(frame_data)
+        print(f"\nStarting batch extraction of {total_frames} frames")
+        
+        # Sort by frame number for sequential access
+        frame_data.sort(key=lambda x: x[0])
+        
+        # Create dataset directory
+        dataset_dir = 'player_crops'
+        os.makedirs(dataset_dir, exist_ok=True)
+
+        cap = cv2.VideoCapture(urllib.parse.quote(video_filepath, safe=':/?='))
+        if not cap.isOpened():
+            raise Exception("Could not open video")
+
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        
+        current_frame = -1
+        successful_crops = 0
+        failed_crops = 0
+        
+        # Create progress bar
+        pbar = tqdm(frame_data, desc="Extracting frames", unit="frame")
+        
+        for frame_number, player_name, bbox in pbar:
+            # Update progress bar description
+            pbar.set_description(f"Processing frame {frame_number} for {player_name}")
+            
+            # Skip to next required frame
+            if frame_number != current_frame + 1:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+            
+            ret, frame = cap.read()
+            if not ret:
+                failed_crops += 1
+                pbar.write(f"❌ Error reading frame {frame_number}")
+                continue
+                
+            current_frame = frame_number
+            
+            try:
+                # Crop with padding
+                x, y, w, h = map(int, bbox)
+                x1 = max(0, x - pad_crop)
+                y1 = max(0, y - pad_crop)
+                x2 = min(width, x + w + pad_crop)
+                y2 = min(height, y + h + pad_crop)
+                
+                cropped = frame[y1:y2, x1:x2]
+                
+                # Save cropped image
+                filename = f"{player_name}_{video_id}_{frame_number}.jpg"
+                filepath = os.path.join(dataset_dir, filename)
+                cv2.imwrite(filepath, cropped)
+                
+                successful_crops += 1
+                pbar.write(f"✅ Saved crop for {player_name} at frame {frame_number}")
+                
+            except Exception as e:
+                failed_crops += 1
+                pbar.write(f"❌ Error processing frame {frame_number}: {str(e)}")
+                continue
+                
+        cap.release()
+        pbar.close()
+        
+        # Print summary
+        print(f"\nBatch extraction complete:")
+        print(f"  ↳ Total frames processed: {total_frames}")
+        print(f"  ↳ Successful crops: {successful_crops}")
+        print(f"  ↳ Failed crops: {failed_crops}")
+        print(f"  ↳ Success rate: {(successful_crops/total_frames)*100:.1f}%")
+
+    except Exception as e:
+        print(f"Error in batch extraction: {str(e)}")
+        print(f"Full traceback: {traceback.format_exc()}")
+        raise
 
 
