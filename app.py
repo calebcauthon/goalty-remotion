@@ -13,6 +13,7 @@ from routes.upload import upload_bp, DOWNLOAD_DIRECTORY
 import requests
 from b2 import bucket
 from routes.homography import homography_bp
+from routes.datasets import datasets_bp
 
 
 app = Flask(__name__, static_folder='react_app/build', template_folder='templates')
@@ -27,6 +28,7 @@ app.register_blueprint(videos_bp, url_prefix='/api/videos')
 app.register_blueprint(hotkeys_bp, url_prefix='/api/hotkeys')
 app.register_blueprint(upload_bp, url_prefix='/api')
 app.register_blueprint(homography_bp, url_prefix='/api/homography')
+app.register_blueprint(datasets_bp, url_prefix='/datasets')
 
 if not os.path.exists(DOWNLOAD_DIRECTORY):
     os.makedirs(DOWNLOAD_DIRECTORY)

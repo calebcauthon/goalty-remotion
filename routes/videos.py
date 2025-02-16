@@ -15,6 +15,7 @@ import urllib.parse
 import ell
 import traceback
 from tqdm import tqdm
+from inference_sdk import InferenceHTTPClient
 
 videos_bp = Blueprint('videos', __name__)
 
@@ -333,17 +334,18 @@ def get_player_trajectories(video_id):
             print(f"\n=== Processing inverted frames ===")
             print(f"Total frames: {len(all_frames)}")
             
+
+            frame_data = collect_frames_for_batch(
+                boxes_data,
+                (min(all_frames), max(all_frames)),
+                None,  # No specific player for inverted mode
+                catch_throw_ranges=catch_throw_ranges,  # Pass the ranges
+                skip=skip,
+                name_prefix=name_prefix,
+                is_throw_sequence=False
+            )
+
             if make_dataset:
-                frame_data = collect_frames_for_batch(
-                    boxes_data,
-                    (min(all_frames), max(all_frames)),
-                    None,  # No specific player for inverted mode
-                    catch_throw_ranges=catch_throw_ranges,  # Pass the ranges
-                    skip=skip,
-                    name_prefix=name_prefix,
-                    is_throw_sequence=False
-                )
-                
                 if frame_data:
                     batch_extract_frames(
                         video['filepath'],
@@ -355,6 +357,7 @@ def get_player_trajectories(video_id):
             # For inverted mode, we don't return trajectory data
             return jsonify({
                 'message': f'Processed {len(all_frames)} frames outside catch/throw sequences',
+                'frame_data': frame_data,
                 'frame_range': {
                     'start': start_frame,
                     'end': end_frame
@@ -949,6 +952,94 @@ def create_dataset_csv():
 
     except Exception as e:
         print(f"Error creating dataset CSV: {str(e)}")
+        print(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 400
+
+def classify_frame_with_roboflow(frame):
+    """
+    Classify an image frame using Roboflow API
+    
+    Args:
+        frame: numpy array of the image
+        
+    Returns:
+        dict containing classification results and base64 image
+    """
+    try:
+        # Convert frame to base64
+        _, buffer = cv2.imencode('.jpg', frame)
+        image_base64 = base64.b64encode(buffer).decode('utf-8')
+
+        # Save frame temporarily
+        temp_jpg = "temp_frame.jpg"
+        cv2.imwrite(temp_jpg, frame)
+
+        # Initialize Roboflow client
+        client = InferenceHTTPClient(
+            api_url="https://detect.roboflow.com",
+            api_key="pH2eX46dBGLw2Gh1ofek"
+        )
+
+        try:
+            result = client.infer(temp_jpg, model_id="classify-frisbee/3")
+            
+            # Clean up temp file
+            os.remove(temp_jpg)
+            
+            # Add base64 image to result
+            result['image'] = image_base64
+            
+            return result
+
+        except Exception as e:
+            # Clean up temp file even if there's an error
+            if os.path.exists(temp_jpg):
+                os.remove(temp_jpg)
+            raise e
+
+    except Exception as e:
+        print(f"Error in Roboflow classification: {str(e)}")
+        print(f"Full traceback: {traceback.format_exc()}")
+        raise
+
+@videos_bp.route('/roboflow-classify', methods=['POST'])
+def roboflow_classify():
+    try:
+        # Get request data
+        data = request.json
+        video_id = data.get('video_id')
+        frame_number = data.get('frame_number')
+        bbox = data.get('bbox')  # Should be [x, y, width, height]
+        
+        if not all([video_id, frame_number is not None, bbox]):
+            return jsonify({'error': 'Missing required fields'}), 400
+
+        # Get video info
+        video = get_video(video_id)
+        if not video:
+            return jsonify({'error': 'Video not found'}), 404
+
+        # Extract frame with bounding box
+        try:
+            frame = extract_frame_with_box(
+                video['filepath'],
+                frame_number,
+                bbox[0], bbox[1], bbox[2], bbox[3],
+                crop=True,
+                pad_crop=5
+            )
+        except Exception as e:
+            return jsonify({'error': f'Failed to extract frame: {str(e)}'}), 400
+
+        # Run classification
+        try:
+            result = classify_frame_with_roboflow(frame)
+            return jsonify(result), 200
+        except Exception as e:
+            return jsonify({'error': str(e)}), 400
+
+    except Exception as e:
+        print(f"Error in roboflow classify endpoint: {str(e)}")
         print(f"Full traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 400
 

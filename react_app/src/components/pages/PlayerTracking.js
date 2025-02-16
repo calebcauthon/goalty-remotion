@@ -525,6 +525,35 @@ function PlayerTracking() {
     }
   };
 
+  const handleRoboflowClassify = async () => {
+    if (!selectedVideo || rectangles.length === 0) return;
+
+    try {
+      const frameNumber = Math.floor(videoRef.currentTime * (videoInfo?.fps || 30));
+      
+      // For each rectangle, send a classification request
+      for (const rect of rectangles) {
+        const response = await fetch(`${globalData.APIbaseUrl}/api/videos/roboflow-classify`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            video_id: selectedVideo.id,
+            frame_number: frameNumber,
+            bbox: [rect.x, rect.y, rect.width, rect.height]
+          })
+        });
+
+        const data = await response.json();
+        console.log(`Classification for rectangle ${rect.name || 'unnamed'}:`, data);
+      }
+
+    } catch (error) {
+      console.error('Error classifying with Roboflow:', error);
+    }
+  };
+
   const handleAddTrackingTag = async () => {
     if (!selectedVideo || !outputFilename) return;
     
@@ -753,6 +782,14 @@ console.log({selectedVideo, tag})
                   </button>
                 </div>
               </div>
+
+              <button
+                className="roboflow-classify-button"
+                onClick={handleRoboflowClassify}
+                disabled={!frameImage}
+              >
+                Classify with Roboflow
+              </button>
 
               {renderStatusJsx}
             </div>
