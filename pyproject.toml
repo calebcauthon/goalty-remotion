@@ -2,21 +2,18 @@
 name = "000-markmaker"
 version = "0.1.0"
 description = ""
-authors = ["Caleb <calebcauthon@gmail.com>"]
+authors = ["Caleb Cauthon <calebcauthon@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.13"
+python = ">=3.12,<3.13"
 flask = "^3.1.0"
 flask-cors = "^5.0.0"
-yt-dlp = "^2025.1.12"
-b2sdk = "^2.7.0"
+yt-dlp = "^2025.1.26"
+b2sdk = "^2.8.0"
 gunicorn = "^23.0.0"
-opencv-python = "^4.10.0.84"
-replicate = "^1.0.4"
-b2 = "^4.3.0"
+inference-sdk = "^0.37.1"
 ell-ai = {extras = ["all"], version = "^0.0.15"}
-tqdm = "^4.65.0"
 
 
 [build-system]
