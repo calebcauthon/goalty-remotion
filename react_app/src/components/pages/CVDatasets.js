@@ -34,6 +34,7 @@ function CVDatasets() {
   const [selectedBoxes, setSelectedBoxes] = useState(new Set());
   const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
   const [videoInfo, setVideoInfo] = useState(null);
+  const [lastCheckedIndex, setLastCheckedIndex] = useState(null);
 
   useEffect(() => {
     fetchVideos();
@@ -380,7 +381,7 @@ function CVDatasets() {
           <input
             type="checkbox"
             checked={selectedBoxes.has(index)}
-            onChange={() => handleSelectBox(index)}
+            onChange={(e) => handleSelectBox(index, e)}
           />
         </td>
         <td>{rect.frame}</td>
@@ -412,13 +413,33 @@ function CVDatasets() {
     }
   };
 
-  const handleSelectBox = (index) => {
+  const handleSelectBox = (index, e) => {
     const newSelected = new Set(selectedBoxes);
-    if (newSelected.has(index)) {
-      newSelected.delete(index);
+    const isShiftKey = e.nativeEvent.shiftKey;
+
+    if (isShiftKey && lastCheckedIndex !== null) {
+      // Get range between last checked and current
+      const start = Math.min(lastCheckedIndex, index);
+      const end = Math.max(lastCheckedIndex, index);
+      
+      // Add or remove all boxes in range
+      for (let i = start; i <= end; i++) {
+        if (selectedBoxes.has(lastCheckedIndex)) {
+          newSelected.add(i);
+        } else {
+          newSelected.delete(i);
+        }
+      }
     } else {
-      newSelected.add(index);
+      // Normal toggle behavior
+      if (newSelected.has(index)) {
+        newSelected.delete(index);
+      } else {
+        newSelected.add(index);
+      }
     }
+
+    setLastCheckedIndex(index);
     setSelectedBoxes(newSelected);
   };
 
