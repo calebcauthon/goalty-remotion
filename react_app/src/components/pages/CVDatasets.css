@@ -128,6 +128,22 @@
   overflow-y: auto;
 }
 
+.bounding-boxes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.export-button {
+  background-color: #2196F3;
+}
+
+.export-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
 .boxes-table {
   width: 100%;
   border-collapse: collapse;
@@ -248,4 +264,10 @@
   outline: none;
   border-color: #4CAF50;
   box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.boxes-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
 } 

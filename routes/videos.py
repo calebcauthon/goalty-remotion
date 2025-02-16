@@ -41,6 +41,77 @@ def get_videos():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@videos_bp.route('/export-dataset', methods=['POST'])
+def export_dataset():
+    try:
+        data = request.json
+        video_id = data['videoId']
+        boxes = data['boxes']
+        
+        # Create dataset directory if it doesn't exist
+        dataset_dir = 'player_crops'
+        os.makedirs(dataset_dir, exist_ok=True)
+        
+        # Get video path
+        video = get_video(video_id)
+        if not video:
+            return jsonify({'error': 'Video not found'}), 404
+            
+        # Open video
+        cap = cv2.VideoCapture(video.get('filepath'))
+        
+        # Process each box
+        processed_images = []
+        for box in boxes:
+            # Seek to frame
+            cap.set(cv2.CAP_PROP_POS_FRAMES, box['frame'])
+            ret, frame = cap.read()
+            if not ret:
+                continue
+                
+            # Crop image using box coordinates
+            x, y, w, h = int(box['x']), int(box['y']), int(box['width']), int(box['height'])
+            crop = frame[y:y+h, x:x+w]
+            
+            # Generate filename using tag and frame number
+            tag = box['tag'].lower().replace(' ', '_') or 'untagged'
+            filename = f"{tag}_{video_id}_{box['frame']}.jpg"
+            filepath = os.path.join(dataset_dir, filename)
+            
+            # Save image
+            cv2.imwrite(filepath, crop)
+            processed_images.append({
+                'filename': filename,
+                'tag': tag,
+                'frame': box['frame']
+            })
+            
+        # Create CSV
+        csv_rows = ['filename,tag,frame']
+        for img in processed_images:
+            csv_rows.append(f"{img['filename']},{img['tag']},{img['frame']}")
+            
+        csv_path = os.path.join(dataset_dir, f'dataset_{video_id}.csv')
+        with open(csv_path, 'w') as f:
+            f.write('\n'.join(csv_rows))
+            
+        cap.release()
+        
+        return jsonify({
+            'message': 'Dataset exported successfully',
+            'total_images': len(processed_images),
+            'csv_path': csv_path
+        }), 200
+        
+    except Exception as e:
+        print(f"Error exporting dataset: {str(e)}")
+        print(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 400
+
+
+
+
 @videos_bp.route('/with-tags', methods=['GET'])
 def get_videos_with_tags():
     try:
@@ -1047,4 +1118,25 @@ def roboflow_classify():
         print(f"Full traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 400
 
+@videos_bp.route('/dimensions/<int:video_id>', methods=['GET'])
+def get_video_dimensions(video_id):
+    try:
+        video = get_video(video_id)
+        if not video:
+            return jsonify({'error': 'Video not found'}), 404
+            
+        cap = cv2.VideoCapture(video.get('filepath'))
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        cap.release()
+        
+        return jsonify({
+            'width': width,
+            'height': height
+        }), 200
+        
+    except Exception as e:
+        print(f"Error getting video dimensions: {str(e)}")
+        print(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 400
 

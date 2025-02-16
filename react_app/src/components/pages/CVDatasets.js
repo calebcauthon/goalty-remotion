@@ -31,6 +31,8 @@ function CVDatasets() {
   const historicalCanvasRef = useRef(null);
   const [currentTag, setCurrentTag] = useState('');
   const [showTagInput, setShowTagInput] = useState(false);
+  const [selectedBoxes, setSelectedBoxes] = useState(new Set());
+  const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     fetchVideos();
@@ -54,7 +56,7 @@ function CVDatasets() {
     }
   };
 
-  const handleVideoSelect = (video) => {
+  const handleVideoSelect = async (video) => {
     if (!video) return;
     
     const selectedVideoData = {
@@ -69,6 +71,20 @@ function CVDatasets() {
     };
     
     setSelectedVideo(selectedVideoData);
+    
+    // Get video dimensions
+    try {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/dimensions/${video.id}`);
+      const data = await response.json();
+      if (response.ok) {
+        setVideoDimensions({
+          width: data.width,
+          height: data.height
+        });
+      }
+    } catch (error) {
+      console.error('Failed to get video dimensions:', error);
+    }
   };
 
   const handleFrameUpdate = (frame) => {
@@ -332,6 +348,13 @@ function CVDatasets() {
 
     return sortedRectangles.map((rect, index) => (
       <tr key={`${rect.frame}-${index}`}>
+        <td>
+          <input
+            type="checkbox"
+            checked={selectedBoxes.has(index)}
+            onChange={() => handleSelectBox(index)}
+          />
+        </td>
         <td>{index + 1}</td>
         <td>{rect.frame}</td>
         <td>{rect.tag || '-'}</td>
@@ -352,6 +375,68 @@ function CVDatasets() {
         </td>
       </tr>
     ));
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedBoxes(new Set(rectangleHistory.map((_, index) => index)));
+    } else {
+      setSelectedBoxes(new Set());
+    }
+  };
+
+  const handleSelectBox = (index) => {
+    const newSelected = new Set(selectedBoxes);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedBoxes(newSelected);
+  };
+
+  const handleExport = async () => {
+    if (selectedBoxes.size === 0) {
+      alert('Please select at least one box to export');
+      return;
+    }
+
+    // Calculate scale factors
+    const scaleX = videoDimensions.width / 800;  // 800 is canvas width
+    const scaleY = videoDimensions.height / 450; // 450 is canvas height
+
+    const selectedData = Array.from(selectedBoxes).map(index => {
+      const rect = rectangleHistory[index];
+      return {
+        ...rect,
+        x: Math.round(rect.x * scaleX),
+        y: Math.round(rect.y * scaleY),
+        width: Math.round(rect.width * scaleX),
+        height: Math.round(rect.height * scaleY)
+      };
+    });
+    
+    try {
+      const response = await fetch(`${globalData.APIbaseUrl}/api/videos/export-dataset`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoId: selectedVideo.id,
+          boxes: selectedData
+        }),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        alert(`Export successful! Created ${result.total_images} images`);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      alert(`Export failed: ${error.message}`);
+    }
   };
 
   return (
@@ -500,10 +585,26 @@ function CVDatasets() {
 
             {rectangleHistory.length > 0 && (
               <div className="bounding-boxes">
-                <h3>Bounding Boxes</h3>
+                <div className="bounding-boxes-header">
+                  <h3>Bounding Boxes</h3>
+                  <button
+                    onClick={handleExport}
+                    className="control-button export-button"
+                    disabled={selectedBoxes.size === 0}
+                  >
+                    Export Selected ({selectedBoxes.size})
+                  </button>
+                </div>
                 <table className="boxes-table">
                   <thead>
                     <tr>
+                      <th>
+                        <input
+                          type="checkbox"
+                          onChange={handleSelectAll}
+                          checked={selectedBoxes.size === rectangleHistory.length}
+                        />
+                      </th>
                       <th>#</th>
                       <th>Frame</th>
                       <th>Tag</th>
