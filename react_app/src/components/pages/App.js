@@ -11,6 +11,7 @@ import ViewHotkeyGroup from 'components/pages/ViewHotkeyGroup';
 import StatsReports from 'components/pages/StatsReports';
 import PlayerTracking from 'components/pages/PlayerTracking';
 import Homography from 'components/pages/Homography';
+import CVDatasets from 'components/pages/CVDatasets';
 import 'components/pages/App.css';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
         <Route path="/stats" element={<StatsReports />} />
         <Route path="/player-tracking" element={<PlayerTracking />} />
         <Route path="/homography" element={<Homography />} />
+        <Route path="/cv-datasets" element={<CVDatasets />} />
       </Routes>
     </Router>
   );

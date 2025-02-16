@@ -1,0 +1,251 @@
+.cv-datasets {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.video-selector {
+  margin: 20px 0;
+}
+
+.video-dropdown {
+  width: 100%;
+  padding: 8px;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.video-container {
+  margin: 20px 0;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.video-section {
+  width: 800px;
+  flex-shrink: 0;
+}
+
+.video-wrapper {
+  position: relative;
+  width: 800px;
+  height: 450px;
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cv-video-controls {
+  width: 800px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 15px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  align-items: center;
+}
+
+.control-button {
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.control-button:hover {
+  background-color: #45a049;
+}
+
+.control-button.active {
+  background-color: #2196F3;
+}
+
+.control-button.active:hover {
+  background-color: #1976D2;
+}
+
+.frame-display {
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.status-message {
+  margin-top: 10px;
+  color: #666;
+  font-style: italic;
+}
+
+.historical-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.drawing-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 2px solid blue;
+  cursor: crosshair;
+  pointer-events: all;
+  z-index: 1; /* Ensure drawing overlay is above historical */
+}
+
+.drawing-overlay.drag-mode {
+  cursor: none;  /* Hide the default cursor */
+}
+
+/* Add custom cursor styles */
+.drawing-overlay[data-mode="drag"]::after {
+  content: '↖️';  /* Unicode arrow pointing up-left */
+  position: fixed;
+  font-size: 24px;
+  pointer-events: none;
+  transform: translate(20px, 20px);  /* Offset from actual cursor position */
+}
+
+/* Alternative using a custom cursor image */
+.drawing-overlay[data-mode="drag"] {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='%234CAF50' d='M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z'/%3E%3C/svg%3E") 24 24, move;
+}
+
+.bounding-boxes {
+  font-size: .75rem;
+  flex: 1;
+  padding: 15px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  min-width: 300px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.boxes-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.boxes-table th,
+.boxes-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.boxes-table th {
+  background-color: #f0f0f0;
+  font-weight: bold;
+}
+
+.delete-button {
+  padding: 4px 8px;
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background-color: #cc0000;
+}
+
+.fps-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 4px;
+  min-width: 250px;
+}
+
+.fps-slider {
+  flex: 1;
+  min-width: 150px;
+}
+
+/* Improve slider appearance */
+.fps-slider {
+  -webkit-appearance: none;
+  height: 8px;
+  background: #ddd;
+  border-radius: 4px;
+  outline: none;
+}
+
+.fps-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #4CAF50;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.fps-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #4CAF50;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+/* Add a special style for when FPS is at normal speed */
+.fps-label {
+  color: #333;
+}
+
+.fps-label[data-normal="true"] {
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+.boxes-table tr[data-frame-start="true"] {
+  border-top: 2px solid #4CAF50;
+}
+
+.boxes-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+  font-size: 0.85em;
+}
+
+.boxes-table tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.tag-input-form {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.tag-input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.tag-input:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+} 
