@@ -383,7 +383,6 @@ function CVDatasets() {
             onChange={() => handleSelectBox(index)}
           />
         </td>
-        <td>{index + 1}</td>
         <td>{rect.frame}</td>
         <td>{rect.tag || '-'}</td>
         <td>{Math.round(rect.x)}</td>
@@ -494,9 +493,9 @@ function CVDatasets() {
             <th>Tag</th>
             <th>X</th>
             <th>Y</th>
-            <th>Width</th>
-            <th>Height</th>
-            <th>Action</th>
+            <th>W</th>
+            <th>H</th>
+            <th>🔴</th>
           </tr>
         </thead>
         <tbody>
@@ -707,13 +706,12 @@ function CVDatasets() {
                         />
                       </th>
                       <th>#</th>
-                      <th>Frame</th>
                       <th>Tag</th>
                       <th>X</th>
                       <th>Y</th>
-                      <th>Width</th>
-                      <th>Height</th>
-                      <th>Actions</th>
+                      <th>W</th>
+                      <th>H</th>
+                      <th>🔴</th>
                     </tr>
                   </thead>
                   <tbody>
