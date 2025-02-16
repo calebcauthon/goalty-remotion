@@ -912,4 +912,44 @@ def batch_extract_frames(video_filepath, frame_data, pad_crop=5, video_id=None):
         print(f"Full traceback: {traceback.format_exc()}")
         raise
 
+@videos_bp.route('/create-dataset-csv', methods=['GET'])
+def create_dataset_csv():
+    try:
+        dataset_dir = 'player_crops'
+        if not os.path.exists(dataset_dir):
+            return jsonify({'error': 'Dataset directory not found'}), 404
+
+        # Get all jpg files
+        image_files = [f for f in os.listdir(dataset_dir) if f.endswith('.jpg')]
+        
+        # Create CSV content
+        csv_rows = ['filename,frisbee,not_holding_frisbee']  # Header
+        
+        for filename in image_files:
+            # Determine if holding frisbee based on filename
+            if filename.startswith('holding_'):
+                frisbee, not_holding = 1, 0
+            elif filename.startswith('not_holding_'):
+                frisbee, not_holding = 0, 1
+            else:
+                continue
+                
+            csv_rows.append(f'{filename},{frisbee},{not_holding}')
+        
+        # Write to CSV file
+        csv_path = os.path.join(dataset_dir, 'classes.csv')
+        with open(csv_path, 'w') as f:
+            f.write('\n'.join(csv_rows))
+            
+        return jsonify({
+            'message': 'CSV file created successfully',
+            'total_images': len(csv_rows) - 1,  # Subtract header
+            'csv_path': csv_path
+        }), 200
+
+    except Exception as e:
+        print(f"Error creating dataset CSV: {str(e)}")
+        print(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 400
+
 
