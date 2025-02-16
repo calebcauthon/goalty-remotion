@@ -33,6 +33,7 @@ function CVDatasets() {
   const [showTagInput, setShowTagInput] = useState(false);
   const [selectedBoxes, setSelectedBoxes] = useState(new Set());
   const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
+  const [videoInfo, setVideoInfo] = useState(null);
 
   useEffect(() => {
     fetchVideos();
@@ -71,6 +72,33 @@ function CVDatasets() {
     };
     
     setSelectedVideo(selectedVideoData);
+    
+    // Fetch b2 info
+    try {
+      const b2Response = await fetch(
+        `${globalData.APIbaseUrl}/api/videos/b2-info`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            url: video.filepath,
+            frame_number: 0
+          })
+        }
+      );
+      const b2Data = await b2Response.json();
+      
+      if (b2Data.error) {
+        console.error(b2Data.error);
+        setError(b2Data.error);
+      } else {
+        setVideoInfo(b2Data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch video info:', error);
+    }
     
     // Get video dimensions
     try {
@@ -395,6 +423,10 @@ function CVDatasets() {
     setSelectedBoxes(newSelected);
   };
 
+  const handleDeactivateRect = (index) => {
+    setActiveRectangles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleExport = async () => {
     if (selectedBoxes.size === 0) {
       alert('Please select at least one box to export');
@@ -439,6 +471,65 @@ function CVDatasets() {
     }
   };
 
+  const handleDeleteSelected = () => {
+    // Convert selectedBoxes Set to array of indices
+    const selectedIndices = Array.from(selectedBoxes);
+    
+    console.log('selectedIndices [to delete]', selectedIndices);
+    // Remove selected boxes from rectangleHistory
+    setRectangleHistory(prev => 
+      prev.filter((_, index) => !selectedIndices.includes(index))
+    );
+    
+    // Clear selection
+    setSelectedBoxes(new Set());
+  };
+
+  const activeRectanglesTableJsx = (
+    <div className="active-rectangles">
+      <h3>Active Rectangles</h3>
+      <table className="coordinates-table">
+        <thead>
+          <tr>
+            <th>Tag</th>
+            <th>X</th>
+            <th>Y</th>
+            <th>Width</th>
+            <th>Height</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {activeRectangles.map((rect, index) => (
+            <tr key={index}>
+              <td>{rect.tag || '-'}</td>
+              <td>{Math.round(rect.x)}</td>
+              <td>{Math.round(rect.y)}</td>
+              <td>{Math.round(rect.width)}</td>
+              <td>{Math.round(rect.height)}</td>
+              <td>
+                <button
+                  className="deactivate-button"
+                  onClick={() => handleDeactivateRect(index)}
+                  title="Deactivate rectangle"
+                >
+                  ⏸️
+                </button>
+              </td>
+            </tr>
+          ))}
+          {activeRectangles.length === 0 && (
+            <tr>
+              <td colSpan="6" className="no-rectangles">
+                No active rectangles
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+
   return (
     <Layout>
       <div className="cv-datasets">
@@ -481,10 +572,10 @@ function CVDatasets() {
                     src: selectedVideo.url,
                     onFrameUpdate: handleFrameUpdate
                   }}
-                  durationInFrames={3000}
+                  durationInFrames={videoInfo?.frame_count || 99999}
                   compositionWidth={800}
                   compositionHeight={450}
-                  fps={29.8}
+                  fps={videoInfo?.fps || 29.8}
                   playbackRate={playbackRate}
                   controls
                 />
@@ -586,15 +677,25 @@ function CVDatasets() {
             {rectangleHistory.length > 0 && (
               <div className="bounding-boxes">
                 <div className="bounding-boxes-header">
-                  <h3>Bounding Boxes</h3>
-                  <button
-                    onClick={handleExport}
-                    className="control-button export-button"
-                    disabled={selectedBoxes.size === 0}
-                  >
-                    Export Selected ({selectedBoxes.size})
-                  </button>
+                  <h3>Bounding Box History</h3>
+                  <div className="bounding-boxes-actions">
+                    <button
+                      onClick={handleDeleteSelected}
+                      className="control-button delete-selected-button"
+                      disabled={selectedBoxes.size === 0}
+                    >
+                      Delete Selected ({selectedBoxes.size})
+                    </button>
+                    <button
+                      onClick={handleExport}
+                      className="control-button export-button"
+                      disabled={selectedBoxes.size === 0}
+                    >
+                      Export Selected ({selectedBoxes.size})
+                    </button>
+                  </div>
                 </div>
+                {activeRectanglesTableJsx}
                 <table className="boxes-table">
                   <thead>
                     <tr>
