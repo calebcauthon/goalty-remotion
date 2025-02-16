@@ -380,6 +380,10 @@ def get_player_trajectories(video_id):
                             throw_frame = next_tag.get('frame')
                             print(f"  ↳ Found matching throw at frame {throw_frame}")
                             
+                            # Limit to 15 frames after catch
+                            throw_frame = min(throw_frame, catch_frame + 15)
+                            print(f"  ↳ Limited to frame {throw_frame} (15 frames after catch)")
+
                             # Skip if throw is outside requested range
                             if end_frame is not None and throw_frame > end_frame:
                                 print(f"  ↳ Skipping: throw frame {throw_frame} > end frame {end_frame}")
