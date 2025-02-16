@@ -187,6 +187,69 @@ def get_frame_with_box(video_id):
         print(f"Full traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 400
 
+def collect_frames_for_batch(boxes_data, frame_range, player_name, catch_throw_ranges=None, skip=0, name_prefix='', is_throw_sequence=True):
+    """
+    Collect frames for batch processing.
+    
+    Args:
+        boxes_data: Dictionary of frame boxes
+        frame_range: Tuple of (start_frame, end_frame)
+        player_name: Name of player to track
+        catch_throw_ranges: List of catch/throw ranges for checking exclusions
+        skip: Number of frames to skip
+        name_prefix: Prefix for player name in output
+        is_throw_sequence: If True, this is a throw sequence. If False, it's outside throw sequences
+    
+    Returns:
+        List of tuples (frame_number, player_name, bbox)
+    """
+    frame_data = []
+    frame_count = 0
+    start_frame, end_frame = frame_range
+    
+    for frame in range(start_frame, end_frame + 1):
+        # Apply skip logic
+        if skip > 0 and frame_count > 0 and frame_count % (skip + 1) != 0:
+            frame_count += 1
+            continue
+            
+        if frame < len(boxes_data):
+            frame_boxes = boxes_data[frame]
+            
+            if is_throw_sequence:
+                # For throw sequences, only get the specific player
+                if player_name in frame_boxes:
+                    box_data = frame_boxes[player_name]
+                    suffix = '' if is_throw_sequence else '_non_throw'
+                    frame_data.append((
+                        frame,
+                        f"{name_prefix}{player_name}{suffix}",
+                        box_data['bbox']
+                    ))
+            else:
+                # For non-throw sequences, get all players not in sequences
+                for p_name, box_data in frame_boxes.items():
+                    # Check if this player is in a catch/throw sequence
+                    is_in_sequence = False
+                    if catch_throw_ranges:
+                        is_in_sequence = any(
+                            r['player'] == p_name and 
+                            r['range'][0] <= frame <= r['range'][1] 
+                            for r in catch_throw_ranges
+                        )
+                    
+                    if not is_in_sequence:
+                        suffix = '' if is_throw_sequence else '_non_throw'
+                        frame_data.append((
+                            frame,
+                            f"{name_prefix}{p_name}{suffix}",
+                            box_data['bbox']
+                        ))
+        
+        frame_count += 1
+    
+    return frame_data
+
 @videos_bp.route('/<int:video_id>/player-trajectories', methods=['GET'])
 def get_player_trajectories(video_id):
     print(f"Getting player trajectories for video {video_id}")
@@ -268,45 +331,19 @@ def get_player_trajectories(video_id):
             # Process frames outside catch/throw ranges
             all_frames = set(range(start_frame or 0, (end_frame or len(boxes_data))))
             print(f"\n=== Processing inverted frames ===")
-            print(f"Total frame range: {min(all_frames)} to {max(all_frames)}")
             print(f"Total frames: {len(all_frames)}")
-            print(f"Found {len(catch_throw_ranges)} catch/throw ranges")
             
             if make_dataset:
-                # Collect all frame data for batch processing
-                frame_data = []
-                frame_count = 0
+                frame_data = collect_frames_for_batch(
+                    boxes_data,
+                    (min(all_frames), max(all_frames)),
+                    None,  # No specific player for inverted mode
+                    catch_throw_ranges=catch_throw_ranges,  # Pass the ranges
+                    skip=skip,
+                    name_prefix=name_prefix,
+                    is_throw_sequence=False
+                )
                 
-                for frame in sorted(all_frames):
-                    # Apply skip logic
-                    if skip > 0 and frame_count > 0 and frame_count % (skip + 1) != 0:
-                        frame_count += 1
-                        continue
-                        
-                    if frame < len(boxes_data):
-                        frame_boxes = boxes_data[frame]
-                        for player_name, box_data in frame_boxes.items():
-                            # Check if this player is in a catch/throw sequence at this frame
-                            is_in_sequence = any(
-                                r['player'] == player_name and 
-                                r['range'][0] <= frame <= r['range'][1] 
-                                for r in catch_throw_ranges
-                            )
-                            
-                            if not is_in_sequence:
-                                print(f"  ↳ Frame {frame}: {player_name} not in catch/throw sequence")
-                                frame_data.append((
-                                    frame,
-                                    f"{name_prefix}{player_name}_non_throw",
-                                    box_data['bbox']
-                                ))
-                            else:
-                                print(f"  ↳ Frame {frame}: Skipping {player_name} (in catch/throw sequence)")
-                    
-                    frame_count += 1
-                
-                print(f"\nCollected {len(frame_data)} player crops to process")
-                # Batch process all frames
                 if frame_data:
                     batch_extract_frames(
                         video['filepath'],
@@ -390,19 +427,20 @@ def get_player_trajectories(video_id):
                             if player_boxes:
                                 print(f"  ↳ Found {len(player_boxes)} boxes for trajectory")
                                 
-                                # Update frame URL to include prefix
+                                # Update frame URLs
                                 for box in player_boxes:
                                     bbox = box['bbox']
                                     box['frame_url'] = f"/videos/{video_id}/frame-with-box?frame={box['frame']}&x={bbox[0]}&y={bbox[1]}&w={bbox[2]}&h={bbox[3]}&player_name={name_prefix}{player_name}"
                                 
                                 if make_dataset:
-                                    frame_data = []
-                                    for box in player_boxes:
-                                        frame_data.append((
-                                            box['frame'],
-                                            f"{name_prefix}{player_name}",
-                                            box['bbox']
-                                        ))
+                                    frame_data = collect_frames_for_batch(
+                                        boxes_data,
+                                        (catch_frame, throw_frame),
+                                        player_name,
+                                        skip=skip,
+                                        name_prefix=name_prefix,
+                                        is_throw_sequence=True
+                                    )
                                     
                                     if frame_data:
                                         batch_extract_frames(
