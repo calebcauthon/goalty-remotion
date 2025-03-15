@@ -327,8 +327,10 @@ function ViewFilm() {
         video.tags
           .filter(tag => tag.startFrame && tag.endFrame)
           .filter(tag => 
-            tag.name.toLowerCase().includes(tagFilter.toLowerCase()) ||
-            video.name.toLowerCase().includes(tagFilter.toLowerCase())
+            tagFilter.toLowerCase().split(',').every(term => 
+              tag.name.toLowerCase().includes(term.trim()) ||
+              video.name.toLowerCase().includes(term.trim())
+            )
           )
           .map(tag => ({
             key: `${video.id}-${tag.name}-${tag.frame}-${tag.startFrame}-${tag.endFrame}-${Date.now()}-${Math.random()}`,
