@@ -53,6 +53,7 @@ export const Root: React.FC = () => {
           return {
             ...defaultProps,
             ...props,
+            videos: props.videos,
             durationInFrames: calculatePlayerTrackingDuration(props.selectedTags),
             width: 1920,
             height: 1080,
