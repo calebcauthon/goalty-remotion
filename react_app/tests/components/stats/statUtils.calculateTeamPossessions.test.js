@@ -13,11 +13,11 @@ import {
 describe('calculateTeamPossessions', () => {
   // Basic input handling
   it('should return 0 for null video', () => {
-    expect(calculateTeamPossessions(null, 'home')).toBe(0);
+    expect(calculateTeamPossessions(null, 'home').count).toBe(0);
   });
 
   it('should return 0 for video without tags', () => {
-    expect(calculateTeamPossessions({}, 'home')).toBe(0);
+    expect(calculateTeamPossessions({}, 'home').count).toBe(0);
   });
 
   // Simple cases
@@ -30,7 +30,7 @@ describe('calculateTeamPossessions', () => {
       ]
     };
     
-    expect(calculateTeamPossessions(video, 'home')).toBe(1);
+    expect(calculateTeamPossessions(video, 'home').count).toBe(1);
   });
 
   it('should count multiple separate clearing touches as separate possessions', () => {
@@ -45,7 +45,7 @@ describe('calculateTeamPossessions', () => {
       ]
     };
     
-    expect(calculateTeamPossessions(video, 'home')).toBe(2);
+    expect(calculateTeamPossessions(video, 'home').count).toBe(2);
   });
 
   // Complex scenarios
@@ -59,7 +59,7 @@ describe('calculateTeamPossessions', () => {
       ]
     };
     
-    expect(calculateTeamPossessions(video, 'home')).toBe(1);
+    expect(calculateTeamPossessions(video, 'home').count).toBe(1);
   });
 
   it('should handle mixed touch types correctly', () => {
@@ -74,7 +74,7 @@ describe('calculateTeamPossessions', () => {
       ]
     };
     
-    expect(calculateTeamPossessions(video, 'home')).toBe(2);
+    expect(calculateTeamPossessions(video, 'home').count).toBe(2);
   });
 
   it('should ignore non-touch tags', () => {
@@ -89,6 +89,6 @@ describe('calculateTeamPossessions', () => {
       ]
     };
     
-    expect(calculateTeamPossessions(video, 'home')).toBe(1);
+    expect(calculateTeamPossessions(video, 'home').count).toBe(1);
   });
 }); 
