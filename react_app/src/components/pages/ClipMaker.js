@@ -15,6 +15,7 @@ import FrameRangeSlider from 'components/FrameRangeSlider';
 import { useLocation } from 'react-router-dom';
 import ScoreFinderProcessor from 'components/processing/ScoreFinderProcessor';
 import UserAddsTagsDirectly from 'components/processing/UserAddsTagsDirectly';
+import SplitPlayingTimeProcessor from 'components/processing/SplitPlayingTimeProcessor';
 
 function ClipMaker() {
   const globalData = useContext(GlobalContext);
@@ -309,7 +310,12 @@ function ClipMaker() {
               <PlayingTimeProcessor
                 selectedVideo={selectedVideo}
                 onTagsApproved={refreshVideoData}
-                />
+              />
+
+              <SplitPlayingTimeProcessor
+                selectedVideo={selectedVideo}
+                onTagsApproved={refreshVideoData}
+              />
 
               <ScreenProcessor
                 selectedVideo={selectedVideo}

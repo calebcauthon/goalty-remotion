@@ -537,6 +537,78 @@ export const findPlayerSequences = (video, playerName) => {
   return sequences;
 };
 
+export function splitPlayingTimeTags(tags, playerName, team) {
+  if (!tags || !playerName || !team) return [];
+
+  const playingTags = tags.filter(tag => 
+    tag.name.toLowerCase() === `${playerName.toLowerCase()} playing` &&
+    tag.startFrame !== undefined &&
+    tag.endFrame !== undefined
+  );
+
+  const attackTags = tags.filter(tag => {
+    const isHomeTouch = tag.name.startsWith('home_touch_');
+    const isAwayTouch = tag.name.startsWith('away_touch_');
+    return isHomeTouch || isAwayTouch;
+  });
+
+  const newTags = [];
+
+  for (const playingTag of playingTags) {
+    // Sort attack tags that fall within this playing segment
+    const relevantAttacks = attackTags
+      .filter(tag => tag.frame <= playingTag.endFrame)
+      .sort((a, b) => a.frame - b.frame);
+
+    // Find the most recent touch before or at the start of the playing segment
+    let lastAttackTeam = null;
+    let lastAttackFrame = null;
+    let segmentStart = playingTag.startFrame;
+
+    // Find the most recent touch before the playing segment starts
+    const priorTouch = relevantAttacks
+      .filter(tag => tag.frame <= playingTag.startFrame)
+      .pop();
+
+    if (priorTouch) {
+      lastAttackTeam = priorTouch.name.startsWith('home_touch_') ? 'home' : 'away';
+      lastAttackFrame = priorTouch.frame;
+    }
+
+    // Process touches during the playing segment
+    for (const attackTag of relevantAttacks.filter(tag => tag.frame >= playingTag.startFrame)) {
+      const isHomeAttack = attackTag.name.startsWith('home_touch_');
+      const attackingTeam = isHomeAttack ? 'home' : 'away';
+      
+      if (lastAttackTeam !== null && lastAttackTeam !== attackingTeam) {
+        // Team possession changed, create tag for previous segment
+        const isOffense = lastAttackTeam === team;
+        newTags.push({
+          name: `${playerName} playing ${isOffense ? 'offense' : 'defense'}`,
+          startFrame: segmentStart,
+          endFrame: attackTag.frame - 1
+        });
+        segmentStart = attackTag.frame;
+      }
+      
+      lastAttackTeam = attackingTeam;
+      lastAttackFrame = attackTag.frame;
+    }
+
+    // Handle final segment if there were any touches
+    if (lastAttackTeam !== null) {
+      const isOffense = lastAttackTeam === team;
+      newTags.push({
+        name: `${playerName} playing ${isOffense ? 'offense' : 'defense'}`,
+        startFrame: segmentStart,
+        endFrame: playingTag.endFrame
+      });
+    }
+  }
+
+  return newTags;
+}
+
 export default {
   calculateTeamAttacks,
   calculateTeamScores,
@@ -554,4 +626,5 @@ export default {
   calculateAttackSequenceTags,
   calculateGameAggregateStats,
   findPlayerSequences,
+  splitPlayingTimeTags,
 };
