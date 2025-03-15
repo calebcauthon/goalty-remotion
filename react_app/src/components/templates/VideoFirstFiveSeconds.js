@@ -66,7 +66,7 @@ export const VideoFirstFiveSeconds = ({
         console.log('got dimensions from frameImage', { originalWidth, originalHeight });
       } else if (videos[0]?.metadata) {
         // Fallback to video metadata
-        const videoMetadata = JSON.parse(videos[0].metadata);
+        const videoMetadata = typeof videos[0].metadata === 'string' ? JSON.parse(videos[0].metadata) : videos[0].metadata;
         originalWidth = videoMetadata.width;
         originalHeight = videoMetadata.height;
       } else {
