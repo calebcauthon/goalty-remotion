@@ -29,8 +29,8 @@ export const Root: React.FC = () => {
           
           return {
             durationInFrames: calculateFirstFiveSecondsDuration(props.selectedTags),
-            width,
-            height,
+            width: 1920,
+            height: 1080,
             settings: props.settings || {},
           };
         }}
