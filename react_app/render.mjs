@@ -24,14 +24,6 @@ const require = createRequire(import.meta.url);
     }));
   }
 
-  console.log(`Cleaned Input props (removed boxes and tags): ${JSON.stringify(cleanedProps, null, 2)}`);
-  console.log(`Output filename: ${outputFileName}`);
-  console.log(`Range: ${range}`);
-  console.log(`Composition name: ${compositionName}`);
-  console.log(`# of boxes for first video: ${inputProps.videos[0].metadata.boxes.length}`);
-  console.log(`# of non-empty boxes for first video: ${inputProps.videos[0].metadata.boxes.filter(box => JSON.stringify(box) != '{}').length}`);
-  console.log(`# of tags for first video: ${inputProps.videos[0].metadata.tags.length}`);
-
   const bundled = await bundle({
     entryPoint: require.resolve("./src/index_studio.js"),
     // If you have a webpack override in remotion.config.ts, pass it here as well.
