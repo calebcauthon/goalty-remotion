@@ -71,8 +71,8 @@ function ClipMaker() {
     if (video) {
       try {
         const metadata = await getVideoMetadata(video.filepath);
-        const assumedFps = 30;
-        metadata.fps = assumedFps;
+        const assumedFps = 29.8;
+        metadata.fps = metadata.fps || assumedFps;
         setVideoMetadata(metadata);
         setDurationInFrames(Math.ceil(metadata.durationInSeconds * metadata.fps));
       } catch (error) {
@@ -397,6 +397,7 @@ function ClipMaker() {
                 </div>
               </div>
 
+              <p>FPS used: {videoMetadata?.fps || 30}</p>
               <table className="tags-table">
                 <thead>
                   <tr>
