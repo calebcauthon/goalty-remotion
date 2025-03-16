@@ -15,8 +15,8 @@ export const Root: React.FC = () => {
         id="VideoFirstFiveSeconds"
         width={1980}
         height={1020}
-        fps={30}
-        durationInFrames={30 * 20}
+        fps={29.8}
+        durationInFrames={29.8 * 20}
         component={VideoFirstFiveSeconds}
         defaultProps={{
           selectedVideos: [],
