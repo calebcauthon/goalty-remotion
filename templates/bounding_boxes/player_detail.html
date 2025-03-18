@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <a href="{{ url_for('bounding_boxes.index') }}" class="text-blue-600 hover:text-blue-800">← Back to Database</a>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <h1 class="text-3xl font-bold mb-4">{{ player.name }}</h1>
+        {% if player.team %}
+        <p class="text-xl text-gray-600 mb-8">Team: {{ player.team }}</p>
+        {% endif %}
+
+        <!-- Video Tracking -->
+        <div>
+            <h2 class="text-2xl font-semibold mb-4">Tracking Data</h2>
+            <div class="space-y-6">
+                {% for video in videos %}
+                <div class="border rounded p-6">
+                    <h3 class="text-lg font-medium mb-4">
+                        <a href="{{ url_for('bounding_boxes.video_detail', video_id=video.video_id) }}"
+                           class="text-blue-600 hover:text-blue-800">
+                            {{ video.filename }}
+                        </a>
+                    </h3>
+                    
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-600">
+                            Duration: {{ "%.2f"|format(video.duration_seconds) }}s
+                            ({{ video.total_frames }} frames @ {{ video.frame_rate }} fps)
+                        </p>
+                    </div>
+
+                    <div id="track-{{ video.video_id }}" class="space-y-2">
+                        <button onclick="loadTrackingData({{ video.video_id }})"
+                                class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">
+                            Load Tracking Data
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadTrackingData(videoId) {
+    fetch(`/bounding-boxes/api/players/{{ player.name|urlencode }}/tracking?video_id=${videoId}`)
+        .then(response => response.json())
+        .then(trackData => {
+            const trackDiv = document.getElementById(`track-${videoId}`);
+            if (trackData.length === 0) {
+                trackDiv.innerHTML = '<p class="text-gray-500 mt-2">No tracking data in this video</p>';
+                return;
+            }
+            
+            // Create a summary of the tracking data
+            const firstFrame = trackData[0];
+            const lastFrame = trackData[trackData.length - 1];
+            
+            trackDiv.innerHTML = `
+                <div class="text-sm space-y-2">
+                    <p>Tracked in ${trackData.length} frames</p>
+                    <p>First appearance: Frame ${firstFrame.frame_number}</p>
+                    <p>Last appearance: Frame ${lastFrame.frame_number}</p>
+                    <div class="mt-4">
+                        <h4 class="font-medium mb-2">Sample Positions:</h4>
+                        <div class="space-y-1">
+                            ${trackData.slice(0, 5).map(pos => `
+                                <p>Frame ${pos.frame_number}: 
+                                   (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)})
+                                   ${pos.width.toFixed(1)}x${pos.height.toFixed(1)}
+                                </p>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+}
+</script>
+{% endblock %} 

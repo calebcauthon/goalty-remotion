@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Bounding Box Database</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Videos Section -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-2xl font-semibold mb-4">Videos</h2>
+            <div class="space-y-4">
+                {% for video in videos %}
+                <div class="border rounded p-4">
+                    <h3 class="text-lg font-medium">
+                        <a href="{{ url_for('bounding_boxes.video_detail', video_id=video.video_id) }}" 
+                           class="text-blue-600 hover:text-blue-800">
+                            {{ video.filename }}
+                        </a>
+                    </h3>
+                    <div class="text-sm text-gray-600 mt-2">
+                        <p>Duration: {{ "%.2f"|format(video.duration_seconds) }}s</p>
+                        <p>Frames: {{ video.total_frames }} ({{ video.frame_rate }} fps)</p>
+                        <p>Resolution: {{ video.width }}x{{ video.height }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-gray-500">No videos found</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Players Section -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-2xl font-semibold mb-4">Players</h2>
+            <div class="space-y-4">
+                {% for player in players %}
+                <div class="border rounded p-4">
+                    <h3 class="text-lg font-medium">
+                        <a href="{{ url_for('bounding_boxes.player_detail', player_name=player.name) }}"
+                           class="text-blue-600 hover:text-blue-800">
+                            {{ player.name }}
+                        </a>
+                    </h3>
+                    {% if player.team %}
+                    <p class="text-sm text-gray-600 mt-2">Team: {{ player.team }}</p>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-gray-500">No players found</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- API Documentation -->
+<div class="container mx-auto px-4 py-8 mt-8">
+    <h2 class="text-2xl font-semibold mb-4">API Documentation</h2>
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="space-y-6">
+            <div>
+                <h3 class="text-lg font-medium">GET /api/videos</h3>
+                <p class="text-gray-600">List all videos in the database</p>
+            </div>
+            <div>
+                <h3 class="text-lg font-medium">GET /api/videos/{video_id}/frames/{frame_number}/boxes</h3>
+                <p class="text-gray-600">Get bounding boxes for a specific frame</p>
+            </div>
+            <div>
+                <h3 class="text-lg font-medium">GET /api/players</h3>
+                <p class="text-gray-600">List all players in the database</p>
+            </div>
+            <div>
+                <h3 class="text-lg font-medium">GET /api/players/{player_name}/tracking?video_id={video_id}</h3>
+                <p class="text-gray-600">Get tracking data for a player in a specific video</p>
+            </div>
+            <div>
+                <h3 class="text-lg font-medium">GET /api/videos/{video_id}/export</h3>
+                <p class="text-gray-600">Export all bounding boxes for a video</p>
+            </div>
+            <div>
+                <h3 class="text-lg font-medium">POST /api/videos/{video_id}/import</h3>
+                <p class="text-gray-600">Import bounding boxes for a video</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

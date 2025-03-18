@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <a href="{{ url_for('bounding_boxes.index') }}" class="text-blue-600 hover:text-blue-800">← Back to Database</a>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <h1 class="text-3xl font-bold mb-4">{{ video.filename }}</h1>
+        <div class="text-gray-600 mb-8">
+            <p>Duration: {{ "%.2f"|format(video.duration_seconds) }}s</p>
+            <p>Frames: {{ video.total_frames }} ({{ video.frame_rate }} fps)</p>
+            <p>Resolution: {{ video.width }}x{{ video.height }}</p>
+            {% if video.b2_path %}
+            <p>Storage Path: {{ video.b2_path }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Frame Viewer -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Frame Viewer</h2>
+            <div class="flex space-x-4 mb-4">
+                <input type="number" id="frameNumber" 
+                       min="0" max="{{ video.total_frames - 1 }}" 
+                       value="0"
+                       class="border rounded px-3 py-2 w-32">
+                <button onclick="loadFrame()" 
+                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    Load Frame
+                </button>
+            </div>
+            
+            <div id="frameData" class="border rounded p-4">
+                <div id="bboxList" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- Player Tracking -->
+        <div>
+            <h2 class="text-2xl font-semibold mb-4">Player Tracking</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for player in players %}
+                <div class="border rounded p-4">
+                    <h3 class="font-medium mb-2">{{ player.name }}</h3>
+                    <button onclick="loadPlayerTrack('{{ player.name }}')"
+                            class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">
+                        View Tracking
+                    </button>
+                    <div id="track-{{ player.name|replace(' ', '-') }}" class="mt-2"></div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadFrame() {
+    const frameNumber = document.getElementById('frameNumber').value;
+    fetch(`/bounding-boxes/api/videos/{{ video.video_id }}/frames/${frameNumber}/boxes`)
+        .then(response => response.json())
+        .then(boxes => {
+            const bboxList = document.getElementById('bboxList');
+            bboxList.innerHTML = '';
+            
+            boxes.forEach(box => {
+                const div = document.createElement('div');
+                div.className = 'text-sm';
+                div.innerHTML = `
+                    <span class="font-medium">${box.name}</span>: 
+                    (${box.x.toFixed(1)}, ${box.y.toFixed(1)}) 
+                    ${box.width.toFixed(1)}x${box.height.toFixed(1)}
+                    [conf: ${(box.confidence * 100).toFixed(1)}%]
+                `;
+                bboxList.appendChild(div);
+            });
+        });
+}
+
+function loadPlayerTrack(playerName) {
+    fetch(`/bounding-boxes/api/players/${encodeURIComponent(playerName)}/tracking?video_id={{ video.video_id }}`)
+        .then(response => response.json())
+        .then(trackData => {
+            const trackDiv = document.getElementById(`track-${playerName.replace(' ', '-')}`);
+            if (trackData.length === 0) {
+                trackDiv.innerHTML = '<p class="text-gray-500">No tracking data</p>';
+                return;
+            }
+            
+            trackDiv.innerHTML = `
+                <p class="text-sm text-gray-600">
+                    Tracked in ${trackData.length} frames
+                </p>
+            `;
+        });
+}
+
+// Load initial frame
+loadFrame();
+</script>
+{% endblock %} 
