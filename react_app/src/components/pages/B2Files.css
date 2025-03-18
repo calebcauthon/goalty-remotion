@@ -10,6 +10,30 @@
   color: #333;
 }
 
+.search-container {
+  margin-bottom: 1.5rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 15px;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: border-color 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.search-input:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 1px 3px rgba(52, 152, 219, 0.3);
+}
+
+.search-input::placeholder {
+  color: #aaa;
+}
+
 .loading-container {
   display: flex;
   justify-content: center;

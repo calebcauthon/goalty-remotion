@@ -4,8 +4,35 @@ import { Link } from 'react-router-dom';
 import { GlobalContext } from '../../index';
 import './B2Files.css';
 
+// Simple fuzzy search function
+const fuzzySearch = (searchTerm, str) => {
+  const term = searchTerm.toLowerCase();
+  const string = str.toLowerCase();
+  
+  // If empty search term, return true (matches everything)
+  if (!term || term === '') return true;
+  
+  let searchTermIndex = 0;
+  
+  // Look for the search term characters in order, but they don't have to be consecutive
+  for (let i = 0; i < string.length; i++) {
+    if (string[i] === term[searchTermIndex]) {
+      searchTermIndex++;
+    }
+    
+    // If we've matched all characters in the search term
+    if (searchTermIndex === term.length) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
 function B2Files() {
   const [files, setFiles] = useState([]);
+  const [allFiles, setAllFiles] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [addingVideo, setAddingVideo] = useState({});
@@ -18,6 +45,7 @@ function B2Files() {
       try {
         setLoading(true);
         const filesData = await b2Service.getB2Files();
+        setAllFiles(filesData);
         setFiles(filesData);
         setError(null);
       } catch (err) {
@@ -29,6 +57,18 @@ function B2Files() {
 
     fetchFiles();
   }, []);
+
+  // Filter files when search term changes
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFiles(allFiles);
+    } else {
+      const filtered = allFiles.filter(file => 
+        fuzzySearch(searchTerm, file.fileName)
+      );
+      setFiles(filtered);
+    }
+  }, [searchTerm, allFiles]);
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text)
@@ -95,6 +135,10 @@ function B2Files() {
     return new Date(timestamp).toLocaleString();
   };
 
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
   return (
     <div className="b2-files-container">
       <h1 className="b2-files-title">B2 Storage Files</h1>
@@ -109,8 +153,23 @@ function B2Files() {
         </div>
       ) : (
         <>
+          <div className="search-container">
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search files..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+            />
+          </div>
+          
           <div className="files-info">
-            <p>Total files: <span className="files-count">{files.length}</span></p>
+            <p>
+              Showing <span className="files-count">{files.length}</span> 
+              {allFiles.length !== files.length && 
+                ` of ${allFiles.length}`
+              } files
+            </p>
           </div>
           
           <div className="table-container">
@@ -126,7 +185,11 @@ function B2Files() {
               <tbody>
                 {files.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="no-files-message">No files found in B2 storage</td>
+                    <td colSpan="4" className="no-files-message">
+                      {allFiles.length === 0 
+                        ? "No files found in B2 storage" 
+                        : "No files match your search criteria"}
+                    </td>
                   </tr>
                 ) : (
                   files.map((file) => (
