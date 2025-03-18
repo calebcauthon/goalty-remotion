@@ -10,6 +10,7 @@ from routes.films import films_bp
 from routes.videos import videos_bp
 from routes.hotkeys import hotkeys_bp
 from routes.upload import upload_bp, DOWNLOAD_DIRECTORY
+from routes.bounding_boxes import bp as bounding_boxes_bp
 import requests
 from b2 import bucket
 from routes.homography import homography_bp
@@ -22,6 +23,7 @@ CORS(films_bp)
 CORS(videos_bp)
 CORS(hotkeys_bp)
 CORS(upload_bp)
+CORS(bounding_boxes_bp)
 
 app.register_blueprint(films_bp, url_prefix='/api/films')
 app.register_blueprint(videos_bp, url_prefix='/api/videos')
@@ -29,6 +31,7 @@ app.register_blueprint(hotkeys_bp, url_prefix='/api/hotkeys')
 app.register_blueprint(upload_bp, url_prefix='/api')
 app.register_blueprint(homography_bp, url_prefix='/api/homography')
 app.register_blueprint(datasets_bp, url_prefix='/datasets')
+app.register_blueprint(bounding_boxes_bp, url_prefix='/bounding-boxes')
 
 if not os.path.exists(DOWNLOAD_DIRECTORY):
     os.makedirs(DOWNLOAD_DIRECTORY)

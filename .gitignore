@@ -9,3 +9,6 @@ react_app/out
 .jest-cache
 logdir
 /player_crops
+
+modal_app/client_secrets.json
+modal_app/token.pickle
