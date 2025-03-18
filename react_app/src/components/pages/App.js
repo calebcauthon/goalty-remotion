@@ -12,6 +12,7 @@ import StatsReports from 'components/pages/StatsReports';
 import PlayerTracking from 'components/pages/PlayerTracking';
 import Homography from 'components/pages/Homography';
 import CVDatasets from 'components/pages/CVDatasets';
+import B2Files from 'components/pages/B2Files';
 import 'components/pages/App.css';
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
         <Route path="/player-tracking" element={<PlayerTracking />} />
         <Route path="/homography" element={<Homography />} />
         <Route path="/cv-datasets" element={<CVDatasets />} />
+        <Route path="/b2-files" element={<B2Files />} />
       </Routes>
     </Router>
   );

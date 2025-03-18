@@ -17,6 +17,7 @@ function Layout({ children }) {
           <li><Link to="/stats">Stats & Reports</Link></li>
           <li><Link to="/homography">Homography</Link></li>
           <li><Link to="/cv-datasets">CV Datasets</Link></li>
+          <li><Link to="/b2-files">B2 Storage Files</Link></li>
         </ul>
       </nav>
       <main className="content">

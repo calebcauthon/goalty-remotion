@@ -12,3 +12,5 @@ logdir
 
 modal_app/client_secrets.json
 modal_app/token.pickle
+
+*.db

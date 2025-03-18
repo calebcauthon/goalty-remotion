@@ -41,6 +41,44 @@ def get_videos():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@videos_bp.route('/', methods=['POST'])
+def add_new_video():
+    try:
+        data = request.json
+        
+        # Validate required fields
+        if not all(k in data for k in ['title', 'url']):
+            return jsonify({'error': 'Missing required fields (title, url)'}), 400
+        
+        # Get file size from metadata if provided, otherwise default to 0
+        file_size = data.get('metadata', {}).get('size', 0)
+        
+        # Use the URL as the filepath for B2-hosted files
+        filepath = data['url']
+        
+        # Create metadata object with source information
+        metadata = data.get('metadata', {})
+        metadata['source'] = data.get('source', 'b2')
+        metadata['video_type'] = data.get('video_type', 'mp4')
+        metadata['added_date'] = datetime.now().isoformat()
+        
+        # Add to database
+        video_id = add_video(
+            title=data['title'],
+            size=file_size,
+            filepath=filepath,
+            metadata=metadata
+        )
+        
+        return jsonify({
+            'message': 'Video added successfully',
+            'video_id': video_id,
+            'title': data['title'],
+            'url': filepath
+        }), 201
+    except Exception as e:
+        print(f"Error adding video: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @videos_bp.route('/export-dataset', methods=['POST'])
 def export_dataset():
@@ -108,9 +146,6 @@ def export_dataset():
         print(f"Error exporting dataset: {str(e)}")
         print(f"Full traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 400
-
-
-
 
 @videos_bp.route('/with-tags', methods=['GET'])
 def get_videos_with_tags():
