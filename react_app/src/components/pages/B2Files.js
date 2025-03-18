@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useB2Service } from 'services/b2Service';
 import { Link } from 'react-router-dom';
 import { GlobalContext } from '../../index';
+import Layout from './Layout';
 import './B2Files.css';
 
 // Simple fuzzy search function
@@ -139,8 +140,8 @@ function B2Files() {
     setSearchTerm(e.target.value);
   };
 
-  return (
-    <div className="b2-files-container">
+  const content = (
+    <>
       <h1 className="b2-files-title">B2 Storage Files</h1>
       
       {loading ? (
@@ -240,7 +241,15 @@ function B2Files() {
           </div>
         </>
       )}
-    </div>
+    </>
+  );
+
+  return (
+    <Layout>
+      <div className="b2-files-container">
+        {content}
+      </div>
+    </Layout>
   );
 }
 
