@@ -39,24 +39,23 @@ def render_video(render_params: RenderVideoRequest):
     from b2sdk.v2 import B2Api, InMemoryAccountInfo
 
     def render_mp4(props, output_file_name, composition_name):
-      with open('/tmp/composition.txt', 'w') as f:
-          print(f"Writing composition name to /tmp/composition.txt: {composition_name}")
-          f.write(composition_name)
-
-      # Write output filename to a temporary file
-      with open('/tmp/filename.txt', 'w') as f:
-          print(f"Writing output filename to /tmp/filename.txt: {output_file_name}")
-          f.write(output_file_name)
-
-      # Write props to a temporary file
-      with open('/tmp/props.json', 'w') as f:
-          print(f"Writing props to /tmp/props.json: {props}")
-          json.dump(props, f)
-
-      # Write range to a temporary file
-      with open('/tmp/range.txt', 'w') as f:
-          print(f"Writing range to /tmp/range.txt: {props.get('range', '')}")
-          f.write(str(props.get('range', '')))
+      # Write to /tmp and volume path
+      for filename, content in [
+          ('composition.txt', composition_name),
+          ('filename.txt', output_file_name),
+          ('props.json', json.dumps(props)),
+          ('range.txt', str(props.get('range', '')))
+      ]:
+          tmp_path = f'/tmp/{filename}'
+          volume_path = f'{VOLUME_PATH}/{filename}'
+          
+          with open(tmp_path, 'w') as f:
+              print(f"Writing {filename} to {tmp_path}: {content}")
+              f.write(content)
+          
+          with open(volume_path, 'w') as f:
+              print(f"Writing {filename} to {volume_path}: {content}")
+              f.write(content)
 
       # Check if file exists in B2
       bucket = authenticate_bucket("remotion-videos")
